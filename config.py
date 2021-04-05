@@ -1,0 +1,76 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Feb 11 10:54:43 2021
+
+@author: jbarker
+"""
+"""
+
+   _____             __ _                       _   _                __ _ _      
+  / ____|           / _(_)                     | | (_)              / _(_) |     
+ | |     ___  _ __ | |_ _  __ _ _   _ _ __ __ _| |_ _  ___  _ __   | |_ _| | ___ 
+ | |    / _ \| '_ \|  _| |/ _` | | | | '__/ _` | __| |/ _ \| '_ \  |  _| | |/ _ \
+ | |___| (_) | | | | | | | (_| | |_| | | | (_| | |_| | (_) | | | | | | | | |  __/
+  \_____\___/|_| |_|_| |_|\__, |\__,_|_|  \__,_|\__|_|\___/|_| |_| |_| |_|_|\___|
+                           __/ |                                                 
+                          |___/                                                  
+"""
+"""Data analysis tools"""
+Comparing_nominal2real = False
+Which_epochs = (0,) #the comma must stay, otherwise the variable will be just int
+Using_CAD_compare = False
+Line_differences_checking = False
+
+"""Nominal CAD coordinates of Fiducials
+Standard SA format with spaces as delimiters and no comments:
+Point name 'space' X [mm] 'space' Y [mm] 'space' Z [mm] 
+"""
+Coords_file_name = "PtOut.txt"
+
+"""Measured Lines
+Standard SA format with spaces as delimiters and no comments:
+Group aka Line name 'space' Point name 'space' Sd [mm] 'space' Hz [gon] 'space' V [gon] 
+"""
+Epochs_dictionary = {}
+Epochs_dictionary[0] = "Epoch1.txt"
+Epochs_dictionary[1] = "Epoch2.txt"
+
+if len(Which_epochs) == 1:
+    Measurements_file_name = Epochs_dictionary[Which_epochs[0]]
+elif len(Which_epochs) == 2:
+    Measurements_file_name = Epochs_dictionary[Which_epochs[0]]
+    Measurements_file_name_2 = Epochs_dictionary[Which_epochs[1]]
+elif len(Which_epochs) == 0:
+    print('No epoch(s) were chosen to analyse. Go to config.py and change it in a variable Which_epochs')
+else:
+    print('Too many epochs are chosen, choose just two. Go and correct it in Which_epochs in config.py.')
+Lines_of_sight = {
+'Hor_Left_Bottom': ('PQK62_7', 'PQK62_1','Girder_5','PQL6_7', 'PQL6_1','Girder_13', 'PQK36_7', 'PQK36_1'),
+'Hor_Left_Top': ('PQK62_8', 'PQK62_2','PQL6_8', 'PQL6_2','PQK36_8', 'PQK36_2'),
+'Hor_Top_Left': ('PQK62_9', 'PQK62_3','PQL6_9', 'PQL6_3','PQK36_9', 'PQK36_3'),
+'Hor_Top_Right': ('PQK62_10', 'PQK62_4','PQL6_10', 'PQL6_4','PQK36_10', 'PQK36_4'),
+'Hor_Right_Top': ('PQK62_11', 'PQK62_5','PQL6_11', 'PQL6_5','PQK36_11', 'PQK36_5'),
+'Hor_Right_Bottom': ('PQK62_12', 'PQK62_6','Girder_6','PQL6_12', 'PQL6_6','Girder_14', 'PQK36_12', 'PQK36_6'),
+'IFM_Left_DN': ('PQL6_1','Girder_11'),
+'IFM_Left_UP': ('PQL6_7','Girder_7'),
+'IFM_Right_UP': ('PQL6_12','Girder_8'),
+'IFM_Right_DN': ('PQL6_6','Girder_12'),
+'Ver_Left_DN_DN': ('PQK36_2','PQK36_1','Girder_17'),
+'Ver_Left_DN_UP': ('PQK36_8','PQK36_7','Girder_15'),
+'Ver_Left_MD_DN': ('PQL6_2','PQL6_1','Girder_11'),
+'Ver_Left_MD_UP': ('PQL6_8','PQL6_7','Girder_7'),
+'Ver_Left_UP_DN': ('PQK62_2','PQK62_1','Girder_3'),
+'Ver_Left_UP_UP': ('PQK62_8','PQK62_7','Girder_1'),
+'Ver_Right_DN_DN': ('PQK36_5','PQK36_6','Girder_18'),
+'Ver_Right_DN_UP': ('PQK36_11','PQK36_12','Girder_16'),
+'Ver_Right_MD_DN': ('PQL6_5','PQL6_6','Girder_12'),
+'Ver_Right_MD_UP': ('PQL6_11','PQL6_12','Girder_8'),
+'Ver_Right_UP_DN': ('PQK62_5','PQK62_6','Girder_4'),
+'Ver_Right_UP_UP': ('PQK62_11','PQK62_12','Girder_2'),
+'Diag_Left_DN': ('PQK36_8','PQL6_1','Girder_9'),
+'Diag_Left_UP': ('PQK62_2','PQL6_7','Girder_9'),
+'Diag_Right_DN': ('PQK36_11','PQL6_6','Girder_10'),
+'Diag_Right_UP': ('PQK62_5','PQL6_12','Girder_10'),
+'Diag_Top_DN': ('PKQ36_10','PQL6_3'),
+'Diag_Top_UP': ('PKQ62_4','PQL6_9')
+}
