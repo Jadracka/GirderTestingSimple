@@ -23,7 +23,7 @@ Line_differences_checking = False
 IFM_StDev = 0.001 #mm, from 2-5m based on Leica's MPEs and typical errors
 ADM_StDev = 0.007 #mm, from 2-5m based on Leica's typical errors
 Print_FIDs = False
-Print_LoS_measurements_initial_check = True
+Print_typos = True
 
 """Nominal CAD coordinates of Fiducials
 Standard SA format with spaces as delimiters and no comments:
@@ -91,7 +91,7 @@ Lines_of_sight = {
 'Diag_Left_UP': ('PQK62_2','PQL6_7','Girder_9'),
 'Diag_Right_DN': ('PQK36_11','PQL6_6','Girder_10'),
 'Diag_Right_UP': ('PQK62_5','PQL6_12','Girder_10'),
-'Diag_Top_DN': ('PKQ36_10','PQL6_3'),
-'Diag_Top_UP': ('PKQ62_4','PQL6_9')
+'Diag_Top_DN': ('PQK36_10','PQL6_3'),
+'Diag_Top_UP': ('PQK62_4','PQL6_9')
 }
 

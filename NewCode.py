@@ -18,6 +18,7 @@ from mpl_toolkits.mplot3d import Axes3D
 #from operator import itemgetter
 #from collections import namedtuple
 
+
 Coords_file = open(cg.Coords_file_name,'r')
 Nominal_coords = {}
 
@@ -58,7 +59,7 @@ for row in LoS_Meas_file.readlines():
     - Reads in and parses Meas_file. 
     - The format is string Line name 'space' 
       string Point name 'space' float Distance [mm] 'space' 
-      float Hz angle [gon] 'space' float V angle [gon].
+      float Hz angle [gon] 'space' float Z angle [gon].
     - Ignores point notes at the end.
     - It can handle multiple occurences of delimeters but not a combination of 
       them.
@@ -78,16 +79,31 @@ LoS_Meas_file.close()
 
 # =============================================================================
 # Initial checks for LoS measurements.
-# If you want to print, change: Print_measurements_initial_check to True
+# If you want to print, change: Print_typos to True
 # =============================================================================
 
-# Checking point names for typos and misspells:
+# Checking point names for typos and misspells and creating the list of measured
+# points in lines sorted based on the config file definition:
+sorted_LoS_measurements = {}
 for line in LoS_measurements:
-    for point in LoS_measurements.keys():
-        if point in Nominal_coords:
-            print(point)
-
-
+    if (cg.Print_typos) and (line not in cg.Lines_of_sight):
+# printing which lines are in measurements input but are not in the default
+# naming either due to typo or just simply missing in the nominal LoS decription
+        print("Line %s was measured, but not expected." % (line))
+    else:
+        line_points_sorted = []
+        for point in cg.Lines_of_sight[line]:
+            line_points_sorted.append(point)
+        sorted_LoS_measurements[line] = tuple(line_points_sorted)
+        del line_points_sorted    
+    for point in LoS_measurements[line]:
+        if (cg.Print_typos) and (point not in Nominal_coords):
+            print("Measured point with name %s in %s is not in the Nominal Coordinate file." % (point, line))
+    del line, point
+for point in Nominal_coords.keys():
+    if (cg.Print_typos) and (point not in LoS_measurements):
+        print("Point %s was not measured in any line." % (point))
+    del point
 
 #for line in LoS_measurements:
 #    print(list(LoS_measurements[line].keys()))
