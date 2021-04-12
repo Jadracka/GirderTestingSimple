@@ -30,7 +30,7 @@ for line in Coords_file.readlines():
 
 Coords_file.close()
 
-if cg.Using_CAD_compare:
+if cg.Using_nominal_compare:
 #Calculates nominal distances in ideal lines as seen in config file
     nominal_distances_in_lines = {}
     for line, Tupple_of_points in cg.Lines_of_sight.items():
@@ -84,7 +84,7 @@ for row in Meas_file.readlines():
     del words, row
 
 # =============================================================================
-# Finfing the minimal distance measured in each line and storing it, together
+# Finding the minimal distance measured in each line and storing it, together
 # in dictionary of lists. Dictionary keys = line names, values = list of pairs:
 # Point_name, measured distance (first of the triplet tuple of measurements)
 # =============================================================================
