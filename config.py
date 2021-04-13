@@ -18,12 +18,12 @@ Created on Thu Feb 11 10:54:43 2021
 """Data analysis tools"""
 """CAN BE CHANGED"""
 Which_epochs = (0,) #the comma must stay, otherwise the variable will be just int
-Using_nominal_compare = False
+Using_nominal_compare = True
 Line_differences_checking = False
 IFM_StDev = 0.001 #mm, from 2-5m based on Leica's MPEs and typical errors
 ADM_StDev = 0.007 #mm, from 2-5m based on Leica's typical errors
 Print_FIDs = False
-Print_typos = True
+Print_typos = False
 
 """Nominal CAD coordinates of Fiducials
 Standard SA format with spaces as delimiters and no comments:
