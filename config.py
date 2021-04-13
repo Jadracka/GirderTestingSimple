@@ -17,7 +17,7 @@ Created on Thu Feb 11 10:54:43 2021
 """
 """Data analysis tools"""
 """CAN BE CHANGED"""
-Which_epochs = (0,1) #the comma must stay, otherwise the variable will be just int
+Which_epochs = (0,) #the comma must stay, otherwise the variable will be just int
 Using_nominal_compare = False
 Line_differences_checking = False
 IFM_StDev = 0.001 #mm, from 2-5m based on Leica's MPEs and typical errors
@@ -36,8 +36,8 @@ Standard SA format with spaces as delimiters and no comments:
 Group aka Line name 'space' Point name 'space' Sd [mm] 'space' Hz [gon] 'space' V [gon] 
 """
 Epochs_dictionary = {}
-Epochs_dictionary[0] = "Epoch1.txt"
-Epochs_dictionary[1] = "Epoch2.txt"
+Epochs_dictionary[0] = "Testing_measurements_Epoch0.txt"
+Epochs_dictionary[1] = "Testing_measurements_Epoch1.txt"
 
 Using_nominal_compare0 = False
 Using_nominal_compare1 = False

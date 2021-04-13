@@ -12,7 +12,7 @@ import NewCode as nc
 import random as rnd
 import functions as fc
 
-out_file = open("Testing_measurements.txt","w+")
+out_file = open("Testing_measurements_Epoch1.txt","w+")
 
 lines_of_measurements = ()
 for line in cg.Lines_of_sight:
@@ -23,7 +23,11 @@ for line in cg.Lines_of_sight:
         distance_error = rnd.gauss(0,0.001)
         H_error = rnd.gauss(0,0.00015)
         Z_error = rnd.gauss(0,0.00015)
-        distance_nom = fc.slope_distance(nc.Nominal_coords[cg.Lines_of_sight[line][i-1]],nc.Nominal_coords[cg.Lines_of_sight[line][i]])
+        distance_nom = fc.slope_distance(nc.Nominal_coords[
+                                               cg.Lines_of_sight[line][i-1]],
+                                         nc.Nominal_coords[
+                                                 cg.Lines_of_sight[line][i]
+                                         ])
         H = H_rand + H_error
         Z = Z_rand + Z_error
         dist = distance_offset + distance_nom + distance_error
