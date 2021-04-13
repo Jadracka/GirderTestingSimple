@@ -116,6 +116,8 @@ for point in Nominal_coords.keys():
 LoS_measurements = sorted_LoS_measurements
 del sorted_LoS_measurements, all_measured_points
 
+
+
 #for line in LoS_measurements:
 #    print(list(LoS_measurements[line].keys()))
 print('Alles klar')
