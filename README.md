@@ -1,4 +1,4 @@
 # GirderTesting
 Code for Petra IV girder transport test using Petra III girder.
 
-Boohoo
+To run, python3 NewCode.py
