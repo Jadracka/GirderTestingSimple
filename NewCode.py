@@ -122,28 +122,61 @@ if (cg.Print_typos) and (measured_points_all_good):
 if (cg.Print_typos) and (nominal_points_all_measured):
     print("All nominal points were measured at least once.")
 if (cg.Print_typos) and not (all_points_in_lines_measured):
-    print("Not all points in lines were measured. Continueing in analysis.")
+    print("Not all points in lines were measured. Continuing in analysis.")
 
 
 del all_measured_points, nominal_points_all_measured,\
     all_points_in_lines_measured
 
-#sorted_measured_points_in_lines
-
+measured_distances_in_lines = {}
+if cg.Using_nominal_compare:
+    nominal_distances_in_line = {}
+    differences_in_distances = {}
+    StDev_distances_in_lines = {}
 if measured_lines_all_good and measured_points_all_good:
     del measured_lines_all_good, measured_points_all_good
     # Calculating distance deltas
     for line in LoS_measurements:
+        deltas = ()
+        if cg.Using_nominal_compare:
+            deltas_nominal = ()
         for i in range (1,len(sorted_measured_points_in_lines[line])):
-#            delta = fc.slope_distance
-            print(i) #, delta
-            pass
-        #fc.slope_distance
-    if cg.Using_nominal_compare0:
-        pass
+            delta = (LoS_measurements[line][
+                       sorted_measured_points_in_lines[line][i]][0]\
+                    - LoS_measurements[line][
+                       sorted_measured_points_in_lines[line][i-1]][0],)
+            deltas = deltas + delta
+            if cg.Using_nominal_compare:
+                d = fc.slope_distance(
+                            Nominal_coords[
+                                sorted_measured_points_in_lines[line][i-1]],
+                            Nominal_coords[
+                                sorted_measured_points_in_lines[line][i]])
+                deltas_nominal = deltas_nominal + (d,)
+        measured_distances_in_lines[line] = deltas
+        if cg.Using_nominal_compare:
+            nominal_distances_in_line[line] = deltas_nominal
+            del deltas_nominal
+    del line, i, delta, deltas, d
+    if cg.Using_nominal_compare:
+        for line in LoS_measurements:
+            differences_in_distances[line] = np.asarray(
+                                              nominal_distances_in_line[line])\
+                                            - np.asarray(
+                                            measured_distances_in_lines[line])
+            StDev_distances_in_lines[line] = np.std(
+                                               differences_in_distances[line])
+            if StDev_distances_in_lines[line] == 0:
+                StDev_distances_in_lines[line] = None
+            differences_in_distances[line] = tuple(
+                                                differences_in_distances[line])
+        del line
 else:
     print("Analysis cannot be performed as there are typos and errors in " 
           "input data. Please correct before running the script again. "
           "To help troubleshoot, change Print_typos in config.py to True.")
+
+
+
 
 print('End of the script')

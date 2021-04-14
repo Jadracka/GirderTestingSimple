@@ -24,6 +24,7 @@ IFM_StDev = 0.001 #mm, from 2-5m based on Leica's MPEs and typical errors
 ADM_StDev = 0.007 #mm, from 2-5m based on Leica's typical errors
 Print_FIDs = False
 Print_typos = False
+Print_real2nominal_checks = True
 
 """Nominal CAD coordinates of Fiducials
 Standard SA format with spaces as delimiters and no comments:
@@ -39,20 +40,13 @@ Epochs_dictionary = {}
 Epochs_dictionary[0] = "Testing_measurements_Epoch0.txt"
 Epochs_dictionary[1] = "Testing_measurements_Epoch1.txt"
 
-Using_nominal_compare0 = False
-Using_nominal_compare1 = False
 
 """Which Epochs gonna be used and adding the data into the code"""
 if len(Which_epochs) == 1:
     Measurements_file_name = Epochs_dictionary[Which_epochs[0]]
-    if Using_nominal_compare:
-        Using_nominal_compare0 = True
 elif len(Which_epochs) == 2:
     Measurements_file_name = Epochs_dictionary[Which_epochs[0]]
     Measurements_file_name_2 = Epochs_dictionary[Which_epochs[1]]
-    if Using_nominal_compare:
-        Using_nominal_compare0 = True
-        Using_nominal_compare1 = True
 elif len(Which_epochs) == 0:
     print('No epoch(s) were chosen to analyse. Go to config.py and change it in a variable Which_epochs')
 else:
