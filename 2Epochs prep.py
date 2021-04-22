@@ -6,6 +6,8 @@ Created on Wed Apr  7 08:02:05 2021
 """
 
 #import scipy as sp
+import re
+
 import numpy as np
 
 #import sys
@@ -18,17 +20,48 @@ import functions as fc
 #from operator import itemgetter
 #from collections import namedtuple
 
-# =============================================================================
-# Loading measurement files and Coordinates
-# =============================================================================
-Nominal_coords = fc.Coords_read_in(cg.Coords_file_name)
-LoS_measurements = fc.Measurements_read_in(cg.LoS_Measurements_file_name)
-Pol_measurements = fc.Measurements_read_in(cg.Pol_Measurements_file_name)
-if len(cg.Which_epochs) > 1:
-    LoS_measurements_1 = fc.Measurements_read_in(
-                                               cg.LoS_Measurements_file_name_1)
-    Pol_measurements_1 = fc.Measurements_read_in(
-                                               cg.Pol_Measurements_file_name_1)
+
+Coords_file = open(cg.Coords_file_name,'r')
+Nominal_coords = {}
+
+for line in Coords_file.readlines():
+    """Reads in and parses coordinates file. Ignores point notes at the end.
+       It can handle multiple occurences of delimeters,
+       but not a combination of them."""
+    words = re.split(';+|,+|\t+| +',line.strip())
+    Nominal_coords[words[0]] = (float(words[1]), 
+                                float(words[2]), 
+                                float(words[3]))
+    del line
+    
+Coords_file.close()
+
+LoS_Meas_file = open(cg.Measurements_file_name_2,'r')
+LoS_measurements_1 = {}
+
+for row in LoS_Meas_file.readlines():
+    """
+    - Reads in and parses Meas_file. 
+    - The format is string Line name 'space' 
+      string Point name 'space' float Distance [mm] 'space' 
+      float Hz angle [gon] 'space' float Z angle [gon].
+    - Ignores point notes at the end.
+    - It can handle multiple occurences of delimeters but not a 
+      combination of them.
+        - LoS_measurements_1 - a Dictionary of lines which contains a 
+                                    Dictionary of points, where Point
+                                    name is a key and measured values
+                                    are triplet tuple"""
+    words = re.split(';+|,+|\t+| +',row.strip())
+    if words[0] not in LoS_measurements_1.keys():
+        LoS_measurements_1[words[0]] = {}
+        LoS_measurements_1[words[0]][words[1]] =                         \
+          (float(words[2]), float(words[3]), float(words[4]))
+    else: 
+        LoS_measurements_1[words[0]][words[1]] =                         \
+          (float(words[2]), float(words[3]), float(words[4]))
+    del words, row
+LoS_Meas_file.close()
 
 # =============================================================================
 # Initial checks for LoS measurements.
@@ -45,7 +78,7 @@ measured_points_all_good = True
 nominal_points_all_measured = True
 all_points_in_lines_measured = True
 
-for line in LoS_measurements:
+for line in LoS_measurements_1:
     if (cg.Print_typos) and (line not in cg.Lines_of_sight):
 # printing which lines are in measurements input but are not in the 
 # default naming either due to typo or just simply missing in the nominal
@@ -55,7 +88,7 @@ for line in LoS_measurements:
     else:
         line_points_sorted = []
         for point in cg.Lines_of_sight[line]:
-            if point in LoS_measurements[line].keys():
+            if point in LoS_measurements_1[line].keys():
                 line_points_sorted.append(point)
         sorted_measured_points_in_lines[line] = tuple(line_points_sorted)   
         if line_points_sorted != list(cg.Lines_of_sight[line]):
@@ -63,7 +96,7 @@ for line in LoS_measurements:
             if cg.Print_typos:
                 print("Not all points were measured in %s line"% (line))
         del line_points_sorted    
-    for point in LoS_measurements[line]:
+    for point in LoS_measurements_1[line]:
         if (cg.Print_typos) and (point not in Nominal_coords):
             print("Measured point with name %s in %s is not in the Nominal" \
                   " Coordinate file." % (point, line))
@@ -103,14 +136,14 @@ if cg.Using_nominal_compare:
 if measured_lines_all_good and measured_points_all_good:
     del measured_lines_all_good, measured_points_all_good
     # Calculating distance deltas
-    for line in LoS_measurements:
+    for line in LoS_measurements_1:
         deltas = ()
         if cg.Using_nominal_compare:
             deltas_nominal = ()
         for i in range (1,len(sorted_measured_points_in_lines[line])):
-            delta = (LoS_measurements[line][
+            delta = (LoS_measurements_1[line][
                        sorted_measured_points_in_lines[line][i]][0]\
-                    - LoS_measurements[line][
+                    - LoS_measurements_1[line][
                        sorted_measured_points_in_lines[line][i-1]][0],)
             deltas = deltas + delta
             if cg.Using_nominal_compare:
@@ -126,7 +159,7 @@ if measured_lines_all_good and measured_points_all_good:
             del deltas_nominal
     del line, i, delta, deltas, d
     if cg.Using_nominal_compare:
-        for line in LoS_measurements:
+        for line in LoS_measurements_1:
             differences_in_distances[line] = np.asarray(
                                               nominal_distances_in_line[line])\
                                             - np.asarray(
@@ -142,6 +175,8 @@ else:
     print("Analysis cannot be performed as there are typos and errors in " 
           "input data. Please correct before running the script again. "
           "To help troubleshoot, change Print_typos in config.py to True.")
+
+print(differences_in_distances, StDev_distances_in_lines)
 
 
 print('End of the script')

@@ -6,6 +6,8 @@ Created on Thu Feb 11 12:53:33 2021
 """
 import math as m
 from numpy import pi
+import re
+
 """
 ______                _   _                 
 |  ___|              | | (_)                
@@ -54,3 +56,60 @@ def sing(angle):
     """Function takes angle in gons and calculates sinus"""
     result = m.sin(gon2rad(angle))
     return result
+
+def polar2cart3D(S, Hz, Z):
+    return [
+         S * sing(Hz) * cosg(Z),
+         S * sing(Hz) * sing(Z),
+         S * cosg(Hz)
+    ]
+    
+def polar2cart3D(PointID):
+    return [
+         PointID[0] * sing(PointID[1]) * cosg(PointID[2]),
+         PointID[0] * sing(PointID[1]) * sing(PointID[2]),
+         PointID[0] * cosg(PointID[1])
+    ]
+
+def Measurements_read_in(Meas_filename):
+    Meas_file = open(Meas_filename,'r')
+    Measurements = {}
+    for row in Meas_file.readlines():
+        """
+        - Reads in and parses Meas_file. 
+        - The format is string Line name 'space' 
+          string Point name 'space' float Distance [mm] 'space' 
+          float Hz angle [gon] 'space' float Z angle [gon].
+        - Ignores point notes at the end.
+        - It can handle multiple occurences of delimeters but not a 
+          combination of them.
+            - LoS_measurements_1 - a Dictionary of lines which contains a 
+                                        Dictionary of points, where Point
+                                        name is a key and measured values
+                                        are triplet tuple"""
+        words = re.split(';+|,+|\t+| +',row.strip())
+        if words[0] not in Measurements.keys():
+            Measurements[words[0]] = {}
+            Measurements[words[0]][words[1]] =                         \
+              (float(words[2]), float(words[3]), float(words[4]))
+        else: 
+            Measurements[words[0]][words[1]] =                         \
+              (float(words[2]), float(words[3]), float(words[4]))
+    del words, row
+    Meas_file.close()
+    return Measurements
+    
+def Coords_read_in(Coords_file_name):
+    Coords_file = open(Coords_file_name,'r')
+    Coords = {}
+    for line in Coords_file.readlines():
+        """Reads in and parses coordinates file. Ignores point notes at the end.
+           It can handle multiple occurences of delimeters,
+           but not a combination of them."""
+        words = re.split(';+|,+|\t+| +',line.strip())
+        Coords[words[0]] = (float(words[1]), 
+                                    float(words[2]), 
+                                    float(words[3]))
+        del line, words
+    Coords_file.close()
+    return Coords

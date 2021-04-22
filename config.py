@@ -20,8 +20,9 @@ Created on Thu Feb 11 10:54:43 2021
 Which_epochs = (0,) #the comma must stay, otherwise the variable will be just int
 Using_nominal_compare = True
 Line_differences_checking = False
-IFM_StDev = 0.001 #mm, from 2-5m based on Leica's MPEs and typical errors
-ADM_StDev = 0.007 #mm, from 2-5m based on Leica's typical errors
+IFM_StDev_sys = 0.0004 #mm, +- 0,2um based on Leica's white paper
+IFM_StDev_ppm = 0.00015 #mm, 0,15um based on Leica's white paper
+ADM_StDev = 0.010 #mm, from 2-5m based on Leica's typical errors
 Print_FIDs = False
 Print_typos = False
 Print_real2nominal_checks = True
@@ -32,21 +33,25 @@ Point name 'space' X [mm] 'space' Y [mm] 'space' Z [mm]
 """
 Coords_file_name = "BetterCoords.txt"
 
+
 """Measured Lines
 Standard SA format with spaces as delimiters and no comments:
 Group aka Line name 'space' Point name 'space' Sd [mm] 'space' Hz [gon] 'space' V [gon] 
 """
-Epochs_dictionary = {}
-Epochs_dictionary[0] = "Testing_measurements_Epoch0.txt"
-Epochs_dictionary[1] = "Testing_measurements_Epoch1.txt"
-
+Epochs_dictionary = {'LoS':{},'Pol':{}}
+Epochs_dictionary['LoS'][0] = "Testing_measurements_Epoch0.txt"
+Epochs_dictionary['LoS'][1] = "Testing_measurements_Epoch1.txt"
+Epochs_dictionary['Pol'][0] = "Polar_measurements_0.txt"
 
 """Which Epochs gonna be used and adding the data into the code"""
 if len(Which_epochs) == 1:
-    Measurements_file_name = Epochs_dictionary[Which_epochs[0]]
+    LoS_Measurements_file_name = Epochs_dictionary['LoS'][Which_epochs[0]]
+    Pol_Measurements_file_name = Epochs_dictionary['Pol'][Which_epochs[0]]
 elif len(Which_epochs) == 2:
-    Measurements_file_name = Epochs_dictionary[Which_epochs[0]]
-    Measurements_file_name_2 = Epochs_dictionary[Which_epochs[1]]
+    LoS_Measurements_file_name = Epochs_dictionary['LoS'][Which_epochs[0]]
+    LoS_Measurements_file_name_1 = Epochs_dictionary['LoS'][Which_epochs[1]]
+    Pol_Measurements_file_name = Epochs_dictionary['Pol'][Which_epochs[0]]
+    Pol_Measurements_file_name_1 = Epochs_dictionary['Pol'][Which_epochs[1]]
 elif len(Which_epochs) == 0:
     print('No epoch(s) were chosen to analyse. Go to config.py and change it in a variable Which_epochs')
 else:
