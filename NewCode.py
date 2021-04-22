@@ -19,7 +19,8 @@ import functions as fc
 #from collections import namedtuple
 
 # =============================================================================
-# Loading measurement files and Coordinates
+# Loading measurement files and Coordinates, if two epochs are set, files load
+# for them as well.
 # =============================================================================
 Nominal_coords = fc.Coords_read_in(cg.Coords_file_name)
 LoS_measurements = fc.Measurements_read_in(cg.LoS_Measurements_file_name)
@@ -40,10 +41,12 @@ if len(cg.Which_epochs) > 1:
 sorted_measured_points_in_lines = {}
 all_measured_points = []
 measured_lines_all_good = True
-measured_points_all_good = True
+LoS_measured_points_all_good = True
 #nominal_lines_all_measured = True #not checking at the moment
 nominal_points_all_measured = True
 all_points_in_lines_measured = True
+
+
 
 for line in LoS_measurements:
     if (cg.Print_typos) and (line not in cg.Lines_of_sight):
@@ -62,14 +65,14 @@ for line in LoS_measurements:
             all_points_in_lines_measured = False
             if cg.Print_typos:
                 print("Not all points were measured in %s line"% (line))
-        del line_points_sorted    
+        del line_points_sorted
     for point in LoS_measurements[line]:
         if (cg.Print_typos) and (point not in Nominal_coords):
             print("Measured point with name %s in %s is not in the Nominal" \
                   " Coordinate file." % (point, line))
-            measured_points_all_good = False
+            LoS_measured_points_all_good = False
         if point not in cg.Lines_of_sight[line]:
-            measured_points_all_good = False
+            LoS_measured_points_all_good = False
             if cg.Print_typos:
                 print("Point %s does not nominally belong to %s line"
                       % (point, line))
@@ -84,7 +87,7 @@ for point in Nominal_coords.keys():
 
 if (cg.Print_typos) and (measured_lines_all_good):
     print("All measured lines were expected, no typos found.")
-if (cg.Print_typos) and (measured_points_all_good):
+if (cg.Print_typos) and (LoS_measured_points_all_good):
     print("All measured points are correct, in correct lines, no typos found.")   
 if (cg.Print_typos) and (nominal_points_all_measured):
     print("All nominal points were measured at least once.")
@@ -92,7 +95,7 @@ if (cg.Print_typos) and not (all_points_in_lines_measured):
     print("Not all points in lines were measured. Continuing in analysis.")
 
 
-del all_measured_points, nominal_points_all_measured,\
+del all_measured_points, nominal_points_all_measured, \
     all_points_in_lines_measured
 
 measured_distances_in_lines = {}
@@ -100,8 +103,8 @@ if cg.Using_nominal_compare:
     nominal_distances_in_line = {}
     differences_in_distances = {}
     StDev_distances_in_lines = {}
-if measured_lines_all_good and measured_points_all_good:
-    del measured_lines_all_good, measured_points_all_good
+if measured_lines_all_good and LoS_measured_points_all_good:
+    del measured_lines_all_good, LoS_measured_points_all_good
     # Calculating distance deltas
     for line in LoS_measurements:
         deltas = ()

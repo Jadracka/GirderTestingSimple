@@ -23,6 +23,7 @@ Line_differences_checking = False
 IFM_StDev_sys = 0.0004 #mm, +- 0,2um based on Leica's white paper
 IFM_StDev_ppm = 0.00015 #mm, 0,15um based on Leica's white paper
 ADM_StDev = 0.010 #mm, from 2-5m based on Leica's typical errors
+Ang_StDev = 
 Print_FIDs = False
 Print_typos = False
 Print_real2nominal_checks = True
