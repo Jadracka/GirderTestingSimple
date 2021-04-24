@@ -58,18 +58,18 @@ def sing(angle):
     return result
 
 def polar2cart3D(S, Hz, Z):
-    return [
-         S * sing(Hz) * cosg(Z),
-         S * sing(Hz) * sing(Z),
-         S * cosg(Hz)
-    ]
+    return (
+         S * sing(Z) * cosg(Hz),
+         S * sing(Z) * sing(Hz),
+         S * cosg(Z)
+    )
     
-def polar2cart3D(PointID):
-    return [
-         PointID[0] * sing(PointID[1]) * cosg(PointID[2]),
-         PointID[0] * sing(PointID[1]) * sing(PointID[2]),
-         PointID[0] * cosg(PointID[1])
-    ]
+def polar2cart3D(Point):
+    return (
+         Point[0] * sing(Point[2]) * cosg(Point[1]),
+         Point[0] * sing(Point[2]) * sing(Point[1]),
+         Point[0] * cosg(Point[2])
+    )
 
 def Measurements_read_in(Meas_filename):
     Meas_file = open(Meas_filename,'r')
@@ -113,3 +113,43 @@ def Coords_read_in(Coords_file_name):
         del line, words
     Coords_file.close()
     return Coords
+
+def StDev_sys_ppm(Value,StDev_tuple):
+    return float(StDev_tuple[0] + Value * StDev_tuple[1]/1000000)
+
+def StDev_XYZ_from_Polar(Point, StDev_S, StDev_Hz, StDev_Z):
+    '''takes in Point measured in Polar coordinates and outputs tuple of 
+    standard deviations for the XYZ components using config.py's values for 
+    standard deviations of the measurements.'''
+    S = Point[0]/1000
+    Hz = Point[1]
+    Z = Point[2]
+    StDev_S = StDev_sys_ppm(S,StDev_S)
+    StDev_Hz = gon2rad(StDev_sys_ppm(Hz,StDev_Hz))
+    StDev_Z = gon2rad(StDev_sys_ppm(Z,StDev_Z))
+    StDev_X = m.sqrt(m.pow(StDev_S,2) * m.pow(cosg(Hz) * sing(Z),2)\
+              + m.pow(StDev_Hz,2) * m.pow(-S * sing(Hz) * sing(Z),2)\
+              + m.pow(StDev_Z,2) * m.pow(S * cosg(Hz) * cosg(Z),2))
+    StDev_Y = m.sqrt(m.pow(StDev_S,2) * m.pow(sing(Hz) * sing(Z),2)\
+              + m.pow(StDev_Hz,2) * m.pow(S * cosg(Hz) * sing(Z),2)\
+              + m.pow(StDev_Z,2) * m.pow(S * sing(Hz) * cosg(Z),2))
+    StDev_Zz = m.sqrt(m.pow(StDev_S,2) * m.pow(cosg(Z),2)\
+              + m.pow(StDev_Z,2) * m.pow(-S * sing(Z),2))
+    return (StDev_X,StDev_Y,StDev_Zz)
+
+def StDev_distance(Point_From, Point_To, StDevXYZ_From, StDevXYZ_To):
+    sd = slope_distance(Point_From, Point_To)
+    StDev_S = m.sqrt(m.pow(StDevXYZ_From[0],2) * m.pow((Point_To[0] \
+                                                    - Point_From[0])/sd,2)
+                 + m.pow(StDevXYZ_To[0],2) * m.pow((Point_To[0] \
+                                                    - Point_From[0])/-sd,2)
+                 + m.pow(StDevXYZ_From[1],2) * m.pow((Point_To[1] \
+                                                    - Point_From[1])/sd,2)
+                 + m.pow(StDevXYZ_To[1],2) * m.pow((Point_To[1] \
+                                                    - Point_From[1])/-sd,2)
+                 + m.pow(StDevXYZ_From[2],2) * m.pow((Point_To[2] \
+                                                    - Point_From[2])/sd,2)
+                 + m.pow(StDevXYZ_To[2],2) * m.pow((Point_To[2] \
+                                                    - Point_From[2])/-sd,2)
+        )
+    return StDev_S

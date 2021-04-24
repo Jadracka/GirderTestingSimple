@@ -17,16 +17,19 @@ Created on Thu Feb 11 10:54:43 2021
 """
 """Data analysis tools"""
 """CAN BE CHANGED"""
-Which_epochs = (0,) #the comma must stay, otherwise the variable will be just int
+Which_epochs = (0,) #the comma must stay, otherwise the variable will be int
 Using_nominal_compare = True
 Line_differences_checking = False
-IFM_StDev_sys = 0.0004 #mm, +- 0,2um based on Leica's white paper
-IFM_StDev_ppm = 0.00015 #mm, 0,15um based on Leica's white paper
-ADM_StDev = 0.010 #mm, from 2-5m based on Leica's typical errors
-Ang_StDev = 
 Print_FIDs = False
 Print_typos = False
 Print_real2nominal_checks = True
+IFM_StDev_sys = (0.0004,0.00015) #mm, +- 0,2um based on Leica's white paper
+ADM_StDev = 0.010 #mm, from 2-5m based on Leica's typical errors
+Ang_StDev = (0.015,0.003) #mm, needs to be calculated for each angle separately
+
+
+
+Dist_StDev = (IFM_StDev_sys[0]+ADM_StDev,IFM_StDev_sys[1])
 
 """Nominal CAD coordinates of Fiducials
 Standard SA format with spaces as delimiters and no comments:
@@ -42,7 +45,7 @@ Group aka Line name 'space' Point name 'space' Sd [mm] 'space' Hz [gon] 'space' 
 Epochs_dictionary = {'LoS':{},'Pol':{}}
 Epochs_dictionary['LoS'][0] = "Testing_measurements_Epoch0.txt"
 Epochs_dictionary['LoS'][1] = "Testing_measurements_Epoch1.txt"
-Epochs_dictionary['Pol'][0] = "Polar_measurements_0.txt"
+Epochs_dictionary['Pol'][0] = "Polar_measurements_1.txt"
 
 """Which Epochs gonna be used and adding the data into the code"""
 if len(Which_epochs) == 1:
