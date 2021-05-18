@@ -45,7 +45,7 @@ Group aka Line name 'space' Point name 'space' Sd [mm] 'space' Hz [gon] 'space' 
 Epochs_dictionary = {'LoS':{},'Pol':{}}
 Epochs_dictionary['LoS'][0] = "Testing_measurements_Epoch0.txt"
 Epochs_dictionary['LoS'][1] = "Testing_measurements_Epoch1.txt"
-Epochs_dictionary['Pol'][0] = "Polar_measurements_1.txt"
+Epochs_dictionary['Pol'][0] = "Polar_measurements_0.txt"
 Epochs_dictionary['Pol'][1] = "Polar_measurements_1.txt"
 
 """Which Epochs gonna be used and adding the data into the code"""
