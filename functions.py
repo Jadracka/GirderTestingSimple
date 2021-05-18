@@ -57,18 +57,39 @@ def sing(angle):
     result = m.sin(gon2rad(angle))
     return result
 
-def polar2cart3D(S, Hz, Z):
+def arctang(angle):
+    """Function takes angle in gons and calculates cosinus"""
+    result = m.atan(gon2rad(angle))
+    return result
+
+def polar2cart3Dgon(S, Hz, Z):
     return (
          S * sing(Z) * cosg(Hz),
          S * sing(Z) * sing(Hz),
          S * cosg(Z)
     )
     
-def polar2cart3D(Point):
+def polar2cart3Dgon(Point):
     return (
          Point[0] * sing(Point[2]) * cosg(Point[1]),
          Point[0] * sing(Point[2]) * sing(Point[1]),
          Point[0] * cosg(Point[2])
+    )
+
+def cart2polal3Dgon(Point):
+    return (
+         m.sqrt(m.pow(Point[0],2) + m.pow(Point[1],2) + m.pow(Point[2],2)),
+         rad2gon(
+            arctang(m.sqrt(m.pow(Point[0],2) + m.pow(Point[1],2))/Point[2])),
+         rad2gon(arctang(Point[1]/Point[0]))
+    )
+         
+def cart2polal3Dgon(X,Y,Z):
+    return (
+         m.sqrt(m.pow(X,2) + m.pow(Y,2) + m.pow(Z,2)),
+         rad2gon(
+            arctang(m.sqrt(m.pow(X,2) + m.pow(Y,2))/Z)),
+         rad2gon(arctang(Y/X))
     )
 
 def Measurements_read_in(Meas_filename):

@@ -17,11 +17,11 @@ Created on Thu Feb 11 10:54:43 2021
 """
 """Data analysis tools"""
 """CAN BE CHANGED"""
-Which_epochs = (0,) #the comma must stay, otherwise the variable will be int
+Which_epochs = (0,1) #the comma must stay, otherwise the variable will be int
 Using_nominal_compare = True
 Line_differences_checking = False
 Print_FIDs = False
-Print_typos = False
+Print_typos = True
 Print_real2nominal_checks = True
 IFM_StDev_sys = (0.0004,0.00015) #mm, +- 0,2um based on Leica's white paper
 ADM_StDev = 0.010 #mm, from 2-5m based on Leica's typical errors
@@ -46,6 +46,7 @@ Epochs_dictionary = {'LoS':{},'Pol':{}}
 Epochs_dictionary['LoS'][0] = "Testing_measurements_Epoch0.txt"
 Epochs_dictionary['LoS'][1] = "Testing_measurements_Epoch1.txt"
 Epochs_dictionary['Pol'][0] = "Polar_measurements_1.txt"
+Epochs_dictionary['Pol'][1] = "Polar_measurements_1.txt"
 
 """Which Epochs gonna be used and adding the data into the code"""
 if len(Which_epochs) == 1:
