@@ -136,7 +136,10 @@ def Coords_read_in(Coords_file_name):
     return Coords
 
 def StDev_sys_ppm(Value,StDev_tuple):
-    return float(StDev_tuple[0] + Value * StDev_tuple[1]/1000000)
+    return float(StDev_tuple[0] + Value * StDev_tuple[1]/1000)
+
+def StDev_angle(Value,StDev_tuple):
+    return float((StDev_tuple[0] + Value * StDev_tuple[1]/1000)/Value)
 
 def StDev_XYZ_from_Polar(Point, StDev_S, StDev_Hz, StDev_Z):
     '''takes in Point measured in Polar coordinates and outputs tuple of 
@@ -145,9 +148,6 @@ def StDev_XYZ_from_Polar(Point, StDev_S, StDev_Hz, StDev_Z):
     S = Point[0]/1000
     Hz = Point[1]
     Z = Point[2]
-    StDev_S = StDev_sys_ppm(S,StDev_S)
-    StDev_Hz = gon2rad(StDev_sys_ppm(Hz,StDev_Hz))
-    StDev_Z = gon2rad(StDev_sys_ppm(Z,StDev_Z))
     StDev_X = m.sqrt(m.pow(StDev_S,2) * m.pow(cosg(Hz) * sing(Z),2)\
               + m.pow(StDev_Hz,2) * m.pow(-S * sing(Hz) * sing(Z),2)\
               + m.pow(StDev_Z,2) * m.pow(S * cosg(Hz) * cosg(Z),2))

@@ -11,12 +11,17 @@ import numpy as np
 #import sys
 #import string
 #import math as m
-
 import config as cg
 import functions as fc
 
 #from operator import itemgetter
 #from collections import namedtuple
+
+# Are there two epochs to calculate?
+if len(cg.Which_epochs)>1:
+    Two_epochs = True
+else:
+    Two_epochs = False
 
 # =============================================================================
 # Loading measurement files and Coordinates, if two epochs are set, files load
@@ -36,11 +41,7 @@ if len(cg.Which_epochs) > 1:
 # If you want to print, change: Print_typos to True in config.py
 # =============================================================================
 """
-  ___               _       __  
- | __|_ __  ___  __| |_    /  \ 
- | _|| '_ \/ _ \/ _| ' \  | () |
- |___| .__/\___/\__|_||_|  \__/ 
-     |_|                          
+EPOCH 0 - Pre transport
 """
 # Checking point names for typos and misspells and creating the list of
 # measured points in lines sorted based on the config file definition:
@@ -90,15 +91,15 @@ for point in Nominal_coords.keys():
         nominal_points_all_measured = False
     del point
 
-if (cg.Print_typos) and (measured_lines_all_good):
+if (cg.Print_real2nominal_checks) and (measured_lines_all_good):
     print("Epoch0: All measured lines were expected, no typos found.")
-if (cg.Print_typos) and (LoS_measured_points_all_good):
+if (cg.Print_real2nominal_checks) and (LoS_measured_points_all_good):
     print("Epoch0: All measured points are correct, in correct lines, no typos"
           " found.")
-if (cg.Print_typos) and (nominal_points_all_measured):
+if (cg.Print_real2nominal_checks) and (nominal_points_all_measured):
     print("Epoch0: All nominal points in IFM lines were measured at least "
           "once.")
-if (cg.Print_typos) and not (all_points_in_lines_measured):
+if (cg.Print_real2nominal_checks) and not (all_points_in_lines_measured):
     print("Epoch0: Not all points in lines were measured. Continuing in "
           "analysis.")
 
@@ -120,7 +121,7 @@ for instrument in Pol_measurements_cart:
         Measured = fc.slope_distance(Pol_measurements_cart[instrument][
                      points[i]],Pol_measurements_cart[instrument][points[i-1]])
         if points[i-1] not in Nominal_coords.keys() and cg.Print_typos:
-            print('Epoch0: Point %s measured by %s is not in Nominals.' 
+            print('Epoch0: Point %s measured by %s is not in Nominals.'
                   %(points[i-1], instrument))
         if (points[i] in Nominal_coords.keys()) and ((points[i-1]) in
                                                         Nominal_coords.keys()):
@@ -158,7 +159,7 @@ if measured_lines_all_good and LoS_measured_points_all_good:
         if cg.Using_nominal_compare:
             nominal_distances_in_line[line] = deltas_nominal
             del deltas_nominal
-    del line, i, delta, deltas, d
+    del line, i, delta, deltas,
     if cg.Using_nominal_compare:
         for line in LoS_measurements:
             differences_in_distances[line] = np.asarray(
@@ -178,12 +179,10 @@ else:
           "again. To help troubleshoot, change Print_typos in config.py to "
           "True.")
 
-"""___               _      _ 
-  | __|_ __  ___  __| |_   / |
-  | _|| '_ \/ _ \/ _| ' \  | |
-  |___| .__/\___/\__|_||_| |_|
-      |_|                                                                 """
-if len(cg.Which_epochs)>1:
+"""
+EPOCH 1 - Post transport
+"""
+if Two_epochs:
     # Checking point names for typos and misspells and creating the list of
     # measured points in lines sorted based on the config file definition:
     sorted_measured_points_in_lines_E1 = {}
@@ -193,7 +192,7 @@ if len(cg.Which_epochs)>1:
     #nominal_lines_all_measured = True #not checking at the moment
     nominal_points_all_measured_E1 = True
     all_points_in_lines_measured_E1 = True
-    
+
     for line in LoS_measurements_E1:
         if (cg.Print_typos) and (line not in cg.Lines_of_sight):
     # printing which lines are in measurements input but are not in the
@@ -215,7 +214,7 @@ if len(cg.Which_epochs)>1:
             del line_points_sorted
         for point in LoS_measurements_E1[line]:
             if (cg.Print_typos) and (point not in Nominal_coords):
-                print("Epoch1: Measured point with name %s in %s is not in the"  
+                print("Epoch1: Measured point with name %s in %s is not in the"
                       " Nominal Coordinate file." % (point, line))
                 LoS_measured_points_all_good_E1 = False
             if point not in cg.Lines_of_sight[line]:
@@ -231,23 +230,23 @@ if len(cg.Which_epochs)>1:
             print("Epoch1: Point %s was not measured in any line." % (point))
             nominal_points_all_measured_E1 = False
         del point
-    
-    if (cg.Print_typos) and (measured_lines_all_good_E1):
+
+    if (cg.Print_real2nominal_checks) and (measured_lines_all_good_E1):
         print("Epoch1: All measured lines were expected, no typos found.")
-    if (cg.Print_typos) and (LoS_measured_points_all_good_E1):
+    if (cg.Print_real2nominal_checks) and (LoS_measured_points_all_good_E1):
         print("Epoch1: All measured points are correct, in correct lines, no "
               "typos found.")
-    if (cg.Print_typos) and (nominal_points_all_measured_E1):
+    if (cg.Print_real2nominal_checks) and (nominal_points_all_measured_E1):
         print("Epoch1: All nominal points in IFM lines were measured at least "
               "once.")
-    if (cg.Print_typos) and not (all_points_in_lines_measured_E1):
-        print("Epoch1: Not all points in lines were measured. Continuing in "              
+    if (cg.Print_real2nominal_checks) and not (all_points_in_lines_measured_E1):
+        print("Epoch1: Not all points in lines were measured. Continuing in "
               "analysis.")
-    
-    
+
+
     del all_measured_points_E1, nominal_points_all_measured_E1,\
     all_points_in_lines_measured_E1
-    
+
     Pol_measurements_cart_E1 = {}
     for instrument in Pol_measurements_E1:
         Pol_measurements_cart_E1[instrument] = {}
@@ -255,14 +254,15 @@ if len(cg.Which_epochs)>1:
             Pol_measurements_cart_E1[instrument][point] = fc.polar2cart3Dgon(
                                         Pol_measurements_E1[instrument][point])
         del instrument, point
-    
+
     for instrument in Pol_measurements_cart_E1:
         points = tuple(Pol_measurements_cart_E1[instrument].keys())
         for i in range (1,len(points)):
             Measured = fc.slope_distance(Pol_measurements_cart_E1[instrument][
                          points[i]],Pol_measurements_cart_E1[instrument][points[i-1]])
-            if points[i-1] not in Nominal_coords.keys() and cg.Print_typos:
-                print('Epoch1: Point %s measured by %s is not in Nominals.' 
+            if points[i-1] not in Nominal_coords.keys() and\
+                                                  cg.Print_real2nominal_checks:
+                print('Epoch1: Point %s measured by %s is not in Nominals.'
                       %(points[i-1],instrument))
             if (points[i] in Nominal_coords.keys()) and ((points[i-1]) in
                                                         Nominal_coords.keys()):
@@ -270,7 +270,7 @@ if len(cg.Which_epochs)>1:
                                             Nominal_coords[points[i-1]])
                 delta = Nominal - Measured
         del instrument, i, points, Measured, Nominal
-    
+
     measured_distances_in_lines_E1 = {}
     if cg.Using_nominal_compare:
         nominal_distances_in_line_E1 = {}
@@ -300,13 +300,13 @@ if len(cg.Which_epochs)>1:
             if cg.Using_nominal_compare:
                 nominal_distances_in_line_E1[line] = deltas_nominal
                 del deltas_nominal
-        del line, i, delta, deltas, d
+        del line, i, delta, deltas
         if cg.Using_nominal_compare:
             for line in LoS_measurements_E1:
                 differences_in_distances_E1[line] = \
                       np.asarray(nominal_distances_in_line_E1[line]) \
                     - np.asarray(measured_distances_in_lines_E1[line])
-                    
+
                 StDev_distances_in_lines_E1[line] = np.std(
                                              differences_in_distances_E1[line])
                 if StDev_distances_in_lines_E1[line] == 0:
@@ -319,6 +319,82 @@ if len(cg.Which_epochs)>1:
               " errors in input data. Please correct before running the script"
               " again. To help troubleshoot, change Print_typos in config.py "
               "to True.")
+
+# =============================================================================
+# Standard Deviations calculations
+# =============================================================================
+
+# Calculating StDevs for Laser Tracker IFM measurements
+StDevs_IFM_measurements = {}
+for line in measured_distances_in_lines:
+    stdev_distance = ()
+    for distance in measured_distances_in_lines[line]:
+        std = fc.StDev_sys_ppm(distance,cg.IFM_StDev)
+        stdev_distance = stdev_distance + (std,)
+    StDevs_IFM_measurements[line] = stdev_distance
+del line, stdev_distance, std, distance
+
+if Two_epochs:
+    StDevs_IFM_measurements_E1 = {}
+    for line in measured_distances_in_lines_E1:
+        stdev_distance = ()
+        for distance in measured_distances_in_lines_E1[line]:
+            std = fc.StDev_sys_ppm(distance,cg.IFM_StDev)
+            stdev_distance = stdev_distance + (std,)
+        StDevs_IFM_measurements_E1[line] = stdev_distance
+    del line, stdev_distance, std, distance
+
+# Calculating XYZ StDevs for polar measurements, adding the results to the 
+# Pol_measurements_cart(_E1) as extension of the existing tuple format:
+# X, Y, Z, StDev_X, StDev_Y, StDev_Z
+
+# First, transform the idiotic way of transcribing angular precision by Leica
+for instrument in Pol_measurements_cart:
+    for point in Pol_measurements_cart[instrument]:
+        StDev_HZ_Z = fc.StDev_angle(
+                Pol_measurements[instrument][point][0],cg.Ang_StDev)
+        StDev_S = cg.ADM_StDev + fc.StDev_sys_ppm(Pol_measurements[instrument][
+                                                        point][0],cg.IFM_StDev)
+        StDev_meas = (StDev_S,StDev_HZ_Z,StDev_HZ_Z)
+        Pol_measurements[instrument][point] = Pol_measurements[instrument][
+                                                            point] + StDev_meas
+        StDevXYZ = fc.StDev_XYZ_from_Polar(Pol_measurements[instrument][
+                                          point],StDev_S,StDev_HZ_Z,StDev_HZ_Z)
+        Pol_measurements_cart[instrument][point] = Pol_measurements_cart[
+                instrument][point] + StDevXYZ
+    del point, instrument, StDevXYZ, StDev_HZ_Z, StDev_S, StDev_meas
+
+if Two_epochs:
+    for instrument in Pol_measurements_cart_E1:
+        for point in Pol_measurements_cart_E1[instrument]:
+            StDev_HZ_Z = fc.StDev_angle(
+                    Pol_measurements_E1[instrument][point][0],cg.Ang_StDev)
+            StDev_S = cg.ADM_StDev + fc.StDev_sys_ppm(Pol_measurements_E1[
+                                            instrument][point][0],cg.IFM_StDev)
+            StDev_meas = (StDev_S,StDev_HZ_Z,StDev_HZ_Z)
+            Pol_measurements_E1[instrument][point] = Pol_measurements_E1[
+                                                instrument][point] + StDev_meas
+            StDevXYZ = fc.StDev_XYZ_from_Polar(Pol_measurements_E1[instrument][
+                                          point],StDev_S,StDev_HZ_Z,StDev_HZ_Z)
+            Pol_measurements_cart_E1[instrument][point] = \
+                         Pol_measurements_cart_E1[instrument][point] + StDevXYZ
+        del point, instrument, StDevXYZ, StDev_HZ_Z, StDev_S, StDev_meas
+
+# =============================================================================
+# EPOCH comparisons, only happens if there are more than 1 Epoch
+# =============================================================================
+all_lines_measured_same = True
+if Two_epochs:
+    for line in sorted_measured_points_in_lines:
+        # Checking if same Lines of Sight were measured in both Epochs
+        if sorted_measured_points_in_lines[line] != \
+                                      sorted_measured_points_in_lines_E1[line]:
+            all_lines_measured_same = False
+    if not all_lines_measured_same:
+        print("Lines weren't measured in the same manner, please correct!")
+    if all_lines_measured_same and cg.Print_epoch_checks:
+        print('All lines measured in Epoch 0 were also measured in Epoch 1.')
+    del line, all_lines_measured_same
 
 
 print('End of the script')

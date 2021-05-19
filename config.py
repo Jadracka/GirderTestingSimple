@@ -18,18 +18,29 @@ Created on Thu Feb 11 10:54:43 2021
 """Data analysis tools"""
 """CAN BE CHANGED"""
 Which_epochs = (0,1) #the comma must stay, otherwise the variable will be int
-Using_nominal_compare = True
-Line_differences_checking = False
-Print_FIDs = False
-Print_typos = True
-Print_real2nominal_checks = True
-IFM_StDev_sys = (0.0004,0.00015) #mm, +- 0,2um based on Leica's white paper
+Pico_StDev = 0.00000001 #mm, PicoScale Standard Deviation
+IFM_StDev = (0.0004,0.00015) #mm, LT IFM, based on Leica's white paper
 ADM_StDev = 0.010 #mm, from 2-5m based on Leica's typical errors
-Ang_StDev = (0.015,0.003) #mm, needs to be calculated for each angle separately
+Ang_StDev = (0.015,0.003) #mm,ppm
+Print_FIDs = False
+Line_differences_checking = False
+
+# Print troubleshooting messages:
+Print_all_troubleshooting = False
+Using_nominal_compare = False
+Print_typos = False #Printing error messages
+Print_real2nominal_checks = False
+Print_epoch_checks = False
 
 
 
-Dist_StDev = (IFM_StDev_sys[0]+ADM_StDev,IFM_StDev_sys[1])
+if Print_all_troubleshooting:
+    Using_nominal_compare = True
+    Print_typos = True #Printing error messages
+    Print_real2nominal_checks = True
+    Print_epoch_checks = True
+
+Dist_StDev = (IFM_StDev[0]+ADM_StDev,IFM_StDev[1])
 
 """Nominal CAD coordinates of Fiducials
 Standard SA format with spaces as delimiters and no comments:
