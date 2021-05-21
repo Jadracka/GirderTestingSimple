@@ -22,6 +22,7 @@ Pico_StDev = 0.00000001 #mm, PicoScale Standard Deviation
 IFM_StDev = (0.0004,0.00015) #mm, LT IFM, based on Leica's white paper
 ADM_StDev = 0.010 #mm, from 2-5m based on Leica's typical errors
 Ang_StDev = (0.015,0.003) #mm,ppm
+Max_diff_from_line = 0.5 #mm - maximum distance from line, report the excess
 Print_FIDs = False
 Line_differences_checking = False
 

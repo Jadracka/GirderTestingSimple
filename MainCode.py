@@ -10,7 +10,7 @@ import numpy as np
 
 #import sys
 #import string
-#import math as m
+import math as m
 import config as cg
 import functions as fc
 
@@ -179,6 +179,28 @@ else:
           "again. To help troubleshoot, change Print_typos in config.py to "
           "True.")
 
+# Checking the distance from line for LT-IFM measurements
+for line in LoS_measurements:
+    average_Hz = sum(v[1] for v in LoS_measurements[line].values()) /\
+                float(len(LoS_measurements[line]))
+    average_V = sum(v[2] for v in LoS_measurements[line].values()) /\
+                float(len(LoS_measurements[line]))
+    counter = 0
+    for point in LoS_measurements[line]:
+        Hz_diff = fc.gon2rad(average_Hz - LoS_measurements[line][point][1])\
+                    * LoS_measurements[line][point][0]
+        V_diff = fc.gon2rad(average_V - LoS_measurements[line][point][2])\
+                    * LoS_measurements[line][point][0]
+        Diff = m.sqrt(m.pow(Hz_diff,2)+m.pow(V_diff,2))
+        if cg.Max_diff_from_line < Diff:
+            counter = counter + 1
+            print("Line: %s, in Epoch 0, point %s exceeds Maximum difference "
+                  "from line of %1.3f. The total difference is %1.3f mm, "
+                  " with horizontal component %1.3f mm and vertical component "
+                  "%1.3f mm" %(line, point, cg.Max_diff_from_line, abs(Diff),
+                               abs(Hz_diff), abs(V_diff)))
+#    print(line, counter)
+del line, average_Hz, average_V, counter, point, Hz_diff, V_diff, Diff
 """
 EPOCH 1 - Post transport
 """
@@ -319,6 +341,29 @@ if Two_epochs:
               " errors in input data. Please correct before running the script"
               " again. To help troubleshoot, change Print_typos in config.py "
               "to True.")
+        
+# Checking the distance from line for LT-IFM measurements
+for line in LoS_measurements_E1:
+    average_Hz = sum(v[1] for v in LoS_measurements_E1[line].values()) /\
+                float(len(LoS_measurements_E1[line]))
+    average_V = sum(v[2] for v in LoS_measurements_E1[line].values()) /\
+                float(len(LoS_measurements_E1[line]))
+    counter = 0
+    for point in LoS_measurements_E1[line]:
+        Hz_diff = fc.gon2rad(average_Hz - LoS_measurements_E1[line][point][1])\
+                    * LoS_measurements_E1[line][point][0]
+        V_diff = fc.gon2rad(average_V - LoS_measurements_E1[line][point][2])\
+                    * LoS_measurements_E1[line][point][0]
+        Diff = m.sqrt(m.pow(Hz_diff,2)+m.pow(V_diff,2))
+        if cg.Max_diff_from_line < Diff:
+            counter = counter + 1
+            print("Line: %s, in Epoch 1, point %s exceeds Maximum difference "
+                  "from line of %1.3f. The total difference is %1.3f mm, "
+                  " with horizontal component %1.3f mm and vertical component "
+                  "%1.3f mm" %(line, point, cg.Max_diff_from_line, abs(Diff),
+                               abs(Hz_diff), abs(V_diff)))
+#    print(line, counter)
+del line, average_Hz, average_V, counter, point, Hz_diff, V_diff, Diff
 
 # =============================================================================
 # Standard Deviations calculations
@@ -348,16 +393,19 @@ if Two_epochs:
 # Pol_measurements_cart(_E1) as extension of the existing tuple format:
 # X, Y, Z, StDev_X, StDev_Y, StDev_Z
 
-# First, transform the idiotic way of transcribing angular precision by Leica
 for instrument in Pol_measurements_cart:
     for point in Pol_measurements_cart[instrument]:
+        # Leica's strange way of describing angular precision to normal
         StDev_HZ_Z = fc.StDev_angle(
                 Pol_measurements[instrument][point][0],cg.Ang_StDev)
+        # Combining ADM and IFM precision for polar measurements
         StDev_S = cg.ADM_StDev + fc.StDev_sys_ppm(Pol_measurements[instrument][
                                                         point][0],cg.IFM_StDev)
+        # Polar measurements precisions appended to the measured dictionary
         StDev_meas = (StDev_S,StDev_HZ_Z,StDev_HZ_Z)
         Pol_measurements[instrument][point] = Pol_measurements[instrument][
                                                             point] + StDev_meas
+        # X, Y, Z StDevs calculated and appended to the _cart measured data
         StDevXYZ = fc.StDev_XYZ_from_Polar(Pol_measurements[instrument][
                                           point],StDev_S,StDev_HZ_Z,StDev_HZ_Z)
         Pol_measurements_cart[instrument][point] = Pol_measurements_cart[
@@ -367,13 +415,17 @@ for instrument in Pol_measurements_cart:
 if Two_epochs:
     for instrument in Pol_measurements_cart_E1:
         for point in Pol_measurements_cart_E1[instrument]:
+            # Leica's strange way of describing angular precision to normal
             StDev_HZ_Z = fc.StDev_angle(
                     Pol_measurements_E1[instrument][point][0],cg.Ang_StDev)
+            # Combining ADM and IFM precision for polar measurements            
             StDev_S = cg.ADM_StDev + fc.StDev_sys_ppm(Pol_measurements_E1[
                                             instrument][point][0],cg.IFM_StDev)
+            # Polar measurements precisions appended to the measured dictionary
             StDev_meas = (StDev_S,StDev_HZ_Z,StDev_HZ_Z)
             Pol_measurements_E1[instrument][point] = Pol_measurements_E1[
                                                 instrument][point] + StDev_meas
+            # X, Y, Z StDevs calculated and appended to the _cart measured data
             StDevXYZ = fc.StDev_XYZ_from_Polar(Pol_measurements_E1[instrument][
                                           point],StDev_S,StDev_HZ_Z,StDev_HZ_Z)
             Pol_measurements_cart_E1[instrument][point] = \
@@ -381,7 +433,7 @@ if Two_epochs:
         del point, instrument, StDevXYZ, StDev_HZ_Z, StDev_S, StDev_meas
 
 # =============================================================================
-# EPOCH comparisons, only happens if there are more than 1 Epoch
+# EPOCH comparisons, only happens if there are 2 Epochs
 # =============================================================================
 all_lines_measured_same = True
 if Two_epochs:
