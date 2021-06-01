@@ -35,6 +35,12 @@ def slope_distance(Point_From,Point_To):
 	sd = m.sqrt(pow(dX,2)+pow(dY,2)+pow(dZ,2))
 	return sd
 
+def horizontal_distance(Point_From,Point_To):
+    dX = Point_To[0] - Point_From[0]
+    dY = Point_To[1] - Point_From[1]
+    hd = m.sqrt(pow(dX,2)+pow(dY,2))
+    return hd
+
 def gon2rad(gons):
     """Function takes an angle in gons, transforms to a float and converts
        to radians"""
@@ -174,3 +180,47 @@ def StDev_distance(Point_From, Point_To, StDevXYZ_From, StDevXYZ_To):
                                                     - Point_From[2])/-sd,2)
         )
     return StDev_S
+
+def ParD_Hz(Point, Instrument, instrument = None):
+    # This function returns derivatives of the horizontal angle with respect to
+    # all unknowns, X, Y, Z, O (orientation) for point
+    # for derivatives with respect to instrument, type 'I' as third argument
+    dX = -(Point[1] - Instrument[1]) / (pow(Point[0] - Instrument[0],2) \
+            + pow(Point[1] - Instrument[1],2))
+    dY = (Point[0] - Instrument[0]) / (pow(Point[0] - \
+             Instrument[0],2) + pow(Point[1] - Instrument[1],2))
+    dZ = 0
+    dO = -1
+    if instrument is 'I':
+        return -dX, -dY, dZ, dO
+    else:
+        return dX, dY, dZ, dO
+
+def ParD_Z(Point, Instrument, instrument = None):
+    # This function returns derivatives of the zenith angle with respect to
+    # all unknowns, X, Y, Z, O (orientation) for point
+    dist_squared = pow(Point[0] - Instrument[0],2) \
+    + pow(Point[1] - Instrument[1],2) + pow(Point[2] - Instrument[2],2)
+    h_distance = horizontal_distance(Point, Instrument)
+    dX = ((Point[0]-Instrument[0]) * (Point[2]-Instrument[2])) \
+        / (dist_squared * h_distance)
+    dY = ((Point[1]-Instrument[1]) * (Point[2]-Instrument[2])) \
+        / (dist_squared * h_distance)
+    dZ = - h_distance / dist_squared
+    dO = 0
+    if instrument is 'I':
+        return -dX, -dY, -dZ, dO
+    else:
+        return dX, dY, dZ, dO
+
+
+def ParD_sd(Point, Instrument, instrument = None):
+    dist = slope_distance(Point, Instrument)
+    dX = (Point[0]-Instrument[0]) / dist
+    dY = (Point[1]-Instrument[1]) / dist
+    dZ = (Point[2]-Instrument[2]) / dist
+    dO = 0
+    if instrument is 'I':
+        return -dX, -dY, -dZ, dO
+    else:
+        return dX, dY, dZ, dO

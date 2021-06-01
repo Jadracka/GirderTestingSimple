@@ -448,5 +448,10 @@ if Two_epochs:
         print('All lines measured in Epoch 0 were also measured in Epoch 1.')
     del line, all_lines_measured_same
 
+point = fc.ParD_Hz(Pol_measurements_cart['Instrument_0']['Girder_10'],
+                   Pol_measurements_cart['Instrument_0']['Girder_12'])
+instr = fc.ParD_Hz(Pol_measurements_cart['Instrument_0']['Girder_10'],
+                   Pol_measurements_cart['Instrument_0']['Girder_12'],'I')
+print(point, instr)
 
 print('End of the script')
