@@ -16,16 +16,6 @@ ______                _   _
 | | | |_| | | | | (__| |_| | (_) | | | \__ \
 \_|  \__,_|_| |_|\___|\__|_|\___/|_| |_|___/
 """
-def slope_distance(X1,Y1,Z1,X2,Y2,Z2):
-	"""Function calculates slope distance from point 1 to point 2
-	   from given X1, Y1, Z1, X2, Y2, Z2
-       THIS IS MY FIRST OVERLOADED FUNCTION!!!!"""
-	dX = X2 - X1
-	dY = Y2 - Y1
-	dZ = Z2 - Z1
-	sd = m.sqrt(pow(dX,2)+pow(dY,2)+pow(dZ,2))
-	return sd
-
 def slope_distance(Point_From,Point_To):
 	"""Function calculates slope distance from point 1 to point 2
 	   from given Tupples (X1, Y1, Z1) and (X2, Y2, Z2)"""
@@ -68,13 +58,6 @@ def arctang(angle):
     result = m.atan(gon2rad(angle))
     return result
 
-def polar2cart3Dgon(S, Hz, Z):
-    return (
-         S * sing(Z) * cosg(Hz),
-         S * sing(Z) * sing(Hz),
-         S * cosg(Z)
-    )
-    
 def polar2cart3Dgon(Point):
     return (
          Point[0] * sing(Point[2]) * cosg(Point[1]),
@@ -90,14 +73,6 @@ def cart2polal3Dgon(Point):
          rad2gon(arctang(Point[1]/Point[0]))
     )
          
-def cart2polal3Dgon(X,Y,Z):
-    return (
-         m.sqrt(m.pow(X,2) + m.pow(Y,2) + m.pow(Z,2)),
-         rad2gon(
-            arctang(m.sqrt(m.pow(X,2) + m.pow(Y,2))/Z)),
-         rad2gon(arctang(Y/X))
-    )
-
 def Measurements_read_in(Meas_filename):
     Meas_file = open(Meas_filename,'r')
     Measurements = {}
