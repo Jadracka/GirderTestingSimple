@@ -55,20 +55,31 @@ def dZ_Rotation(gamma):
     Rdz = np.array([[-Rzs, Rzc, 0], [-Rzc, -Rzs, 0], [0, 0, 0]])
     return Rdz
  
+def Rotation_matrix(angle_tuple):
+    R = np.array(X_Rotation(angle_tuple[0])*Y_Rotation(
+                                    angle_tuple[1])*Z_Rotation(angle_tuple[2]))
+    return R
+
 def Rotation_matrix(alpha, beta, gamma):
     R = np.array(X_Rotation(alpha)*Y_Rotation(beta)*Z_Rotation(gamma))
     return R
 
-def Helmert_transformation(T, R, x):
+def Helmert_transformation(x, From):
     """3D Helmert transformation with known transformation Key 
-    (Rotation matrix parameters and Translation vector)"""
-    X = T + R.dot(x)
-    return X
+    From is a dictionary of points
+    (Rotation matrix parameters, Translation vector and scale in tuple)"""
+    T = np.array(x[0:3])
+    q = float(x[3])
+    R = Rotation_matrix(x[-3:])
+    From_transformed = {}
+    for point in From:
+        From_transformed[point] = T + q * R.dot(np.array(From[point]))
+    return From_transformed
 
 def Helmert_aproximate_parameters(From,To):
     identicals = list(set(To.keys()) & set(From.keys()))
     if len(identicals) > 3:
-        # MAKE BETTER CHOICE ON POINTS WHEN YOU HAVE TIME, IF YOU WANT... PLEASE
+        #MAKE BETTER CHOICE ON POINTS WHEN YOU HAVE TIME, IF YOU WANT... PLEASE
         point1_To = np.array(To[identicals[0]])
         point2_To = np.array(To[identicals[-1]])
         point3_To = np.array(To[identicals[len(identicals)//2]])
@@ -93,8 +104,10 @@ def Helmert_aproximate_parameters(From,To):
         # Applying the calculated angle to point 2 and 3
         FirstZrotation2_To = (Z_Rotation(psi_To)).dot(point2_To).transpose()
         FirstZrotation3_To = (Z_Rotation(psi_To)).dot(point3_To.transpose())
-        FirstZrotation2_From = (Z_Rotation(psi_From)).dot(point2_To.transpose())
-        FirstZrotation3_From = (Z_Rotation(psi_From)).dot(point3_To.transpose())
+        FirstZrotation2_From = (Z_Rotation(psi_From)).dot(
+                                                         point2_To.transpose())
+        FirstZrotation3_From = (Z_Rotation(psi_From)).dot(
+                                                         point3_To.transpose())
         # Calculating second rotation angle from the first rotated coordinates
         fi_To = math.atan2(FirstZrotation2_To[1],FirstZrotation2_To[2])
         fi_From = math.atan2(FirstZrotation2_From[1],FirstZrotation2_From[2])
@@ -107,23 +120,25 @@ def Helmert_aproximate_parameters(From,To):
         theta_To = math.atan2(SecondYrotation3_To[1],SecondYrotation3_To[0])
         theta_From = math.atan2(SecondYrotation3_From[1],
                                 SecondYrotation3_From[0])
-        # Using all three angles, I calculate the full rotation matrix for From To
-        R_To = Z_Rotation(theta_To).dot(Y_Rotation(fi_To)).dot(Z_Rotation(psi_To))
+        # Using all three angles, the full rotation matrix for From To is made
+        R_To = Z_Rotation(theta_To).dot(Y_Rotation(fi_To)).dot(Z_Rotation(
+                                                                       psi_To))
         R_From = Z_Rotation(theta_From).dot(Y_Rotation(fi_From)).dot(
                                     Z_Rotation(psi_From))
         # The translation vector is calculated by rotating the original 
         # point1_From to the "To" coordinate frame. By substracting the rotated 
         # point1_From from point1_To we get the translation vector.
-        R = R_To.transpose().dot(R_From)
-        Translation = point1_To_original - R.dot(point1_From_original)
+        R0 = R_To.transpose().dot(R_From)
+        Translation = tuple(point1_To_original - R0.dot(point1_From_original))
         # Euler rotation angles
-        alpha = math.atan2(R[1,2],R[2,2])
-        beta = - math.atan(R[0,0])
-        gamma = math.atan2(R[0,1],R[0,0])
+        alpha = math.atan2(R0[1,2],R0[2,2])
+        beta = - math.atan(R0[0,0])
+        gamma = math.atan2(R0[0,1],R0[0,0])
         R_angles = (alpha, beta, gamma)
+        x0 = Translation + (1.0,) + R_angles
     else:
         print('Not enough identical points for transformation calculations.')
-    return R, Translation, R_angles# RX + T
+    return R0, x0# RX + T
 
 To = {'Point1': (3970673.003, 1018563.740, 4870369.178),
       'Point2': (3970667.574, 1018565.195, 4870373.010),
@@ -141,9 +156,6 @@ From = {'Point1': (744970.551, 1040944.109, 224.592),
         'Point6': (744943.006, 1040920.538, 223.352)
       }
 
-R0, T0, R_angles0 = Helmert_aproximate_parameters(From,To)
-print(R0, T0, R_angles0)
-
 """ Testing of aproximate parameters
 From_transed = {}
 for point in From:
@@ -153,7 +165,8 @@ for point in From:
     print(distance12, distance121)
 print(From_transed)"""
 
-def Build_TFromT(x,From,identicals):
+def Build_TFrom(x,From,identicals):
+    """x are the transform parameters T,q,R in a tuple"""
     TFrom = np.array([]) #Transformed "From" coords
     for i in range(len(identicals)):
         PointID = identicals[i] #string
@@ -200,20 +213,34 @@ def Build_A(x,From,identicals):
         A[iii+2,6] = D_gamma[2]
     return A
 
-def Helmert_LSM(R0,T0,R_angles0,From,To):
+def Helmert_LSM(From,To):
+    R0, x0 = Helmert_aproximate_parameters(From,To)
+    print(x0)
     identicals = list(set(To.keys()) & set(From.keys()))
-    equation_count = 3*len(identicals) #This is Anthony's fault!
-    dx = np.empty(7)
-    x = np.array([T0[0],T0[1],T0[2],1.0,R_angles0[0],R_angles0[1],R_angles0[2]])
-    To_ith = To[PointID] #tuple
+    equation_count = 3*len(identicals)
+    dx = np.zeros(7)
+    x = np.array(x0)
+#    To_ith = To[PointID] #tuple
     vI = np.empty((equation_count))
     vII = np.empty((equation_count))
-    ToT = np.empty((equation_count)) # Transposed "To" coordinates
+    To_array = np.empty((equation_count)) # Transposed "To" coordinates
+    Transformed_From = 1
+    To_array = np.empty(0)
+    From_array = np.empty(0)
     for i in range(len(identicals)):
         PointID = identicals[i] #string
         To_ith = To[PointID] #tuple
         From_ith = From[PointID] #tuple
-        ToT[3*i] = To_ith[0]
-        ToT[3*i+1] = To_ith[1]                  # MAKE IT NICE! THIS IS GROSS
-        ToT[3*i+2] = To_ith[2]
-    return T,R,q,Transformed_From
+        To_array = np.concatenate((To_array,np.array(To_ith)),axis = None)
+        From_array = np.concatenate((From_array,np.array(From_ith)),
+                                                                   axis = None)
+    threshold = 0.000001 #basic unit
+    metric = threshold + 1
+    while metric > threshold:
+        dx = np.empty(7)
+        x += dx
+        vI = Build_A(x,From,identicals).dot(dx) + vII
+        metric = 0.000000000001
+    return x,Transformed_From
+
+T,R,q,Transformed_From = Helmert_LSM(From,To)
