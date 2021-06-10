@@ -13,6 +13,7 @@ import numpy as np
 import math as m
 import config as cg
 import functions as fc
+import Helmert3Dtransform as helm
 
 #from operator import itemgetter
 #from collections import namedtuple
@@ -447,6 +448,17 @@ if Two_epochs:
     if all_lines_measured_same and cg.Print_epoch_checks:
         print('All lines measured in Epoch 0 were also measured in Epoch 1.')
     del line, all_lines_measured_same
+
+# =============================================================================
+# Calculating Helmert transformations for measured cartesian coordinates
+# =============================================================================
+
+#Transformed_Pol_measurements = fc.Helmert_calc_for_PolMeas(
+#                                          Pol_measurements_cart,Nominal_coords)
+#if Two_epochs:
+#    Transformed_Pol_measurements_E1 = fc.Helmert_calc_for_PolMeas(
+#                                        Pol_measurements_cart_E1,Nominal_coords)
+
 
 
 print('End of the script')

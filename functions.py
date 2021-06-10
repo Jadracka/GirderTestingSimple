@@ -7,6 +7,7 @@ Created on Thu Feb 11 12:53:33 2021
 import math as m
 from numpy import pi
 import re
+import Helmert3Dtransform as helmt
 
 """
 ______                _   _                 
@@ -121,6 +122,14 @@ def StDev_sys_ppm(Value,StDev_tuple):
 
 def StDev_angle(Value,StDev_tuple):
     return float((StDev_tuple[0] + Value * StDev_tuple[1]/1000)/Value)
+
+def Helmert_calc_for_PolMeas(From,To):
+    Transformed_From = {}
+    for instrument in From:
+        x,Transformed_From[instrument] = helmt.Helmert_transform(
+                                                           From[instrument],To)
+        Transformed_From[instrument][instrument]:(tuple(x[:3]))
+    return Transformed_From
 
 def StDev_XYZ_from_Polar(Point, StDev_S, StDev_Hz, StDev_Z):
     '''takes in Point measured in Polar coordinates and outputs tuple of 
