@@ -126,8 +126,8 @@ def StDev_angle(Value,StDev_tuple):
 def Helmert_calc_for_PolMeas(From,To):
     Transformed_From = {}
     for instrument in From:
-        x,Transformed_From[instrument] = helmt.Helmert_transform(
-                                                           From[instrument],To)
+        x = helmt.Helmert_transform(From[instrument],To)
+        Transformed_From[instrument] = helmt.Transformation(x,From[instrument])
         Transformed_From[instrument][instrument]:(tuple(x[:3]))
     return Transformed_From
 

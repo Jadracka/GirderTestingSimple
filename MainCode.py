@@ -453,11 +453,11 @@ if Two_epochs:
 # Calculating Helmert transformations for measured cartesian coordinates
 # =============================================================================
 
-#Transformed_Pol_measurements = fc.Helmert_calc_for_PolMeas(
-#                                          Pol_measurements_cart,Nominal_coords)
-#if Two_epochs:
-#    Transformed_Pol_measurements_E1 = fc.Helmert_calc_for_PolMeas(
-#                                        Pol_measurements_cart_E1,Nominal_coords)
+Transformed_Pol_measurements = fc.Helmert_calc_for_PolMeas(
+                                          Pol_measurements_cart,Nominal_coords)
+if Two_epochs:
+    Transformed_Pol_measurements_E1 = fc.Helmert_calc_for_PolMeas(
+                                        Pol_measurements_cart_E1,Nominal_coords)
 
 
 

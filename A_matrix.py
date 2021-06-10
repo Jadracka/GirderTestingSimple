@@ -40,9 +40,8 @@ if MC.Two_epochs:
 #A_matrix = np.zeroes([m,n])
 #print(A_matrix.shape)
 
-count_IFM_measurements = sum([len(v)+1 for k, v in\
-                                         measured_distances_in_lines.items()])\
-                         - len(measured_distances_in_lines)
+count_IFM_measurements = sum([len(v) for k, v in\
+                                         measured_distances_in_lines.items()])
 count_Pico_measurements = 4
 count_Pol_measurements = (sum([len(v) for k, v in Pol_measurements.items()]))*3
                         
@@ -53,6 +52,7 @@ for instrument in Pol_measurements:
     keys = list(Pol_measurements[instrument].keys())
     unknowns = list(set(unknowns + keys))
 unknowns.sort()
-print(unknowns)
 
-print(count_all_observations)
+#print(unknowns)
+
+#print(count_all_observations)
