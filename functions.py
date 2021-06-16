@@ -6,6 +6,7 @@ Created on Thu Feb 11 12:53:33 2021
 """
 import math as m
 from numpy import pi
+from numpy import array
 import re
 import Helmert3Dtransform as helmt
 
@@ -128,7 +129,7 @@ def Helmert_calc_for_PolMeas(From,To):
     for instrument in From:
         x = helmt.Helmert_transform(From[instrument],To)
         Transformed_From[instrument] = helmt.Transformation(x,From[instrument])
-        Transformed_From[instrument][instrument]:(tuple(x[:3]))
+        Transformed_From[instrument][instrument] = (tuple(x[:3]))
     return Transformed_From
 
 def StDev_XYZ_from_Polar(Point, StDev_S, StDev_Hz, StDev_Z):
@@ -208,3 +209,35 @@ def ParD_sd(Point, Instrument, instrument = None):
         return -dX, -dY, -dZ, dO
     else:
         return dX, dY, dZ, dO
+    
+def find_unknowns(Dict_of_measurements):
+    # Dictionary of transformed measurements is input (must include instrument
+    # station so it gets counted to unknowns!)
+    unknowns = []
+    unknown_points = []
+    unknown_instrument_stations = []
+    unknown_instrument_orientations = []
+    for instrument in Dict_of_measurements:
+        new = list(Dict_of_measurements[instrument].keys())
+        new.pop(new.index(instrument))
+        unknown_points = list(set(unknown_points + new))
+        unknown_instrument_stations.append(instrument)
+#        orientation = 'Ori_' + instrument
+        unknown_instrument_orientations.append(('Ori_' + instrument))
+    unknowns = unknown_points + unknown_instrument_stations +\
+        unknown_instrument_orientations
+    number_of_instruments = len(unknown_instrument_stations)
+    number_of_unknowns = len(unknown_points)*3 + number_of_instruments*4
+    return unknowns, number_of_unknowns, number_of_instruments
+
+def merge_measured_coordinates(dict_a,dict_b):
+    # Takes two dictionaries with measurements and if there are common points, 
+    # makes an average of the measured points, resulting in aproximates
+    result = dict(dict_a.items() ^ dict_b.items())
+    intersection = dict_a.keys() & dict_b.keys()
+    print(intersection)
+    for point in intersection:
+        point_a = array(dict_a[point])
+        point_b = array(dict_b[point])
+        result[point] = tuple((point_a + point_b)/2)
+    return result

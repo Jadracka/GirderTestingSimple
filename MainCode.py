@@ -31,7 +31,7 @@ else:
 Nominal_coords = fc.Coords_read_in(cg.Coords_file_name)
 LoS_measurements = fc.Measurements_read_in(cg.LoS_Measurements_file_name)
 Pol_measurements = fc.Measurements_read_in(cg.Pol_Measurements_file_name)
-if len(cg.Which_epochs) > 1:
+if Two_epochs:
     LoS_measurements_E1 = fc.Measurements_read_in(
                                                cg.LoS_Measurements_file_name_1)
     Pol_measurements_E1 = fc.Measurements_read_in(
@@ -344,27 +344,28 @@ if Two_epochs:
               "to True.")
         
 # Checking the distance from line for LT-IFM measurements
-for line in LoS_measurements_E1:
-    average_Hz = sum(v[1] for v in LoS_measurements_E1[line].values()) /\
-                float(len(LoS_measurements_E1[line]))
-    average_V = sum(v[2] for v in LoS_measurements_E1[line].values()) /\
-                float(len(LoS_measurements_E1[line]))
-    counter = 0
-    for point in LoS_measurements_E1[line]:
-        Hz_diff = fc.gon2rad(average_Hz - LoS_measurements_E1[line][point][1])\
-                    * LoS_measurements_E1[line][point][0]
-        V_diff = fc.gon2rad(average_V - LoS_measurements_E1[line][point][2])\
-                    * LoS_measurements_E1[line][point][0]
-        Diff = m.sqrt(m.pow(Hz_diff,2)+m.pow(V_diff,2))
-        if cg.Max_diff_from_line < Diff:
-            counter = counter + 1
-            print("Line: %s, in Epoch 1, point %s exceeds Maximum difference "
-                  "from line of %1.3f. The total difference is %1.3f mm, "
-                  " with horizontal component %1.3f mm and vertical component "
-                  "%1.3f mm" %(line, point, cg.Max_diff_from_line, abs(Diff),
-                               abs(Hz_diff), abs(V_diff)))
-#    print(line, counter)
-del line, average_Hz, average_V, counter, point, Hz_diff, V_diff, Diff
+if Two_epochs:
+    for line in LoS_measurements_E1:
+        average_Hz = sum(v[1] for v in LoS_measurements_E1[line].values()) /\
+                    float(len(LoS_measurements_E1[line]))
+        average_V = sum(v[2] for v in LoS_measurements_E1[line].values()) /\
+                    float(len(LoS_measurements_E1[line]))
+        counter = 0
+        for point in LoS_measurements_E1[line]:
+            Hz_diff = fc.gon2rad(average_Hz - LoS_measurements_E1[line][point][1])\
+                        * LoS_measurements_E1[line][point][0]
+            V_diff = fc.gon2rad(average_V - LoS_measurements_E1[line][point][2])\
+                        * LoS_measurements_E1[line][point][0]
+            Diff = m.sqrt(m.pow(Hz_diff,2)+m.pow(V_diff,2))
+            if cg.Max_diff_from_line < Diff:
+                counter = counter + 1
+                print("Line: %s, in Epoch 1, point %s exceeds Maximum difference "
+                      "from line of %1.3f. The total difference is %1.3f mm, "
+                      " with horizontal component %1.3f mm and vertical component "
+                      "%1.3f mm" %(line, point, cg.Max_diff_from_line, abs(Diff),
+                                   abs(Hz_diff), abs(V_diff)))
+    #    print(line, counter)
+    del line, average_Hz, average_V, counter, point, Hz_diff, V_diff, Diff
 
 # =============================================================================
 # Standard Deviations calculations
@@ -461,4 +462,4 @@ if Two_epochs:
 
 
 
-print('End of the script')
+print('End of MainCode')
