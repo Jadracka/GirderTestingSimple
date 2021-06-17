@@ -6,7 +6,7 @@ Created on Thu Feb 11 12:53:33 2021
 """
 import math as m
 from numpy import pi
-from numpy import array
+import numpy as np
 import re
 import Helmert3Dtransform as helmt
 
@@ -166,49 +166,40 @@ def StDev_distance(Point_From, Point_To, StDevXYZ_From, StDevXYZ_To):
         )
     return StDev_S
 
-def ParD_Hz(Point, Instrument, instrument = None):
+def ParD_Hz(PointTo, PointFrom):
     # This function returns derivatives of the horizontal angle with respect to
     # all unknowns, X, Y, Z, O (orientation) for point
-    # for derivatives with respect to instrument, type 'I' as third argument
-    dX = -(Point[1] - Instrument[1]) / (pow(Point[0] - Instrument[0],2) \
-            + pow(Point[1] - Instrument[1],2))
-    dY = (Point[0] - Instrument[0]) / (pow(Point[0] - \
-             Instrument[0],2) + pow(Point[1] - Instrument[1],2))
+    # For PointFrom add '-' in front of dX and dY
+    dX = -(PointTo[1] - PointFrom[1]) / (pow(PointTo[0] - PointFrom[0],2) \
+            + pow(PointTo[1] - PointFrom[1],2))
+    dY = (PointTo[0] - PointFrom[0]) / (pow(PointTo[0] - \
+             PointFrom[0],2) + pow(PointTo[1] - PointFrom[1],2))
     dZ = 0
     dO = -1
-    if instrument is 'I':
-        return -dX, -dY, dZ, dO
-    else:
-        return dX, dY, dZ, dO
+    return dX, dY, dZ, dO
 
-def ParD_Z(Point, Instrument, instrument = None):
+def ParD_Z(PointTo, PointFrom):
     # This function returns derivatives of the zenith angle with respect to
-    # all unknowns, X, Y, Z, O (orientation) for point
-    dist_squared = pow(Point[0] - Instrument[0],2) \
-    + pow(Point[1] - Instrument[1],2) + pow(Point[2] - Instrument[2],2)
-    h_distance = horizontal_distance(Point, Instrument)
-    dX = ((Point[0]-Instrument[0]) * (Point[2]-Instrument[2])) \
+    # all unknowns, X, Y, Z, O (orientation) for PointTo
+    # For PointFrom add '-' in front of dX, dY and dZ
+    dist_squared = pow(PointTo[0] - PointFrom[0],2) 
+    + pow(PointTo[1] - PointFrom[1],2) + pow(PointTo[2] - PointFrom[2],2)
+    h_distance = horizontal_distance(PointTo, PointFrom)
+    dX = ((PointTo[0]-PointFrom[0]) * (PointTo[2]-PointFrom[2])) \
         / (dist_squared * h_distance)
-    dY = ((Point[1]-Instrument[1]) * (Point[2]-Instrument[2])) \
+    dY = ((PointTo[1]-PointFrom[1]) * (PointTo[2]-PointFrom[2])) \
         / (dist_squared * h_distance)
     dZ = - h_distance / dist_squared
-    dO = 0
-    if instrument is 'I':
-        return -dX, -dY, -dZ, dO
-    else:
-        return dX, dY, dZ, dO
+    return dX, dY, dZ
 
 
-def ParD_sd(Point, Instrument, instrument = None):
-    dist = slope_distance(Point, Instrument)
-    dX = (Point[0]-Instrument[0]) / dist
-    dY = (Point[1]-Instrument[1]) / dist
-    dZ = (Point[2]-Instrument[2]) / dist
-    dO = 0
-    if instrument is 'I':
-        return -dX, -dY, -dZ, dO
-    else:
-        return dX, dY, dZ, dO
+def ParD_sd(PointTo, PointFrom):
+    # For PointToFrom add '-' in front of dX, dY and dZ
+    dist = slope_distance(PointTo, PointFrom)
+    dX = (PointTo[0]-PointFrom[0]) / dist
+    dY = (PointTo[1]-PointFrom[1]) / dist
+    dZ = (PointTo[2]-PointFrom[2]) / dist
+    return dX, dY, dZ
     
 def find_unknowns(Dict_of_measurements):
     # Dictionary of transformed measurements is input (must include instrument
@@ -222,7 +213,6 @@ def find_unknowns(Dict_of_measurements):
         new.pop(new.index(instrument))
         unknown_points = list(set(unknown_points + new))
         unknown_instrument_stations.append(instrument)
-#        orientation = 'Ori_' + instrument
         unknown_instrument_orientations.append(('Ori_' + instrument))
     unknowns = unknown_points + unknown_instrument_stations +\
         unknown_instrument_orientations
@@ -230,14 +220,37 @@ def find_unknowns(Dict_of_measurements):
     number_of_unknowns = len(unknown_points)*3 + number_of_instruments*4
     return unknowns, number_of_unknowns, number_of_instruments
 
-def merge_measured_coordinates(dict_a,dict_b):
-    # Takes two dictionaries with measurements and if there are common points, 
-    # makes an average of the measured points, resulting in aproximates
-    result = dict(dict_a.items() ^ dict_b.items())
-    intersection = dict_a.keys() & dict_b.keys()
-    print(intersection)
-    for point in intersection:
-        point_a = array(dict_a[point])
-        point_b = array(dict_b[point])
-        result[point] = tuple((point_a + point_b)/2)
+
+def merge_measured_coordinates(Dictionary):
+    # Takes in dictionary with transformed cartesian coordinates with structure
+    # Dictionary: Instrument: dictionary of measured points
+    result = {}
+    if len(Dictionary.keys()) == 2:
+        keys = list(Dictionary.keys())
+        result = dict(Dictionary[keys[0]].items() | Dictionary[keys[1]].items())
+        intersection = Dictionary[keys[0]].keys() & Dictionary[keys[1]].keys()
+        for point in intersection:
+            point_a = np.array(Dictionary[keys[0]][point])
+            point_b = np.array(Dictionary[keys[1]][point])
+            result[point] = tuple((point_a + point_b)/2)
+    elif len(Dictionary.keys()) == 1:
+        result = Dictionary.values()
+    else:
+        for d in Dictionary.values():
+            for PointID, Point in d.items():
+                if PointID in result:
+                    result[PointID].append(Point)
+                else:
+                    result[PointID] = [Point,]
+        for PointID in result:
+            result[PointID] = tuple(sum(ele) / len(result[
+                                    PointID]) for ele in zip(*result[PointID]))
+
     return result
+
+def filling_X(Aproximates, unknowns, count_unknowns, count_instruments):
+    X = np.zeros(count_unknowns)
+    for i, unknown in enumerate(unknowns[:-count_instruments]):
+        iii = 3*i 
+        X[iii:iii+3] = np.array(Aproximates[unknown])
+    return X
