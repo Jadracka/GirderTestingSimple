@@ -178,7 +178,7 @@ def ParD_Hz(PointTo, PointFrom):
     dO = -1
     return dX, dY, dZ, dO
 
-def ParD_Z(PointTo, PointFrom):
+def ParD_V(PointTo, PointFrom):
     # This function returns derivatives of the zenith angle with respect to
     # all unknowns, X, Y, Z, O (orientation) for PointTo
     # For PointFrom add '-' in front of dX, dY and dZ
@@ -196,6 +196,8 @@ def ParD_Z(PointTo, PointFrom):
 def ParD_sd(PointTo, PointFrom):
     # For PointToFrom add '-' in front of dX, dY and dZ
     dist = slope_distance(PointTo, PointFrom)
+    if dist == 0:
+        print('ParD_sd: PointTo is identical with PointFrom.')
     dX = (PointTo[0]-PointFrom[0]) / dist
     dY = (PointTo[1]-PointFrom[1]) / dist
     dZ = (PointTo[2]-PointFrom[2]) / dist
@@ -250,7 +252,14 @@ def merge_measured_coordinates(Dictionary):
 
 def filling_X(Aproximates, unknowns, count_unknowns, count_instruments):
     X = np.zeros(count_unknowns)
+    XHR = []
     for i, unknown in enumerate(unknowns[:-count_instruments]):
         iii = 3*i 
         X[iii:iii+3] = np.array(Aproximates[unknown])
-    return X
+        # Human readible version of X
+        XHR.append(('X ' + unknown))
+        XHR.append(('Y ' + unknown))
+        XHR.append(('Z ' + unknown))
+    for unknown in unknowns[-count_instruments:]:
+        XHR.append(unknown)
+    return X, XHR
