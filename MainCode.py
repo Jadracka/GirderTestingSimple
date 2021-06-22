@@ -13,7 +13,7 @@ import numpy as np
 import math as m
 import config as cg
 import functions as fc
-import Helmert3Dtransform as helm
+#import Helmert3Dtransform as helm
 
 #from operator import itemgetter
 #from collections import namedtuple
