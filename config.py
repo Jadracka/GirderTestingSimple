@@ -21,10 +21,13 @@ Which_epochs = (0,) #the comma must stay, otherwise the variable will be int
 Pico_StDev = 0.00000001 #mm, PicoScale Standard Deviation
 IFM_StDev = (0.0004,0.00015) #mm, LT IFM, based on Leica's white paper
 ADM_StDev = 0.010 #mm, from 2-5m based on Leica's typical errors
-Ang_StDev = (0.015,0.003) #mm,ppm
+Ang_StDev = 0.15 #mgon decided based on experience
+Constraint_StDev = 0.000001 #mm
 Max_diff_from_line = 0.5 #mm - maximum distance from line, report the excess
+Sigma_0 = 1
 Print_FIDs = False
 Line_differences_checking = False
+Names_of_magnets = ['PQK36','PQL6','PQK62']
 
 # Print troubleshooting messages:
 Print_all_troubleshooting = False

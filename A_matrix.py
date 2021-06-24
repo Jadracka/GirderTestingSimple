@@ -13,6 +13,7 @@ import numpy as np
 #import config as cg
 import functions as fc
 import MainCode as MC
+import config as cg
 
 #from operator import itemgetter
 #from collections import namedtuple
@@ -47,6 +48,19 @@ del count_IFM_measurements, count_Pico_measurements
 unknowns,count_unknowns,count_instruments = fc.find_unknowns(
                                                   Transformed_Pol_measurements)
 
+Aproximates = fc.merge_measured_coordinates(Transformed_Pol_measurements)
+
+# Creating a list of tuple pairs filled with PointIDs of point to point pairs
+# on magnets. This will be used to fill the A matrix with pseudomeasurements
+# instead of constraints.
+Combinations_for_constraints = []
+for magnet in cg.Names_of_magnets:
+    points_on_magnet = [key for key in Aproximates.keys() if magnet in key]
+    magnet_combinations = [(PointA, PointB) for index, PointA in enumerate(
+            points_on_magnet) for PointB in points_on_magnet[index + 1:]]
+    Combinations_for_constraints.extend(magnet_combinations)
+count_constraints = len(Combinations_for_constraints)
+
 #if Two_epochs:
 #    unknowns_E1 = fc.find_unknowns(Pol_measurements_E1)
 #   if cg.Print_epoch_checks:
@@ -55,13 +69,14 @@ unknowns,count_unknowns,count_instruments = fc.find_unknowns(
 #        else:
 #            print("Unknowns in epochs don't match")
 
-A_matrix = np.zeros([count_all_observations,count_unknowns])
+A_matrix = np.zeros([count_all_observations + count_constraints,
+                                                               count_unknowns])
 A_matrixHR = {}
 
 L_vector = np.array([])
 L_vectorHR = []
 
-Aproximates = fc.merge_measured_coordinates(Transformed_Pol_measurements)
+P_vector = np.array([])
 
 X_vector, X_vectorHR = fc.filling_X(
                       Aproximates, unknowns, count_unknowns, count_instruments)
@@ -76,6 +91,8 @@ for line in measured_distances_in_lines:
         # correct corresponding row in First plan matrix A
         L_i = len(L_vector)
         L_vector = np.append(L_vector, distance)
+        StDev = fc.StDev_sys_ppm(distance,cg.IFM_StDev)
+        P_vector = np.append(P_vector,StDev)
         """Now figuring the index of points in the unknowns list, so I know
            which column of the A matrix. The original index is multiplied by 3
            because unknowns are names of points (and instrument orientations)
@@ -105,6 +122,11 @@ L_subv_Hz_HR = []
 L_subv_V_HR = []
 L_subv_sd_HR = []
 
+P_subv_Hz = np.array([])
+P_subv_V = np.array([])
+P_subv_sd = np.array([])
+
+
 counter = 0
 for inst,points in Pol_measurements.items():
     instrument_i = 3 * unknowns.index(inst) # Starting column of the instrument
@@ -118,9 +140,12 @@ for inst,points in Pol_measurements.items():
         # Returning measured values
         sd,Hz,V = Pol_measurements[inst][point][0:3]
         # Filling the L subvectors for Hz,V and sd
-        L_subv_Hz = np.append(L_subv_Hz, Hz)
-        L_subv_V = np.append(L_subv_V, V)
+        L_subv_Hz = np.append(L_subv_Hz, fc.gon2rad(Hz))
+        P_subv_Hz = np.append(P_subv_Hz, fc.gon2rad(cg.Ang_StDev/1000))
+        L_subv_V = np.append(L_subv_V, fc.gon2rad(V))
+        P_subv_V = np.append(P_subv_V, fc.gon2rad(cg.Ang_StDev/1000))
         L_subv_sd = np.append(L_subv_sd, sd)
+        P_subv_sd = np.append(P_subv_sd, fc.StDev_sys_ppm(sd,cg.Dist_StDev))
         # Filling the Human readible version of L subvectors
         L_subv_Hz_HR.append(('Hz', inst, point))
         L_subv_V_HR.append(('V', inst, point))
@@ -155,4 +180,43 @@ for inst,points in Pol_measurements.items():
         counter += 1
 L_vector = np.append(L_vector,[L_subv_Hz,L_subv_V,L_subv_sd])
 L_vectorHR = L_vectorHR + L_subv_Hz_HR + L_subv_V_HR + L_subv_sd_HR
+P_vector = np.append(P_vector,[P_subv_Hz,P_subv_V,P_subv_sd])
+
+# Filling A and L, and A and L Human Readable with constraint rows
+
+L_lenght = len(L_vector)
+for index, const in enumerate(Combinations_for_constraints):
+    A_row_index = L_lenght + index
+    PointFrom = Combinations_for_constraints[index][0]
+    PointTo = Combinations_for_constraints[index][1]
+    #Probably needs to take the coordinates from somewhere else!
+    dX,dY,dZ = fc.ParD_sd(Nominal_coords[PointTo],Nominal_coords[PointFrom])
+    sd = fc.slope_distance(Nominal_coords[PointFrom],Nominal_coords[PointTo])
+    PointFrom_i = 3*unknowns.index(PointFrom) 
+    PointTo_i = 3*unknowns.index(PointTo)
+    A_matrix[A_row_index,PointTo_i:PointTo_i+3] = dX,dY,dZ
+    # for point "From" the partial derivatives change sign
+    A_matrix[A_row_index,PointFrom_i:PointFrom_i+3] = -dX,-dY,-dZ
+    # Documenting in human readible format what are the A and L elements
+    L_vector = np.append(L_vector,sd)
+    P_vector = np.append(P_vector,cg.Constraint_StDev)
+    L_vectorHR.append(('constraint', PointFrom, PointTo))
+    A_matrixHR[(A_row_index,PointFrom_i)] = ['dX', 'distance constraint', 
+               PointFrom, PointTo]
+    A_matrixHR[(A_row_index,PointFrom_i+1)] = ['dY', 'distance constraint', 
+               PointFrom, PointTo]
+    A_matrixHR[(A_row_index,PointFrom_i+2)] = ['dZ', 'distance constraint', 
+               PointFrom, PointTo]
+    A_matrixHR[(A_row_index,PointTo_i)] = ['dX', 'distance constraint', 
+               PointTo, PointFrom]
+    A_matrixHR[(A_row_index,PointTo_i+1)] = ['dY', 'distance constraint', 
+               PointTo, PointFrom]
+    A_matrixHR[(A_row_index,PointTo_i+2)] = ['dZ', 'distance constraint', 
+               PointTo, PointFrom]
+if len(P_vector) != len(L_vector) != A_matrix.shape[0]:
+    print("Error during filling P, L, A, sizes are not same")
+
+if len(X_vector) != A_matrix.shape[1]:
+    print("Error during filling A, X, sizes don't match.")
+
 print('End of A_matrix code')

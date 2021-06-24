@@ -398,8 +398,7 @@ if Two_epochs:
 for instrument in Pol_measurements_cart:
     for point in Pol_measurements_cart[instrument]:
         # Leica's strange way of describing angular precision to normal
-        StDev_HZ_Z = fc.StDev_angle(
-                Pol_measurements[instrument][point][0],cg.Ang_StDev)
+        StDev_HZ_Z = fc.gon2rad(cg.Ang_StDev/1000)
         # Combining ADM and IFM precision for polar measurements
         StDev_S = cg.ADM_StDev + fc.StDev_sys_ppm(Pol_measurements[instrument][
                                                         point][0],cg.IFM_StDev)

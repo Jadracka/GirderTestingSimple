@@ -121,9 +121,6 @@ def Coords_read_in(Coords_file_name):
 def StDev_sys_ppm(Value,StDev_tuple):
     return float(StDev_tuple[0] + Value * StDev_tuple[1]/1000)
 
-def StDev_angle(Value,StDev_tuple):
-    return float((StDev_tuple[0] + Value * StDev_tuple[1]/1000)/Value)
-
 def Helmert_calc_for_PolMeas(From,To):
     Transformed_From = {}
     for instrument in From:
