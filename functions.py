@@ -200,6 +200,15 @@ def ParD_sd(PointTo, PointFrom):
     dZ = (PointTo[2]-PointFrom[2]) / dist
     return dX, dY, dZ
     
+def horizontal_angle_from_Coords(PointTo,PointFrom):
+    Hz = m.atan2(PointTo[1]-PointFrom[1],PointTo[0]-PointFrom[0])
+    return Hz
+
+def vertical_angle_from_Coords(PointTo,PointFrom):
+    dist = slope_distance(PointFrom, PointTo)
+    V = m.acos((PointTo[2]-PointFrom[2])/dist)
+    return V
+
 def find_unknowns(Dict_of_measurements):
     # Dictionary of transformed measurements is input (must include instrument
     # station so it gets counted to unknowns!)
@@ -260,3 +269,10 @@ def filling_X(Aproximates, unknowns, count_unknowns, count_instruments):
     for unknown in unknowns[-count_instruments:]:
         XHR.append(unknown)
     return X, XHR
+
+def filling_Aproximates(unknowns, X_vector, count_instruments):
+    updated_Aproximates = dict()
+    for i, point in enumerate(unknowns[:-count_instruments]):
+        iii = 3*i
+        updated_Aproximates[point] = tuple(X_vector[iii:iii+3])
+    return updated_Aproximates
