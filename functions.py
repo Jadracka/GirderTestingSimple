@@ -216,7 +216,9 @@ def find_unknowns(Dict_of_measurements):
     unknown_points = []
     unknown_instrument_stations = []
     unknown_instrument_orientations = []
+    instruments = []
     for instrument in Dict_of_measurements:
+        instruments.append(instrument)
         new = list(Dict_of_measurements[instrument].keys())
         new.pop(new.index(instrument))
         unknown_points = list(set(unknown_points + new))
@@ -224,9 +226,9 @@ def find_unknowns(Dict_of_measurements):
         unknown_instrument_orientations.append(('Ori_' + instrument))
     unknowns = unknown_points + unknown_instrument_stations +\
         unknown_instrument_orientations
-    number_of_instruments = len(unknown_instrument_stations)
-    number_of_unknowns = len(unknown_points)*3 + number_of_instruments*4
-    return unknowns, number_of_unknowns, number_of_instruments
+    count_instruments = len(unknown_instrument_stations)
+    number_of_unknowns = len(unknown_points)*3 + count_instruments*4
+    return unknowns, number_of_unknowns, instruments, count_instruments
 
 
 def merge_measured_coordinates(Dictionary):
@@ -270,9 +272,12 @@ def filling_X(Aproximates, unknowns, count_unknowns, count_instruments):
         XHR.append(unknown)
     return X, XHR
 
-def filling_Aproximates(unknowns, X_vector, count_instruments):
+def filling_Aproximates(unknowns, X_vector, instruments):
     updated_Aproximates = dict()
-    for i, point in enumerate(unknowns[:-count_instruments]):
+    inst_count = len(instruments)
+    for i, point in enumerate(unknowns[:-inst_count]):
         iii = 3*i
         updated_Aproximates[point] = tuple(X_vector[iii:iii+3])
+    for i,instrument in enumerate(instruments):
+        updated_Aproximates['Ori_' + instrument] = X_vector[-inst_count+i]
     return updated_Aproximates
