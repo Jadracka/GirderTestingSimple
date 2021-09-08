@@ -15,6 +15,7 @@ from numpy.linalg import inv
 import functions as fc
 import MainCode as MC
 import config as cg
+import MxDegeneracy as MxD
 
 #from operator import itemgetter
 #from collections import namedtuple
@@ -289,23 +290,30 @@ LSM_can_be_done,A_matrix,L_vector,P_matrix,LX0_vector,A_matrixHR,L_vectorHR \
 
 Aproximates_original = Aproximates.copy()
 
-threshold = 0.001 #fraction of basic unit
+threshold = 0.0001 #fraction of basic unit
 metric = threshold + 1
 counter = 0
-while (metric > threshold) and (counter < 10):
+while (metric > threshold) and (counter < 1):
     print('\n Iteration', counter)
     l = LX0_vector - L_vector
-    N = A_matrix.transpose().dot(P_matrix).dot(A_matrix)#.dot(P_matrix)
+#    for i in range(len(LX0_vector)):
+#        print(i,l[i],LX0_vector[i],L_vector[i])
+    N = A_matrix.transpose().dot(A_matrix)#.dot(P_matrix)
     print(np.linalg.det(A_matrix.transpose().dot(A_matrix)))
     O = np.zeros([4,4])
-    N = np.block([[N,G_matrix],[np.transpose(G_matrix),O]])
-    n = A_matrix.transpose().dot(P_matrix).dot(l)#
-    N_inv = inv(N)[:-4,:-4]
+    N_extended = np.block([[N,G_matrix],[np.transpose(G_matrix),O]])
+    print("Determinant of G-extended N: ", np.linalg.det(N))
+    print("Condition number N: ", np.linalg.cond(N_extended))
+    n = A_matrix.transpose().dot(l)#.dot(P_matrix)
+    N_inv = inv(N_extended)[:-4,:-4]
+#    print("N_inv max: ",np.amax(N_inv), " min: ",np.amin(N_inv) )#~10^7 
     dx = -N_inv.dot(n)
-    print('dx',max(abs(dx)), np.argmax(dx))
+#    for i in range(len(dx)):
+#        print(i,dx[i])
+    print('dx',max(abs(dx)), np.argmax(abs(dx)))
     X_vector += dx
     vI = A_matrix.dot(dx) - l
-    print('vI', max(abs(vI)), np.argmax(vI))
+    print('vI', vI[np.argmax(abs(vI))], np.argmax(abs(vI)))
     Aproximates = fc.filling_Aproximates(unknowns, X_vector, instruments)
     LSM_can_be_done,A_matrix,L_vector,P_matrix,LX0_vector,A_matrixHR,L_vectorHR \
       = Filling_A_L_P_LX0(MC.Nominal_coords,Aproximates,
@@ -316,10 +324,9 @@ while (metric > threshold) and (counter < 10):
                           MC.Pol_measurements)
     vII = - LX0_vector + L_vector
     v = vI-vII
-    print('vII', max(abs(vII)), np.argmax(vII))
-    print('v', max(abs(v)), np.argmax(v))
-    metric = max(abs(v))
+    print('vII', vII[np.argmax(abs(vII))], np.argmax(abs(vII)))
+    print('v', v[np.argmax(abs(v))], np.argmax(abs(v)))
+    metric = max(abs(dx))
     counter += 1
-
 
 print('End of A_matrix code')

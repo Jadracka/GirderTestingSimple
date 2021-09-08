@@ -144,10 +144,10 @@ if measured_lines_all_good and LoS_measured_points_all_good:
         if cg.Using_nominal_compare:
             deltas_nominal = ()
         for i in range (1,len(sorted_measured_points_in_lines[line])):
-            delta = (LoS_measurements[line][
+            delta = (abs(LoS_measurements[line][
                        sorted_measured_points_in_lines[line][i]][0]\
                     - LoS_measurements[line][
-                       sorted_measured_points_in_lines[line][i-1]][0],)
+                       sorted_measured_points_in_lines[line][i-1]][0]),)
             deltas = deltas + delta
             if cg.Using_nominal_compare:
                 d = fc.slope_distance(
