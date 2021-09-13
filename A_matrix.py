@@ -43,7 +43,7 @@ count_Pico_measurements = 0
 count_Pol_measurements = (sum([len(v) for k, v in Pol_measurements.items()]))
                         
 count_all_observations = count_Pico_measurements \
-                         + 3*count_Pol_measurements + count_IFM_measurements
+                         + 3*count_Pol_measurements# + count_IFM_measurements
 del count_IFM_measurements, count_Pico_measurements
 
 unknowns,count_unknowns, instruments, count_instruments = fc.find_unknowns(
@@ -110,42 +110,42 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
     P_vector = np.array([])
     
     
-    # Filling A and L with IFM measurements
-    for line in measured_distances_in_lines:
-        # meas_i is index of the measurand in line, so I can pair it with the
-        # Point IDs from sorted points in lines, first measured point is on the
-        # same index as the distance and second point is on index + 1
-        for meas_i,distance in enumerate(measured_distances_in_lines[line]):
-            # I need index of the measurement in L vector, so I can put it on
-            # correct corresponding row in First plan matrix A
-            L_i = len(L_vector)
-            L_vector = np.append(L_vector, distance)
-            StDev = fc.StDev_sys_ppm(distance,cg.IFM_StDev)
-            P_vector = np.append(P_vector,pow(cg.Sigma_0,2) / pow(StDev,2))
-            """Now figuring the index of points in the unknowns list, so I know
-               which column of the A matrix. The original index is multiplied 
-               by 3 because unknowns are names of points (and instrument 
-               orientations) 
-               not a complete list of unknowns = Point X,Y and Z => *3      """
-            PointFrom = sorted_measured_points_in_lines[line][meas_i]
-            PointTo = sorted_measured_points_in_lines[line][meas_i+1]
-            LX0_vector = np.append(LX0_vector, fc.slope_distance(
-                                  Aproximates[PointTo],Aproximates[PointFrom]))
-            PointFrom_i = 3*unknowns.index(PointFrom) 
-            PointTo_i = 3*unknowns.index(PointTo)
-            dX,dY,dZ = fc.ParD_sd(Aproximates[PointTo],Aproximates[PointFrom])
-            A_matrix[L_i,PointTo_i:PointTo_i+3] = dX,dY,dZ
-            # for point "From" the partial derivatives change sign
-            A_matrix[L_i,PointFrom_i:PointFrom_i+3] = -dX,-dY,-dZ
-            # Documenting in human readible format the A and L elements
-            L_vectorHR.append((line, PointFrom, PointTo))
-            A_matrixHR[(L_i,PointFrom_i)] = ['dX', line, PointFrom, PointTo]
-            A_matrixHR[(L_i,PointFrom_i+1)] = ['dY', line, PointFrom, PointTo]
-            A_matrixHR[(L_i,PointFrom_i+2)] = ['dZ', line, PointFrom, PointTo]
-            A_matrixHR[(L_i,PointTo_i)] = ['dX', line, PointTo, PointFrom]
-            A_matrixHR[(L_i,PointTo_i+1)] = ['dY', line, PointTo, PointFrom]
-            A_matrixHR[(L_i,PointTo_i+2)] = ['dZ', line, PointTo, PointFrom]
-    del PointFrom,PointTo, PointFrom_i,PointTo_i,dX,dY,dZ,L_i, meas_i, distance
+#    # Filling A and L with IFM measurements
+#    for line in measured_distances_in_lines:
+#        # meas_i is index of the measurand in line, so I can pair it with the
+#        # Point IDs from sorted points in lines, first measured point is on the
+#        # same index as the distance and second point is on index + 1
+#        for meas_i,distance in enumerate(measured_distances_in_lines[line]):
+#            # I need index of the measurement in L vector, so I can put it on
+#            # correct corresponding row in First plan matrix A
+#            L_i = len(L_vector)
+#            L_vector = np.append(L_vector, distance)
+#            StDev = fc.StDev_sys_ppm(distance,cg.IFM_StDev)
+#            P_vector = np.append(P_vector,pow(cg.Sigma_0,2) / pow(StDev,2))
+#            """Now figuring the index of points in the unknowns list, so I know
+#               which column of the A matrix. The original index is multiplied 
+#               by 3 because unknowns are names of points (and instrument 
+#               orientations) 
+#               not a complete list of unknowns = Point X,Y and Z => *3      """
+#            PointFrom = sorted_measured_points_in_lines[line][meas_i]
+#            PointTo = sorted_measured_points_in_lines[line][meas_i+1]
+#            LX0_vector = np.append(LX0_vector, fc.slope_distance(
+#                                  Aproximates[PointTo],Aproximates[PointFrom]))
+#            PointFrom_i = 3*unknowns.index(PointFrom) 
+#            PointTo_i = 3*unknowns.index(PointTo)
+#            dX,dY,dZ = fc.ParD_sd(Aproximates[PointTo],Aproximates[PointFrom])
+#            A_matrix[L_i,PointTo_i:PointTo_i+3] = dX,dY,dZ
+#            # for point "From" the partial derivatives change sign
+#            A_matrix[L_i,PointFrom_i:PointFrom_i+3] = -dX,-dY,-dZ
+#            # Documenting in human readible format the A and L elements
+#            L_vectorHR.append((line, PointFrom, PointTo))
+#            A_matrixHR[(L_i,PointFrom_i)] = ['dX', line, PointFrom, PointTo]
+#            A_matrixHR[(L_i,PointFrom_i+1)] = ['dY', line, PointFrom, PointTo]
+#            A_matrixHR[(L_i,PointFrom_i+2)] = ['dZ', line, PointFrom, PointTo]
+#            A_matrixHR[(L_i,PointTo_i)] = ['dX', line, PointTo, PointFrom]
+#            A_matrixHR[(L_i,PointTo_i+1)] = ['dY', line, PointTo, PointFrom]
+#            A_matrixHR[(L_i,PointTo_i+2)] = ['dZ', line, PointTo, PointFrom]
+#    del PointFrom,PointTo, PointFrom_i,PointTo_i,dX,dY,dZ,L_i, meas_i, distance
     
     L_subv_Hz = np.array([])
     L_subv_V = np.array([])
@@ -292,7 +292,7 @@ Aproximates_original = Aproximates.copy()
 threshold = 0.0001 #fraction of basic unit
 metric = threshold + 1
 counter = 0
-while (metric > threshold) and (counter < 3):
+while (metric > threshold) and (counter < 1):
     print('\n Iteration', counter)
     l = LX0_vector - L_vector
 #    for i in range(len(LX0_vector)):
