@@ -15,7 +15,6 @@ from numpy.linalg import inv
 import functions as fc
 import MainCode as MC
 import config as cg
-import MxDegeneracy as MxD
 
 #from operator import itemgetter
 #from collections import namedtuple
@@ -43,8 +42,8 @@ count_IFM_measurements = sum([len(v) for k, v in\
 count_Pico_measurements = 0
 count_Pol_measurements = (sum([len(v) for k, v in Pol_measurements.items()]))
                         
-count_all_observations = count_IFM_measurements + count_Pico_measurements \
-                         + 3*count_Pol_measurements
+count_all_observations = count_Pico_measurements \
+                         + 3*count_Pol_measurements + count_IFM_measurements
 del count_IFM_measurements, count_Pico_measurements
 
 unknowns,count_unknowns, instruments, count_instruments = fc.find_unknowns(
@@ -84,7 +83,7 @@ G_matrix = np.zeros([count_unknowns,4])
 for i,unknown in enumerate(unknowns):
     if i < (len(unknowns) - 2*count_instruments):
         iii = 3*i
-        G_matrix[iii,0] = 1
+        G_matrix[iii,0] = 1 
         G_matrix[iii+1,1] = 1
         G_matrix[iii+2,2] = 1
         G_matrix[iii,3] = Aproximates[unknown][1]
@@ -293,7 +292,7 @@ Aproximates_original = Aproximates.copy()
 threshold = 0.0001 #fraction of basic unit
 metric = threshold + 1
 counter = 0
-while (metric > threshold) and (counter < 1):
+while (metric > threshold) and (counter < 3):
     print('\n Iteration', counter)
     l = LX0_vector - L_vector
 #    for i in range(len(LX0_vector)):
@@ -302,7 +301,8 @@ while (metric > threshold) and (counter < 1):
     print(np.linalg.det(A_matrix.transpose().dot(A_matrix)))
     O = np.zeros([4,4])
     N_extended = np.block([[N,G_matrix],[np.transpose(G_matrix),O]])
-    print("Determinant of G-extended N: ", np.linalg.det(N))
+    print('Rank N_extended:', np.linalg.matrix_rank(N_extended))
+    print("Determinant of G-extended N: ", np.linalg.det(N_extended))
     print("Condition number N: ", np.linalg.cond(N_extended))
     n = A_matrix.transpose().dot(l)#.dot(P_matrix)
     N_inv = inv(N_extended)[:-4,:-4]

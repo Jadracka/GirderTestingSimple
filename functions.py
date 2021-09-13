@@ -112,7 +112,7 @@ def Coords_read_in(Coords_file_name):
            but not a combination of them."""
         words = re.split(';+|,+|\t+| +',line.strip())
         Coords[words[0]] = (float(words[1]), 
-                                    float(words[2]), 
+                                    -float(words[2]), 
                                     float(words[3]))
         del line, words
     Coords_file.close()
