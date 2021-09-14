@@ -55,9 +55,14 @@ def sing(angle):
     result = m.sin(gon2rad(angle))
     return result
 
-def arctang(angle):
-    """Function takes angle in gons and calculates cosinus"""
-    result = m.atan(gon2rad(angle))
+def atang(arg):
+    """Function takes argument and calculates arcus tangens"""
+    result = rad2gon(m.atan(arg))
+    return result
+
+def atan2g(dx,dy):
+    """Function takes two arguments and calculates arcut tangens"""
+    result = rad2gon(m.atan2(dy,dx))
     return result
 
 def polar2cart3Dgon(Point):
@@ -70,10 +75,9 @@ def polar2cart3Dgon(Point):
 def cart2polal3Dgon(Point):
     return (
          m.sqrt(m.pow(Point[0],2) + m.pow(Point[1],2) + m.pow(Point[2],2)),
-         rad2gon(
-            arctang(m.sqrt(m.pow(Point[0],2) + m.pow(Point[1],2))/Point[2])),
-         rad2gon(arctang(Point[1]/Point[0]))
-    )
+         atan2g(m.sqrt(m.pow(Point[0],2) + m.pow(Point[1],2)),Point[2]),
+         atan2g(Point[1],Point[0])
+         )
          
 def Measurements_read_in(Meas_filename):
     Meas_file = open(Meas_filename,'r')
@@ -201,7 +205,7 @@ def ParD_sd(PointTo, PointFrom):
     return dX, dY, dZ
     
 def horizontal_angle_from_Coords(PointTo,PointFrom):
-    Hz = m.atan2(PointTo[1]-PointFrom[1],PointTo[0]-PointFrom[0])
+    Hz = m.atan2(PointFrom[1]-PointTo[1],PointFrom[0]-PointTo[0])
     return Hz
 
 def vertical_angle_from_Coords(PointTo,PointFrom):

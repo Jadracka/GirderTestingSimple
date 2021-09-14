@@ -10,8 +10,8 @@ import numpy as np
 from numpy.linalg import inv
 #import sys
 #import string
-#import math as m
 #import config as cg
+import math as m
 import functions as fc
 import MainCode as MC
 import config as cg
@@ -19,7 +19,6 @@ import config as cg
 #from operator import itemgetter
 #from collections import namedtuple
 
-   
 Nominal_coords = MC.Nominal_coords   
 LoS_measurements = MC.LoS_measurements
 Pol_measurements = MC.Pol_measurements
@@ -165,7 +164,7 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
     counter = 0
     for inst,points in Pol_measurements.items():
         instrument_i = 3 * unknowns.index(inst) # Starting column of the instrument
-        Ori_instrument_i = X_vectorHR.index('Ori_'+inst) # Inst's Orientation index
+        Ori_inst_i = X_vectorHR.index('Ori_'+inst) # Inst's Orientation index
         for point in points:
             # evaluating the partial derivatives for all polar observations
             Hz_dX, Hz_dY, Hz_dZ, Hz_dO = fc.ParD_Hz(Aproximates[point],
@@ -178,9 +177,9 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
             L_subv_Hz = np.append(L_subv_Hz, fc.gon2rad(Hz))
             P_subv_Hz = np.append(P_subv_Hz, pow(cg.Sigma_0,2) / pow(fc.gon2rad(
                                                              cg.Ang_StDev/1000),2))
-            LX0_subv_Hz = np.append(LX0_subv_Hz, fc.horizontal_angle_from_Coords(
-                                             Aproximates[point],Aproximates[inst])
-                                            -Aproximates['Ori_' + inst])
+            Hz_angle_from_aprox = fc.horizontal_angle_from_Coords(
+                  Aproximates[point],Aproximates[inst]) - (X_vector[Ori_inst_i])
+            LX0_subv_Hz = np.append(LX0_subv_Hz, Hz_angle_from_aprox)
     
             L_subv_V = np.append(L_subv_V, fc.gon2rad(V))
             P_subv_V = np.append(P_subv_V, pow(cg.Sigma_0,2) / pow(
@@ -208,7 +207,7 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
             A_matrix[Hz_offset+counter,Point_i:Point_i+3] = Hz_dX, Hz_dY, Hz_dZ
             A_matrix[V_offset+counter,Point_i:Point_i+3] = V_dX, V_dY, V_dZ
             A_matrix[sd_offset+counter,Point_i:Point_i+3] = sd_dX, sd_dY, sd_dZ
-            A_matrix[Hz_offset+counter,Ori_instrument_i] = Hz_dO
+            A_matrix[Hz_offset+counter,Ori_inst_i] = Hz_dO
             A_matrix[Hz_offset+counter,instrument_i:instrument_i+3] = \
                                                              -Hz_dX, -Hz_dY, -Hz_dZ
             A_matrix[V_offset+counter,instrument_i:instrument_i+3] = \
@@ -288,15 +287,20 @@ LSM_can_be_done,A_matrix,L_vector,P_matrix,LX0_vector,A_matrixHR,L_vectorHR \
                           MC.Pol_measurements)
 
 Aproximates_original = Aproximates.copy()
+LX0_vector_original = LX0_vector.copy()
+X_vector_original = X_vector.copy()
 
-threshold = 0.0001 #fraction of basic unit
+threshold = 0.01 #fraction of basic unit
 metric = threshold + 1
 counter = 0
-while (metric > threshold) and (counter < 1):
+
+while (metric > threshold) and (counter < 10):
     print('\n Iteration', counter)
     l = LX0_vector - L_vector
-#    for i in range(len(LX0_vector)):
-#        print(i,l[i],LX0_vector[i],L_vector[i])
+    if l[1] > 6.283:
+        l[1] = l[1]-2*m.pi
+    elif l[1] < -6.238:
+        l[1] = l[1]+2*m.pi
     N = A_matrix.transpose().dot(A_matrix)#.dot(P_matrix)
     print(np.linalg.det(A_matrix.transpose().dot(A_matrix)))
     O = np.zeros([4,4])
@@ -323,6 +327,10 @@ while (metric > threshold) and (counter < 1):
                           MC.measured_distances_in_lines,
                           MC.Pol_measurements)
     vII = - LX0_vector + L_vector
+    if vII[1] > 6.283:
+        vII[1] = vII[1]-2*m.pi
+    elif vII[1] < -6.238:
+        vII[1] = vII[1]+2*m.pi
     v = vI-vII
     print('vII', vII[np.argmax(abs(vII))], np.argmax(abs(vII)))
     print('v', v[np.argmax(abs(v))], np.argmax(abs(v)))
