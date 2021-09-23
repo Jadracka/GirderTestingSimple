@@ -55,13 +55,14 @@ def sing(angle):
     result = m.sin(gon2rad(angle))
     return result
 
-def atang(arg):
-    """Function takes argument and calculates arcus tangens"""
-    result = rad2gon(m.atan(arg))
+def arctang(atanarg):
+    """Function takes arctan and calculates angle in gons"""
+    result = rad2gon(m.atan(atanarg))
     return result
 
-def atan2g(dx,dy):
-    """Function takes two arguments and calculates arcut tangens"""
+def arctan2g(dy,dx):
+    """Function takes dx,dy and calculates angle gons"""
+    """Function takes care of dx,dy=0"""
     result = rad2gon(m.atan2(dy,dx))
     return result
 
@@ -171,10 +172,10 @@ def ParD_Hz(PointTo, PointFrom):
     # This function returns derivatives of the horizontal angle with respect to
     # all unknowns, X, Y, Z, O (orientation) for point
     # For PointFrom add '-' in front of dX and dY
-    dX = -(PointTo[1] - PointFrom[1]) / (pow(PointTo[0] - PointFrom[0],2) \
+    dX =-(PointTo[1] - PointFrom[1]) / (pow(PointTo[0] - PointFrom[0],2) \
             + pow(PointTo[1] - PointFrom[1],2))
-    dY = (PointTo[0] - PointFrom[0]) / (pow(PointTo[0] - \
-             PointFrom[0],2) + pow(PointTo[1] - PointFrom[1],2))
+    dY =+(PointTo[0] - PointFrom[0]) / (pow(PointTo[0] - PointFrom[0],2) \
+            + pow(PointTo[1] - PointFrom[1],2))
     dZ = 0
     dO = -1
     return dX, dY, dZ, dO
@@ -183,7 +184,7 @@ def ParD_V(PointTo, PointFrom):
     # This function returns derivatives of the zenith angle with respect to
     # all unknowns, X, Y, Z, O (orientation) for PointTo
     # For PointFrom add '-' in front of dX, dY and dZ
-    dist_squared = pow(PointTo[0] - PointFrom[0],2) 
+    dist_squared = pow(PointTo[0] - PointFrom[0],2) \
     + pow(PointTo[1] - PointFrom[1],2) + pow(PointTo[2] - PointFrom[2],2)
     h_distance = horizontal_distance(PointTo, PointFrom)
     dX = ((PointTo[0]-PointFrom[0]) * (PointTo[2]-PointFrom[2])) \

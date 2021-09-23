@@ -80,14 +80,29 @@ X_vector, X_vectorHR = fc.filling_X(
 
 G_matrix = np.zeros([count_unknowns,4])
 
+sumx=0
+sumy=0
+sumz=0
+c=0
+for i,unknown in enumerate(unknowns):
+    if i < (len(unknowns) - 2*count_instruments):
+        sumx = sumx + Aproximates[unknown][0]
+        sumy = sumy + Aproximates[unknown][0]
+        sumz = sumz + Aproximates[unknown][0]
+        c=c+1
+meanx = sumx/c
+meany = sumy/c
+meanz = sumz/c
+del c,sumx,sumy,sumz
+
 for i,unknown in enumerate(unknowns):
     if i < (len(unknowns) - 2*count_instruments):
         iii = 3*i
-        G_matrix[iii,0] = 1 
+        G_matrix[iii,0]   = 1 
         G_matrix[iii+1,1] = 1
         G_matrix[iii+2,2] = 1
-        G_matrix[iii,3] = Aproximates[unknown][1]
-        G_matrix[iii+1,3] = - Aproximates[unknown][0]
+        G_matrix[iii,3] =     (Aproximates[unknown][1] - meany)/10000
+        G_matrix[iii+1,3] = - (Aproximates[unknown][0] - meanx)/10000
 del i, iii, unknown
 
     
@@ -295,14 +310,12 @@ X_vector_original = X_vector.copy()
 threshold = 0.01 #fraction of basic unit
 metric = threshold + 1
 counter = 0
-
-while (metric > threshold) and (counter < 10):
+while (metric > threshold) and (counter < 0):
     print('\n Iteration', counter)
-    l = LX0_vector - L_vector
-    if l[1] > 6.283:
-        l[1] = l[1]-2*m.pi
-    elif l[1] < -6.238:
-        l[1] = l[1]+2*m.pi
+#    l = LX0_vector - L_vector
+    l = L_vector - LX0_vector
+#    for i in range(len(LX0_vector)):
+#        print(i,l[i],LX0_vector[i],L_vector[i])
     N = A_matrix.transpose().dot(A_matrix)#.dot(P_matrix)
     print(np.linalg.det(A_matrix.transpose().dot(A_matrix)))
     O = np.zeros([4,4])
