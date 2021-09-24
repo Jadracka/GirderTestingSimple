@@ -114,7 +114,7 @@ for instrument in Pol_measurements:
     Pol_measurements_cart[instrument] = {}
     for point in Pol_measurements[instrument]:
         Pol_measurements_cart[instrument][point] = fc.polar2cart3Dgon(
-                                          Pol_measurements[instrument][point])
+                                          Pol_measurements[instrument][point][:3])
     del instrument, point
 
 for instrument in Pol_measurements_cart:
@@ -276,7 +276,7 @@ if Two_epochs:
         Pol_measurements_cart_E1[instrument] = {}
         for point in Pol_measurements_E1[instrument]:
             Pol_measurements_cart_E1[instrument][point] = fc.polar2cart3Dgon(
-                                        Pol_measurements_E1[instrument][point])
+                                        Pol_measurements_E1[instrument][point][:3])
         del instrument, point
 
     for instrument in Pol_measurements_cart_E1:
@@ -399,20 +399,21 @@ if Two_epochs:
 for instrument in Pol_measurements_cart:
     for point in Pol_measurements_cart[instrument]:
         # Leica's strange way of describing angular precision to normal
-        StDev_HZ_Z = fc.gon2rad(cg.Ang_StDev/1000)
+        StDev_HZ = fc.gon2rad(cg.Hz_StDev/1000)
+        StDev_V = fc.gon2rad(cg.V_StDev/1000)
         # Combining ADM and IFM precision for polar measurements
         StDev_S = cg.ADM_StDev + fc.StDev_sys_ppm(Pol_measurements[instrument][
                                                         point][0],cg.IFM_StDev)
         # Polar measurements precisions appended to the measured dictionary
-        StDev_meas = (StDev_S,StDev_HZ_Z,StDev_HZ_Z)
+        StDev_meas = (StDev_S,StDev_HZ,StDev_V)
         Pol_measurements[instrument][point] = Pol_measurements[instrument][
                                                             point] + StDev_meas
         # X, Y, Z StDevs calculated and appended to the _cart measured data
         StDevXYZ = fc.StDev_XYZ_from_Polar(Pol_measurements[instrument][
-                                          point],StDev_S,StDev_HZ_Z,StDev_HZ_Z)
+                                          point],StDev_S,StDev_HZ,StDev_V)
         Pol_measurements_cart[instrument][point] = Pol_measurements_cart[
                 instrument][point] + StDevXYZ
-    del point, instrument, StDevXYZ, StDev_HZ_Z, StDev_S, StDev_meas
+    del point, instrument, StDevXYZ, StDev_HZ, StDev_S, StDev_meas, StDev_V
 
 if Two_epochs:
     for instrument in Pol_measurements_cart_E1:
