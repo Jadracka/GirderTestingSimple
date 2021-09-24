@@ -55,9 +55,15 @@ def sing(angle):
     result = m.sin(gon2rad(angle))
     return result
 
-def arctang(angle):
-    """Function takes angle in gons and calculates cosinus"""
-    result = m.atan(gon2rad(angle))
+def arctang(atanarg):
+    """Function takes arctan and calculates angle in gons"""
+    result = rad2gon(m.atan(atanarg))
+    return result
+
+def arctan2g(dy,dx):
+    """Function takes dx,dy and calculates angle gons"""
+    """Function takes care of dx,dy=0"""
+    result = rad2gon(m.atan2(dy,dx))
     return result
 
 def polar2cart3Dgon(Point):
@@ -70,10 +76,9 @@ def polar2cart3Dgon(Point):
 def cart2polal3Dgon(Point):
     return (
          m.sqrt(m.pow(Point[0],2) + m.pow(Point[1],2) + m.pow(Point[2],2)),
-         rad2gon(
-            arctang(m.sqrt(m.pow(Point[0],2) + m.pow(Point[1],2))/Point[2])),
-         rad2gon(arctang(Point[1]/Point[0]))
-    )
+         atan2g(m.sqrt(m.pow(Point[0],2) + m.pow(Point[1],2)),Point[2]),
+         atan2g(Point[1],Point[0])
+         )
          
 def Measurements_read_in(Meas_filename):
     Meas_file = open(Meas_filename,'r')
@@ -112,7 +117,7 @@ def Coords_read_in(Coords_file_name):
            but not a combination of them."""
         words = re.split(';+|,+|\t+| +',line.strip())
         Coords[words[0]] = (float(words[1]), 
-                                    float(words[2]), 
+                                    -float(words[2]), 
                                     float(words[3]))
         del line, words
     Coords_file.close()
@@ -167,10 +172,10 @@ def ParD_Hz(PointTo, PointFrom):
     # This function returns derivatives of the horizontal angle with respect to
     # all unknowns, X, Y, Z, O (orientation) for point
     # For PointFrom add '-' in front of dX and dY
-    dX = -(PointTo[1] - PointFrom[1]) / (pow(PointTo[0] - PointFrom[0],2) \
+    dX =-(PointTo[1] - PointFrom[1]) / (pow(PointTo[0] - PointFrom[0],2) \
             + pow(PointTo[1] - PointFrom[1],2))
-    dY = (PointTo[0] - PointFrom[0]) / (pow(PointTo[0] - \
-             PointFrom[0],2) + pow(PointTo[1] - PointFrom[1],2))
+    dY =+(PointTo[0] - PointFrom[0]) / (pow(PointTo[0] - PointFrom[0],2) \
+            + pow(PointTo[1] - PointFrom[1],2))
     dZ = 0
     dO = -1
     return dX, dY, dZ, dO
@@ -179,7 +184,7 @@ def ParD_V(PointTo, PointFrom):
     # This function returns derivatives of the zenith angle with respect to
     # all unknowns, X, Y, Z, O (orientation) for PointTo
     # For PointFrom add '-' in front of dX, dY and dZ
-    dist_squared = pow(PointTo[0] - PointFrom[0],2) 
+    dist_squared = pow(PointTo[0] - PointFrom[0],2) \
     + pow(PointTo[1] - PointFrom[1],2) + pow(PointTo[2] - PointFrom[2],2)
     h_distance = horizontal_distance(PointTo, PointFrom)
     dX = ((PointTo[0]-PointFrom[0]) * (PointTo[2]-PointFrom[2])) \
@@ -200,6 +205,15 @@ def ParD_sd(PointTo, PointFrom):
     dZ = (PointTo[2]-PointFrom[2]) / dist
     return dX, dY, dZ
     
+def horizontal_angle_from_Coords(PointTo,PointFrom):
+    Hz = m.atan2(PointFrom[1]-PointTo[1],PointFrom[0]-PointTo[0])
+    return Hz
+
+def vertical_angle_from_Coords(PointTo,PointFrom):
+    dist = slope_distance(PointFrom, PointTo)
+    V = m.acos((PointTo[2]-PointFrom[2])/dist)
+    return V
+
 def find_unknowns(Dict_of_measurements):
     # Dictionary of transformed measurements is input (must include instrument
     # station so it gets counted to unknowns!)
@@ -207,7 +221,9 @@ def find_unknowns(Dict_of_measurements):
     unknown_points = []
     unknown_instrument_stations = []
     unknown_instrument_orientations = []
+    instruments = []
     for instrument in Dict_of_measurements:
+        instruments.append(instrument)
         new = list(Dict_of_measurements[instrument].keys())
         new.pop(new.index(instrument))
         unknown_points = list(set(unknown_points + new))
@@ -215,9 +231,9 @@ def find_unknowns(Dict_of_measurements):
         unknown_instrument_orientations.append(('Ori_' + instrument))
     unknowns = unknown_points + unknown_instrument_stations +\
         unknown_instrument_orientations
-    number_of_instruments = len(unknown_instrument_stations)
-    number_of_unknowns = len(unknown_points)*3 + number_of_instruments*4
-    return unknowns, number_of_unknowns, number_of_instruments
+    count_instruments = len(unknown_instrument_stations)
+    number_of_unknowns = len(unknown_points)*3 + count_instruments*4
+    return unknowns, number_of_unknowns, instruments, count_instruments
 
 
 def merge_measured_coordinates(Dictionary):
@@ -260,3 +276,13 @@ def filling_X(Aproximates, unknowns, count_unknowns, count_instruments):
     for unknown in unknowns[-count_instruments:]:
         XHR.append(unknown)
     return X, XHR
+
+def filling_Aproximates(unknowns, X_vector, instruments):
+    updated_Aproximates = dict()
+    inst_count = len(instruments)
+    for i, point in enumerate(unknowns[:-inst_count]):
+        iii = 3*i
+        updated_Aproximates[point] = tuple(X_vector[iii:iii+3])
+    for i,instrument in enumerate(instruments):
+        updated_Aproximates['Ori_' + instrument] = X_vector[-inst_count+i]
+    return updated_Aproximates
