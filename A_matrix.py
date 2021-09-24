@@ -15,7 +15,6 @@ import math as m
 import functions as fc
 import MainCode as MC
 import config as cg
-import angle_class as ac
 
 #from operator import itemgetter
 #from collections import namedtuple
@@ -190,19 +189,26 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
             # Returning measured values
             sd,Hz,V = Pol_measurements[inst][point][0:3] #Here are angles in gons!!!
             # Filling the L subvectors for Hz,V and sd
-            L_subv_Hz = np.append(L_subv_Hz, ac.Angle(fc.gon2rad(Hz)))
-            P_subv_Hz = np.append(P_subv_Hz, pow(cg.Sigma_0,2) / pow(fc.gon2rad(
-                                                             cg.Ang_StDev/1000),2))
-            Hz_angle_from_aprox = ac.Angle(fc.horizontal_angle_from_Coords(
-                                    Aproximates[point],Aproximates[inst])) - \
-                                    ac.Angle((X_vector[Ori_inst_i]))
+            L_subv_Hz = np.append(L_subv_Hz, fc.angle_normalize(
+                                                        fc.gon2rad(Hz),'rad'))
+            P_subv_Hz = np.append(P_subv_Hz, pow(cg.Sigma_0,2) / pow(
+                                              fc.gon2rad(cg.Ang_StDev/1000),2))
+            Hz_angle_from_aprox = fc.angle_normalize(
+                        fc.angle_normalize(
+                            fc.horizontal_angle_from_Coords(Aproximates[point],
+                                                Aproximates[inst]),'rad') - \
+                            fc.angle_normalize(X_vector[Ori_inst_i],'rad'),
+                                            'rad')
+                        
             LX0_subv_Hz = np.append(LX0_subv_Hz, Hz_angle_from_aprox)
     
-            L_subv_V = np.append(L_subv_V, ac.Angle(fc.gon2rad(V)))
+            L_subv_V = np.append(L_subv_V, fc.angle_normalize(
+                                                          fc.gon2rad(V),'rad'))
             P_subv_V = np.append(P_subv_V, pow(cg.Sigma_0,2) / pow(
-                                                  fc.gon2rad(cg.Ang_StDev/1000),2))
-            LX0_subv_V = np.append(LX0_subv_V, fc.vertical_angle_from_Coords(
-                                             Aproximates[point],Aproximates[inst]))
+                                              fc.gon2rad(cg.Ang_StDev/1000),2))
+            LX0_subv_V = np.append(LX0_subv_V, fc.angle_normalize(
+                                  fc.vertical_angle_from_Coords(
+                                  Aproximates[point],Aproximates[inst]),'rad'))
             
             L_subv_sd = np.append(L_subv_sd, sd)
             P_subv_sd = np.append(P_subv_sd, pow(cg.Sigma_0,2) / pow(
@@ -292,10 +298,11 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
         print("Error during filling A, X, sizes don't match.")
         LSM_can_be_done = False
     return LSM_can_be_done,A_matrix,L_vector,P_matrix,\
-           LX0_vector,A_matrixHR,L_vectorHR
+           LX0_vector,A_matrixHR,L_vectorHR, Hz_offset, sd_offset
 
 
-LSM_can_be_done,A_matrix,L_vector,P_matrix,LX0_vector,A_matrixHR,L_vectorHR \
+LSM_can_be_done,A_matrix,L_vector,P_matrix,LX0_vector,\
+A_matrixHR,L_vectorHR, Hz_offset, sd_offset \
       = Filling_A_L_P_LX0(MC.Nominal_coords,Aproximates,
                           count_all_observations,
                           count_constraints,
@@ -310,12 +317,25 @@ X_vector_original = X_vector.copy()
 threshold = 0.01 #fraction of basic unit
 metric = threshold + 1
 counter = 0
+<<<<<<< Updated upstream
 while (metric > threshold) and (counter < 0):
     print('\n Iteration', counter)
 #    l = LX0_vector - L_vector
     l = L_vector - LX0_vector
 #    for i in range(len(LX0_vector)):
 #        print(i,l[i],LX0_vector[i],L_vector[i])
+=======
+
+while (metric > threshold) and (counter < 1):
+    print('\n Iteration', counter)
+    l = LX0_vector - L_vector
+    for i in range(Hz_offset,sd_offset-1):
+        l[i] = fc.angle_normalize(l[i],'rad')
+#    if l[1] > 6.283:
+#        l[1] = l[1]-2*m.pi
+#    elif l[1] < -6.238:
+#        l[1] = l[1]+2*m.pi
+>>>>>>> Stashed changes
     N = A_matrix.transpose().dot(A_matrix)#.dot(P_matrix)
     print(np.linalg.det(A_matrix.transpose().dot(A_matrix)))
     O = np.zeros([4,4])
@@ -327,14 +347,13 @@ while (metric > threshold) and (counter < 0):
     N_inv = inv(N_extended)[:-4,:-4]
 #    print("N_inv max: ",np.amax(N_inv), " min: ",np.amin(N_inv) )#~10^7 
     dx = -N_inv.dot(n)
-#    for i in range(len(dx)):
-#        print(i,dx[i])
     print('dx',max(abs(dx)), np.argmax(abs(dx)))
     X_vector += dx
     vI = A_matrix.dot(dx) - l
     print('vI', vI[np.argmax(abs(vI))], np.argmax(abs(vI)))
     Aproximates = fc.filling_Aproximates(unknowns, X_vector, instruments)
-    LSM_can_be_done,A_matrix,L_vector,P_matrix,LX0_vector,A_matrixHR,L_vectorHR \
+    LSM_can_be_done,A_matrix,L_vector,P_matrix,LX0_vector,\
+    A_matrixHR,L_vectorHR, Hz_offset, sd_offset \
       = Filling_A_L_P_LX0(MC.Nominal_coords,Aproximates,
                           count_all_observations,
                           count_constraints,
@@ -342,10 +361,10 @@ while (metric > threshold) and (counter < 0):
                           MC.measured_distances_in_lines,
                           MC.Pol_measurements)
     vII = - LX0_vector + L_vector
-    if vII[1] > 6.283:
-        vII[1] = vII[1]-2*m.pi
-    elif vII[1] < -6.238:
-        vII[1] = vII[1]+2*m.pi
+#    if vII[1] > 6.283:
+#        vII[1] = vII[1]-2*m.pi
+#    elif vII[1] < -6.238:
+#        vII[1] = vII[1]+2*m.pi
     v = vI-vII
     print('vII', vII[np.argmax(abs(vII))], np.argmax(abs(vII)))
     print('v', v[np.argmax(abs(v))], np.argmax(abs(v)))
