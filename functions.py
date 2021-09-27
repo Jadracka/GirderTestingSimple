@@ -10,6 +10,7 @@ import numpy as np
 import re
 import Helmert3Dtransform as helmt
 
+
 """
 ______                _   _                 
 |  ___|              | | (_)                
@@ -55,14 +56,13 @@ def sing(angle):
     result = m.sin(gon2rad(angle))
     return result
 
-def arctang(atanarg):
-    """Function takes arctan and calculates angle in gons"""
-    result = rad2gon(m.atan(atanarg))
+def atang(arg):
+    """Function takes argument and calculates arcus tangens"""
+    result = rad2gon(m.atan(arg))
     return result
 
-def arctan2g(dy,dx):
-    """Function takes dx,dy and calculates angle gons"""
-    """Function takes care of dx,dy=0"""
+def atan2g(dx,dy):
+    """Function takes two arguments and calculates arcut tangens"""
     result = rad2gon(m.atan2(dy,dx))
     return result
 
@@ -172,12 +172,18 @@ def ParD_Hz(PointTo, PointFrom):
     # This function returns derivatives of the horizontal angle with respect to
     # all unknowns, X, Y, Z, O (orientation) for point
     # For PointFrom add '-' in front of dX and dY
-    dX =-(PointTo[1] - PointFrom[1]) / (pow(PointTo[0] - PointFrom[0],2) \
+#    dX =-(PointTo[1] - PointFrom[1]) / (pow(PointTo[0] - PointFrom[0],2) \
+#            + pow(PointTo[1] - PointFrom[1],2))
+#    dY =+(PointTo[0] - PointFrom[0]) / (pow(PointTo[0] - PointFrom[0],2) \
+#            + pow(PointTo[1] - PointFrom[1],2))
+#    dZ = 0
+#    dO = -1
+    dX =+(PointTo[1] - PointFrom[1]) / (pow(PointTo[0] - PointFrom[0],2) \
             + pow(PointTo[1] - PointFrom[1],2))
-    dY =+(PointTo[0] - PointFrom[0]) / (pow(PointTo[0] - PointFrom[0],2) \
+    dY =-(PointTo[0] - PointFrom[0]) / (pow(PointTo[0] - PointFrom[0],2) \
             + pow(PointTo[1] - PointFrom[1],2))
     dZ = 0
-    dO = -1
+    dO = 1
     return dX, dY, dZ, dO
 
 def ParD_V(PointTo, PointFrom):
@@ -187,11 +193,16 @@ def ParD_V(PointTo, PointFrom):
     dist_squared = pow(PointTo[0] - PointFrom[0],2) \
     + pow(PointTo[1] - PointFrom[1],2) + pow(PointTo[2] - PointFrom[2],2)
     h_distance = horizontal_distance(PointTo, PointFrom)
-    dX = ((PointTo[0]-PointFrom[0]) * (PointTo[2]-PointFrom[2])) \
+#    dX = -((PointTo[0]-PointFrom[0]) * (PointTo[2]-PointFrom[2])) \
+#        / (dist_squared * h_distance)
+#    dY = ((PointTo[1]-PointFrom[1]) * (PointTo[2]-PointFrom[2])) \
+#        / (dist_squared * h_distance)
+#    dZ = - h_distance / dist_squared
+    dX = -((PointTo[0]-PointFrom[0]) * (PointTo[2]-PointFrom[2])) \
         / (dist_squared * h_distance)
-    dY = ((PointTo[1]-PointFrom[1]) * (PointTo[2]-PointFrom[2])) \
+    dY = -((PointTo[1]-PointFrom[1]) * (PointTo[2]-PointFrom[2])) \
         / (dist_squared * h_distance)
-    dZ = - h_distance / dist_squared
+    dZ = + h_distance / dist_squared
     return dX, dY, dZ
 
 
@@ -200,9 +211,12 @@ def ParD_sd(PointTo, PointFrom):
     dist = slope_distance(PointTo, PointFrom)
     if dist == 0:
         print('ParD_sd: PointTo is identical with PointFrom.')
-    dX = (PointTo[0]-PointFrom[0]) / dist
-    dY = (PointTo[1]-PointFrom[1]) / dist
-    dZ = (PointTo[2]-PointFrom[2]) / dist
+#    dX = (PointTo[0]-PointFrom[0]) / dist
+#    dY = (PointTo[1]-PointFrom[1]) / dist
+#    dZ = (PointTo[2]-PointFrom[2]) / dist
+    dX = -(PointTo[0]-PointFrom[0]) / dist
+    dY = -(PointTo[1]-PointFrom[1]) / dist
+    dZ = -(PointTo[2]-PointFrom[2]) / dist
     return dX, dY, dZ
     
 def horizontal_angle_from_Coords(PointTo,PointFrom):
@@ -269,6 +283,7 @@ def filling_X(Aproximates, unknowns, count_unknowns, count_instruments):
     for i, unknown in enumerate(unknowns[:-count_instruments]):
         iii = 3*i 
         X[iii:iii+3] = np.array(Aproximates[unknown])
+### Hier muss noch die Berechnung des Abrisses für die O-Unbek rein!        
         # Human readible version of X
         XHR.append(('X ' + unknown))
         XHR.append(('Y ' + unknown))

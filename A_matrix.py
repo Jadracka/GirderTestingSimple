@@ -15,6 +15,7 @@ import math as m
 import functions as fc
 import MainCode as MC
 import config as cg
+from angle import Angle as a
 
 #from operator import itemgetter
 #from collections import namedtuple
@@ -42,15 +43,12 @@ count_Pico_measurements = 0
 count_Pol_measurements = (sum([len(v) for k, v in Pol_measurements.items()]))
                         
 count_all_observations = count_Pico_measurements \
-                         + 3*count_Pol_measurements + count_IFM_measurements
+                         + 3*count_Pol_measurements + count_IFM_measurements # ============== Comment '+Count IFM measurements'
 del count_IFM_measurements, count_Pico_measurements
 
 unknowns,count_unknowns, instruments, count_instruments = fc.find_unknowns(
                                                   Transformed_Pol_measurements)
 Aproximates = fc.merge_measured_coordinates(Transformed_Pol_measurements)
-
-for instrument in instruments:
-    Aproximates['Ori_' + instrument] = 0
 
 
 # Creating a list of tuple pairs filled with PointIDs of point to point pairs
@@ -105,6 +103,15 @@ for i,unknown in enumerate(unknowns):
 del i, iii, unknown
 
     
+#   ______  _  _  _  _                            _        _____    _      __   __ ___  
+#  |  ____|(_)| || |(_)                   /\     | |      |  __ \  | |     \ \ / // _ \ 
+#  | |__    _ | || | _  _ __    __ _     /  \    | |      | |__) | | |      \ V /| | | |
+#  |  __|  | || || || || '_ \  / _` |   / /\ \   | |      |  ___/  | |       > < | | | |
+#  | |     | || || || || | | || (_| |  / ____ \  | |____  | |      | |____  / . \| |_| |
+#  |_|     |_||_||_||_||_| |_| \__, | /_/    \_\ |______| |_|      |______|/_/ \_\\___/ 
+#                               __/ |                                                   
+#                              |___/                                                    
+
 def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
                       count_all_observations,
                       count_constraints,
@@ -122,7 +129,6 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
     L_vectorHR = []
     
     P_vector = np.array([])
-    
     
     # Filling A and L with IFM measurements
     for line in measured_distances_in_lines:
@@ -175,7 +181,18 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
     LX0_subv_Hz = np.array([])
     LX0_subv_V = np.array([])
     LX0_subv_sd = np.array([])
-    
+
+    for instrument in instruments:
+        ori_sum = 0
+        count = 0
+        for target in Pol_measurements[instrument]:
+            ori_local = a(Pol_measurements[instrument][target][1],a.T_GON) - \
+                        a(fc.horizontal_angle_from_Coords(Aproximates[target],Aproximates[instrument]),a.T_RAD)
+            ori_sum += ori_local
+            count += 1
+        Aproximates['Ori_' + instrument] = a(ori_sum/count,a.T_GON,True).angle
+        X_vector[X_vectorHR.index('Ori_' + instrument)] = a(-ori_sum/count,a.T_GON,True).angle
+        
     counter = 0
     for inst,points in Pol_measurements.items():
         instrument_i = 3 * unknowns.index(inst) # Starting column of the instrument
@@ -189,26 +206,19 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
             # Returning measured values
             sd,Hz,V = Pol_measurements[inst][point][0:3] #Here are angles in gons!!!
             # Filling the L subvectors for Hz,V and sd
-            L_subv_Hz = np.append(L_subv_Hz, fc.angle_normalize(
-                                                        fc.gon2rad(Hz),'rad'))
-            P_subv_Hz = np.append(P_subv_Hz, pow(cg.Sigma_0,2) / pow(
-                                              fc.gon2rad(cg.Ang_StDev/1000),2))
-            Hz_angle_from_aprox = fc.angle_normalize(
-                        fc.angle_normalize(
-                            fc.horizontal_angle_from_Coords(Aproximates[point],
-                                                Aproximates[inst]),'rad') - \
-                            fc.angle_normalize(X_vector[Ori_inst_i],'rad'),
-                                            'rad')
-                        
+            L_subv_Hz = np.append(L_subv_Hz, a(Hz,a.T_GON,True).angle)
+            P_subv_Hz = np.append(P_subv_Hz, pow(cg.Sigma_0,2) / pow(fc.gon2rad(
+                                                             cg.Ang_StDev/1000),2))
+            Hz_angle_from_aprox = a(fc.horizontal_angle_from_Coords(
+                                    Aproximates[point],Aproximates[inst]) - \
+                                    X_vector[Ori_inst_i],a.T_RAD,True).angle
             LX0_subv_Hz = np.append(LX0_subv_Hz, Hz_angle_from_aprox)
     
-            L_subv_V = np.append(L_subv_V, fc.angle_normalize(
-                                                          fc.gon2rad(V),'rad'))
+            L_subv_V = np.append(L_subv_V, a(V,a.T_GON,True).angle)
             P_subv_V = np.append(P_subv_V, pow(cg.Sigma_0,2) / pow(
-                                              fc.gon2rad(cg.Ang_StDev/1000),2))
-            LX0_subv_V = np.append(LX0_subv_V, fc.angle_normalize(
-                                  fc.vertical_angle_from_Coords(
-                                  Aproximates[point],Aproximates[inst]),'rad'))
+                                                  fc.gon2rad(cg.Ang_StDev/1000),2))
+            LX0_subv_V = np.append(LX0_subv_V, fc.vertical_angle_from_Coords(
+                                             Aproximates[point],Aproximates[inst]))
             
             L_subv_sd = np.append(L_subv_sd, sd)
             P_subv_sd = np.append(P_subv_sd, pow(cg.Sigma_0,2) / pow(
@@ -252,6 +262,8 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
     LX0_vector = np.append(LX0_vector,[LX0_subv_Hz,LX0_subv_V,LX0_subv_sd])
     L_vectorHR = L_vectorHR + L_subv_Hz_HR + L_subv_V_HR + L_subv_sd_HR
     P_vector = np.append(P_vector,[P_subv_Hz,P_subv_V,P_subv_sd])
+
+# BEGINNING OF IFM Measurements in
     
     # Filling A and L, and A and L Human Readable with constraint rows
     
@@ -286,6 +298,8 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
 #                   PointTo, PointFrom]
 #        A_matrixHR[(A_row_index,PointTo_i+2)] = ['dZ', 'distance constraint', 
 #                   PointTo, PointFrom]
+    
+# END OF IFM Measurements in
     P_matrix = np.diagflat(P_vector)
         
     LSM_can_be_done = (len(P_vector) ==  len(L_vector)) and (
@@ -298,11 +312,18 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
         print("Error during filling A, X, sizes don't match.")
         LSM_can_be_done = False
     return LSM_can_be_done,A_matrix,L_vector,P_matrix,\
-           LX0_vector,A_matrixHR,L_vectorHR, Hz_offset, sd_offset
+           LX0_vector,A_matrixHR,L_vectorHR
 
 
-LSM_can_be_done,A_matrix,L_vector,P_matrix,LX0_vector,\
-A_matrixHR,L_vectorHR, Hz_offset, sd_offset \
+
+#   __  __         _        
+#  |  \/  |       (_)       
+#  | \  / |  __ _  _  _ __  
+#  | |\/| | / _` || || '_ \ 
+#  | |  | || (_| || || | | |
+#  |_|  |_| \__,_||_||_| |_|
+#                         
+LSM_can_be_done,A_matrix,L_vector,P_matrix,LX0_vector,A_matrixHR,L_vectorHR \
       = Filling_A_L_P_LX0(MC.Nominal_coords,Aproximates,
                           count_all_observations,
                           count_constraints,
@@ -310,64 +331,48 @@ A_matrixHR,L_vectorHR, Hz_offset, sd_offset \
                           MC.measured_distances_in_lines,
                           MC.Pol_measurements)
 
-Aproximates_original = Aproximates.copy()
-LX0_vector_original = LX0_vector.copy()
-X_vector_original = X_vector.copy()
-
-threshold = 0.01 #fraction of basic unit
+threshold = 1e-7 #fraction of basic unit
 metric = threshold + 1
 counter = 0
-<<<<<<< Updated upstream
-while (metric > threshold) and (counter < 0):
-    print('\n Iteration', counter)
-#    l = LX0_vector - L_vector
-    l = L_vector - LX0_vector
-#    for i in range(len(LX0_vector)):
-#        print(i,l[i],LX0_vector[i],L_vector[i])
-=======
 
-while (metric > threshold) and (counter < 1):
+while (metric > threshold) and (counter <= 10):
     print('\n Iteration', counter)
-    l = LX0_vector - L_vector
-    for i in range(Hz_offset,sd_offset-1):
-        l[i] = fc.angle_normalize(l[i],'rad')
-#    if l[1] > 6.283:
-#        l[1] = l[1]-2*m.pi
-#    elif l[1] < -6.238:
-#        l[1] = l[1]+2*m.pi
->>>>>>> Stashed changes
-    N = A_matrix.transpose().dot(A_matrix)#.dot(P_matrix)
-    print(np.linalg.det(A_matrix.transpose().dot(A_matrix)))
+    l = np.ndarray(L_vector.size)
+    for i, lelement in enumerate(L_vector):
+        if L_vectorHR[i][0] == "Hz":
+            l[i] = (a(LX0_vector[i] - L_vector[i],a.T_RAD,True).angle)
+        else:
+            l[i] = LX0_vector[i] - L_vector[i]
+    N = A_matrix.transpose() @ P_matrix @ A_matrix
+    print(np.linalg.det(A_matrix.transpose() @ A_matrix))
     O = np.zeros([4,4])
     N_extended = np.block([[N,G_matrix],[np.transpose(G_matrix),O]])
     print('Rank N_extended:', np.linalg.matrix_rank(N_extended))
-    print("Determinant of G-extended N: ", np.linalg.det(N_extended))
+    try:
+        print("Log-Determinant of G-extended N: ", np.linalg.slogdet(N_extended))
+    except:
+        print("Log-Determinant of G-extended N gives overflow ")
     print("Condition number N: ", np.linalg.cond(N_extended))
-    n = A_matrix.transpose().dot(l)#.dot(P_matrix)
+    n = A_matrix.transpose() @ P_matrix @ l
     N_inv = inv(N_extended)[:-4,:-4]
-#    print("N_inv max: ",np.amax(N_inv), " min: ",np.amin(N_inv) )#~10^7 
-    dx = -N_inv.dot(n)
+    dx = N_inv @ n
     print('dx',max(abs(dx)), np.argmax(abs(dx)))
     X_vector += dx
-    vI = A_matrix.dot(dx) - l
-    print('vI', vI[np.argmax(abs(vI))], np.argmax(abs(vI)))
+    v = A_matrix @ dx - l
+    print('v max ', v[np.argmax(abs(v))], np.argmax(abs(v)))
+    print('v max ', v[np.argmax(abs(v))], np.argmax(abs(v)))
+    print('[vv]  ', sum(v*v))
+    print('[v]  ', sum(v))
+
     Aproximates = fc.filling_Aproximates(unknowns, X_vector, instruments)
-    LSM_can_be_done,A_matrix,L_vector,P_matrix,LX0_vector,\
-    A_matrixHR,L_vectorHR, Hz_offset, sd_offset \
+    LSM_can_be_done,A_matrix,L_vector,P_matrix,LX0_vector,A_matrixHR,L_vectorHR \
       = Filling_A_L_P_LX0(MC.Nominal_coords,Aproximates,
                           count_all_observations,
                           count_constraints,
                           Combinations_for_constraints,
                           MC.measured_distances_in_lines,
                           MC.Pol_measurements)
-    vII = - LX0_vector + L_vector
-#    if vII[1] > 6.283:
-#        vII[1] = vII[1]-2*m.pi
-#    elif vII[1] < -6.238:
-#        vII[1] = vII[1]+2*m.pi
-    v = vI-vII
-    print('vII', vII[np.argmax(abs(vII))], np.argmax(abs(vII)))
-    print('v', v[np.argmax(abs(v))], np.argmax(abs(v)))
+    
     metric = max(abs(dx))
     counter += 1
 
