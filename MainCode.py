@@ -31,7 +31,10 @@ else:
 # =============================================================================
 Nominal_coords = fc.Coords_read_in(cg.Coords_file_name)
 LoS_measurements = fc.Measurements_read_in(cg.LoS_Measurements_file_name)
-Pol_measurements = fc.Measurements_read_in(cg.Pol_Measurements_file_name)
+Pol_measurements = fc.Polar_2F_meas_read_in(cg.Epochs_dictionary['Pol'][1],
+											Sd_StDev = cg.Dist_StDev, 
+											Hz_StDev = cg.Hz_StDev, 
+											V_StDev = cg.V_StDev)
 if Two_epochs:
     LoS_measurements_E1 = fc.Measurements_read_in(
                                                cg.LoS_Measurements_file_name_1)
@@ -267,9 +270,8 @@ if Two_epochs:
         print("Epoch1: Not all points in lines were measured. Continuing in "
               "analysis.")
 
-
     del all_measured_points_E1, nominal_points_all_measured_E1,\
-    all_points_in_lines_measured_E1
+        all_points_in_lines_measured_E1
 
     Pol_measurements_cart_E1 = {}
     for instrument in Pol_measurements_E1:
@@ -281,13 +283,14 @@ if Two_epochs:
 
     for instrument in Pol_measurements_cart_E1:
         points = tuple(Pol_measurements_cart_E1[instrument].keys())
-        for i in range (1,len(points)):
+        for i in range(1, len(points)):
             Measured = fc.slope_distance(Pol_measurements_cart_E1[instrument][
-                         points[i]],Pol_measurements_cart_E1[instrument][points[i-1]])
+                         points[i]],
+                         Pol_measurements_cart_E1[instrument][points[i-1]])
             if points[i-1] not in Nominal_coords.keys() and\
-                                                  cg.Print_real2nominal_checks:
+                           cg.Print_real2nominal_checks:
                 print('Epoch1: Point %s measured by %s is not in Nominals.'
-                      %(points[i-1],instrument))
+                      % (points[i-1], instrument))
             if (points[i] in Nominal_coords.keys()) and ((points[i-1]) in
                                                         Nominal_coords.keys()):
                 Nominal = fc.slope_distance(Nominal_coords[points[i]],
@@ -343,7 +346,7 @@ if Two_epochs:
               " errors in input data. Please correct before running the script"
               " again. To help troubleshoot, change Print_typos in config.py "
               "to True.")
-        
+
 # Checking the distance from line for LT-IFM measurements
 if Two_epochs:
     for line in LoS_measurements_E1:
@@ -353,18 +356,19 @@ if Two_epochs:
                     float(len(LoS_measurements_E1[line]))
         counter = 0
         for point in LoS_measurements_E1[line]:
-            Hz_diff = fc.gon2rad(average_Hz - LoS_measurements_E1[line][point][1])\
+            Hz_diff = fc.gon2rad(average_Hz - LoS_measurements_E1[line][
+            point][1])\
                         * LoS_measurements_E1[line][point][0]
             V_diff = fc.gon2rad(average_V - LoS_measurements_E1[line][point][2])\
                         * LoS_measurements_E1[line][point][0]
             Diff = m.sqrt(m.pow(Hz_diff,2)+m.pow(V_diff,2))
             if cg.Max_diff_from_line < Diff:
                 counter = counter + 1
-                print("Line: %s, in Epoch 1, point %s exceeds Maximum difference "
-                      "from line of %1.3f. The total difference is %1.3f mm, "
-                      " with horizontal component %1.3f mm and vertical component "
-                      "%1.3f mm" %(line, point, cg.Max_diff_from_line, abs(Diff),
-                                   abs(Hz_diff), abs(V_diff)))
+                print("Line: %s, in Epoch 1, point %s exceeds Maximum differen"
+						        "ce from line of %1.3f. The total difference is %1.3f mm"
+                      ", with horizontal component %1.3f mm and vertical compo"
+                      "nent %1.3f mm" %(line, point, cg.Max_diff_from_line, 
+										abs(Diff), abs(Hz_diff), abs(V_diff)))
     #    print(line, counter)
     del line, average_Hz, average_V, counter, point, Hz_diff, V_diff, Diff
 
@@ -392,9 +396,11 @@ if Two_epochs:
         StDevs_IFM_measurements_E1[line] = stdev_distance
     del line, stdev_distance, std, distance
 
-# Calculating XYZ StDevs for polar measurements, adding the results to the 
+# Calculating XYZ StDevs for polar measurements, adding the results to the
 # Pol_measurements_cart(_E1) as extension of the existing tuple format:
 # X, Y, Z, StDev_X, StDev_Y, StDev_Z
+
+""" vvv DOESN'T HAVE TO BE HERE - I DO THIS IN THE DATA INPUT FUNCTION! vvv """
 
 for instrument in Pol_measurements_cart:
     for point in Pol_measurements_cart[instrument]:
@@ -420,7 +426,7 @@ if Two_epochs:
             # Leica's strange way of describing angular precision to normal
             StDev_HZ_Z = fc.StDev_angle(
                     Pol_measurements_E1[instrument][point][0],cg.Ang_StDev)
-            # Combining ADM and IFM precision for polar measurements            
+            # Combining ADM and IFM precision for polar measurements
             StDev_S = cg.ADM_StDev + fc.StDev_sys_ppm(Pol_measurements_E1[
                                             instrument][point][0],cg.IFM_StDev)
             # Polar measurements precisions appended to the measured dictionary
@@ -433,6 +439,8 @@ if Two_epochs:
             Pol_measurements_cart_E1[instrument][point] = \
                          Pol_measurements_cart_E1[instrument][point] + StDevXYZ
         del point, instrument, StDevXYZ, StDev_HZ_Z, StDev_S, StDev_meas
+
+""" ^^^ AFTER MAKING SURE IT DOES THE SAME, CAN BE DELETED ^^^ """
 
 # =============================================================================
 # EPOCH comparisons, only happens if there are 2 Epochs
@@ -458,7 +466,7 @@ Transformed_Pol_measurements = fc.Helmert_calc_for_PolMeas(
                                           Pol_measurements_cart,Nominal_coords)
 if Two_epochs:
     Transformed_Pol_measurements_E1 = fc.Helmert_calc_for_PolMeas(
-                                        Pol_measurements_cart_E1,Nominal_coords)
+                                       Pol_measurements_cart_E1,Nominal_coords)
 
 
 

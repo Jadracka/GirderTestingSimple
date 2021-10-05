@@ -9,6 +9,7 @@ from numpy import pi
 import numpy as np
 import re
 import Helmert3Dtransform as helmt
+import config as cg
 
 
 """
@@ -108,6 +109,119 @@ def Measurements_read_in(Meas_filename):
     Meas_file.close()
     return Measurements
     
+def Polar_2F_meas_read_in(Meas_filename,
+                          Sd_StDev=(0.010,0), Hz_StDev=0.15, V_StDev=0.15):
+    """Standard deviations for standard measurements with Leica AT960/AT930)"""
+    Meas_file = open(Meas_filename, 'r')
+    max_diff_Hz = (Hz_StDev * m.sqrt(2))/1000
+    max_index_err = (V_StDev * m.sqrt(2))/1000
+    Measurements = {}
+    Diffs = {}
+    for row in Meas_file.readlines():
+        """
+        - Reads in and parses Meas_file.
+        - The format is string Group name (should be instrument name) 'space'
+          string Point name 'space' float Hz angle [gon] 'space'
+          float Z angle [gon] 'space' float Distance [mm].
+        - Ignores point notes at the end.
+        - It can handle multiple occurences of delimeters but not a
+          combination of them.
+        - handles possible 2 face measurements and their statistics"""
+        words = re.split(';+|,+|\t+| +', row.strip())
+        if words[0] not in Measurements.keys():
+            Measurements[words[0]] = {}
+            Measurements[words[0]][words[1]] =                         \
+                (float(words[4]), float(words[2]), float(words[3]), '1F')
+            Diffs[words[0]] = {'Hz': (), 'V': (), 'Sd': ()}
+        else:
+            if words[1] not in Measurements[words[0]].keys():
+                Measurements[words[0]][words[1]] =                         \
+                (float(words[4]), float(words[2]), float(words[3]), '1F')
+            else:
+                Meas1 = Measurements[words[0]][words[1]][:3]
+                Meas2 = (float(words[4]), float(words[2]), float(words[3]))
+                # checking difference of distance measurements for both faces
+                new_Sd = (Meas1[0] + Meas2[0])/2
+                max_diff_Sd = m.sqrt(2) * StDev_sys_ppm(new_Sd, Sd_StDev)
+                diff_Sd = Meas2[0] - Meas1[0]
+                Diffs[words[0]]['Sd'] = Diffs[words[0]]['Sd'] + (diff_Sd/2,)
+                if (diff_Sd > max_diff_Sd) and cg.Print_2F_checks:
+                    print("Point: %s, measured by %s fails 2Face check in "
+                          "distance. Maximum difference is %1.4f mm and "
+                          "measured difference is %1.4f mm.\n"
+                          % (words[1], words[0], max_diff_Sd, diff_Sd))
+                # assigning face one and face two:
+                if Meas2[2] >= 200 and Meas1[2] < 200:
+                    Face1 = Meas1
+                    Face2 = Meas2
+                elif Meas1[2] >= 200 and Meas2[2] < 200:
+                    Face1 = Meas2
+                    Face2 = Meas1
+                else:
+                    print("First and second face measurements check failed,"
+                          "vertical angles don't make sense for point %s "
+                          "measured by %s.\n" % (words[1], words[0]))
+                # averaging V 1,2
+                index_err = -(Face1[2] + Face2[2] - 400)/2
+                Diffs[words[0]]['V'] = Diffs[words[0]]['V'] + (index_err,)
+                if (abs(index_err) > max_index_err) and cg.Print_2F_checks:
+                    print("Index error is higher than expected. Point %s, meas"
+                          "ured by %s has an index error of %1.4f, and maximum"
+                          " error is %1.4f.\n"
+                          % (words[1], words[0], index_err, max_index_err))
+                new_V = Face1[2] + index_err
+                # averaging Hz
+                if Face1[1] > 200:
+                    # for angles above 200g is better to switch to -200,200,
+                    # so there is no 400 overflow problem:
+                    Face2Hz = Face2[1] + 200
+                    conv_Face1 = Face1[1] - 400
+                    conv_Face2 = Face2Hz - 400
+                    diff_Hz = conv_Face2 - conv_Face1
+                    Diffs[words[0]]['Hz'] = Diffs[words[0]]['Hz'] + (diff_Hz/2,)
+                    if (abs(diff_Hz) > max_diff_Hz) and cg.Print_2F_checks:
+                        print("Two face difference in Hz angle is higher than "
+                              "expected. Point %s, measured by %s has an index"
+                              " error of %1.4f, and maximum error is %1.4f.\n"
+                              % (words[1], words[0], index_err, max_index_err))
+                    new_Hz = ((conv_Face1 + conv_Face2)/2) + 400
+                else:
+                    # Otherwise just simple averaging is ok:
+                    Face2Hz = Face2[1] - 200
+                    new_Hz = (Face1[1] + Face2Hz)/2
+                    diff_Hz = Face2Hz - Face1[1]
+                    Diffs[words[0]]['Hz'] = Diffs[words[0]]['Hz'] + (diff_Hz/2,)
+                    if (abs(diff_Hz) > max_diff_Hz) and cg.Print_2F_checks:
+                        print("Two face difference in Hz angle is higher than "
+                              "expected. Point %s, measured by instrument %s "
+                              "has an index error of %1.4f, and maximum error "
+                              "is %1.4f.\n"
+                              % (words[1], words[0], index_err, max_index_err))
+# Now updating the original dictionary entry with averaged values:
+                Measurements[words[0]].update({words[1]: (new_Sd, new_Hz,
+                            new_V, max_diff_Sd/m.sqrt(2), Hz_StDev, V_StDev)})
+    for instrument in Measurements:
+        Diffs[instrument]['Corr_median'] = (np.median(Diffs[instrument]['Sd']),
+        np.median(Diffs[instrument]['Hz']),np.median(Diffs[instrument]['V']))
+        for point in Measurements[instrument]:
+            if '1F' in Measurements[instrument][point]:
+                # Calculating StDevs for 1F Measurements
+                Sd_StDev_p = m.sqrt(2) * (StDev_sys_ppm(
+                                Measurements[instrument][point][0],Sd_StDev))
+                """ tuple(map(sum, zip(a,b)) returns a tuple with element-wise
+                addition.
+                Here adding median corrections to the original measured values,
+                for only 1F measured """
+                Measurements[instrument].update({point: tuple(map(sum,
+                    zip(Measurements[instrument][point][:3],
+                    Diffs[instrument]['Corr_median']))) + (
+                    Sd_StDev_p, max_diff_Hz, max_index_err)})
+
+    del words, row
+    Meas_file.close()
+    return Measurements
+
+
 def Coords_read_in(Coords_file_name):
     Coords_file = open(Coords_file_name,'r')
     Coords = {}
