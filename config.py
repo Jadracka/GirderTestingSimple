@@ -34,7 +34,7 @@ Names_of_magnets = ['PQK36','PQL6','PQK62']
 # Print troubleshooting messages:
 Print_all_troubleshooting = False
 Using_nominal_compare = False
-Print_typos = True #Printing error messages
+Print_typos = False #Printing error messages
 Print_2F_checks = False
 Print_real2nominal_checks = False
 Print_epoch_checks = False
@@ -55,10 +55,8 @@ Group aka Line name 'space' Point name 'space' Sd [mm] 'space' Hz [gon] 'space' 
 """
 Epochs_dictionary = {'LoS':{},'Pol':{}}
 Epochs_dictionary['LoS'][0] = "LoS_measurements_01Sep21.txt"
-#Epochs_dictionary['LoS'][0] = "Testing_measurements_Epoch0.txt"
 Epochs_dictionary['LoS'][1] = "Testing_measurements_Epoch1.txt"
 Epochs_dictionary['Pol'][0] = "Polar_measurements_01Sep21"
-#Epochs_dictionary['Pol'][0] = "Polar_measurements_fabricated_0.txt"
 Epochs_dictionary['Pol'][1] = "Polar_measurements_20Sep21.txt"
 
 """Which Epochs gonna be used and adding the data into the code"""
@@ -71,7 +69,7 @@ elif len(Which_epochs) == 2:
     Pol_Measurements_file_name = Epochs_dictionary['Pol'][Which_epochs[0]]
     Pol_Measurements_file_name_1 = Epochs_dictionary['Pol'][Which_epochs[1]]
 elif len(Which_epochs) == 0:
-    print('No epoch(s) were chosen to analyse. Go to config.py and '
+    print('No epoch(s) were chosen to analyze. Go to config.py and '
           'change it in a variable Which_epochs')
 else:
     print('Too many epochs are chosen, choose just two. Go and correct it in Which_epochs in config.py.')

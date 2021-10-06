@@ -26,8 +26,8 @@ def slope_distance(Point_From,Point_To):
 	dX = Point_To[0] - Point_From[0]
 	dY = Point_To[1] - Point_From[1]
 	dZ = Point_To[2] - Point_From[2]
-	sd = m.sqrt(pow(dX,2)+pow(dY,2)+pow(dZ,2))
-	return sd
+	Sd = m.sqrt(pow(dX,2)+pow(dY,2)+pow(dZ,2))
+	return Sd
 
 def horizontal_distance(Point_From,Point_To):
     dX = Point_To[0] - Point_From[0]
@@ -266,19 +266,19 @@ def StDev_XYZ_from_Polar(Point, StDev_S, StDev_Hz, StDev_Z):
     return (StDev_X,StDev_Y,StDev_Zz)
 
 def StDev_distance(Point_From, Point_To, StDevXYZ_From, StDevXYZ_To):
-    sd = slope_distance(Point_From, Point_To)
+    Sd = slope_distance(Point_From, Point_To)
     StDev_S = m.sqrt(m.pow(StDevXYZ_From[0],2) * m.pow((Point_To[0] \
-                                                    - Point_From[0])/sd,2)
+                                                    - Point_From[0])/Sd,2)
                  + m.pow(StDevXYZ_To[0],2) * m.pow((Point_To[0] \
-                                                    - Point_From[0])/-sd,2)
+                                                    - Point_From[0])/-Sd,2)
                  + m.pow(StDevXYZ_From[1],2) * m.pow((Point_To[1] \
-                                                    - Point_From[1])/sd,2)
+                                                    - Point_From[1])/Sd,2)
                  + m.pow(StDevXYZ_To[1],2) * m.pow((Point_To[1] \
-                                                    - Point_From[1])/-sd,2)
+                                                    - Point_From[1])/-Sd,2)
                  + m.pow(StDevXYZ_From[2],2) * m.pow((Point_To[2] \
-                                                    - Point_From[2])/sd,2)
+                                                    - Point_From[2])/Sd,2)
                  + m.pow(StDevXYZ_To[2],2) * m.pow((Point_To[2] \
-                                                    - Point_From[2])/-sd,2)
+                                                    - Point_From[2])/-Sd,2)
         )
     return StDev_S
 
@@ -320,11 +320,11 @@ def ParD_V(PointTo, PointFrom):
     return dX, dY, dZ
 
 
-def ParD_sd(PointTo, PointFrom):
+def ParD_Sd(PointTo, PointFrom):
     # For PointToFrom add '-' in front of dX, dY and dZ
     dist = slope_distance(PointTo, PointFrom)
     if dist == 0:
-        print('ParD_sd: PointTo is identical with PointFrom.')
+        print('ParD_Sd: PointTo is identical with PointFrom.')
 #    dX = (PointTo[0]-PointFrom[0]) / dist
 #    dY = (PointTo[1]-PointFrom[1]) / dist
 #    dZ = (PointTo[2]-PointFrom[2]) / dist

@@ -402,43 +402,43 @@ if Two_epochs:
 
 """ vvv DOESN'T HAVE TO BE HERE - I DO THIS IN THE DATA INPUT FUNCTION! vvv """
 
-for instrument in Pol_measurements_cart:
-    for point in Pol_measurements_cart[instrument]:
-        # Leica's strange way of describing angular precision to normal
-        StDev_HZ_Z = fc.gon2rad(cg.Ang_StDev/1000)
-        # Combining ADM and IFM precision for polar measurements
-        StDev_S = cg.ADM_StDev + fc.StDev_sys_ppm(Pol_measurements[instrument][
-                                                        point][0],cg.IFM_StDev)
-        # Polar measurements precisions appended to the measured dictionary
-        StDev_meas = (StDev_S,StDev_HZ_Z,StDev_HZ_Z)
-        Pol_measurements[instrument][point] = Pol_measurements[instrument][
-                                                            point] + StDev_meas
-        # X, Y, Z StDevs calculated and appended to the _cart measured data
-        StDevXYZ = fc.StDev_XYZ_from_Polar(Pol_measurements[instrument][
-                                          point],StDev_S,StDev_HZ_Z,StDev_HZ_Z)
-        Pol_measurements_cart[instrument][point] = Pol_measurements_cart[
-                instrument][point] + StDevXYZ
-    del point, instrument, StDevXYZ, StDev_HZ_Z, StDev_S, StDev_meas
-
-if Two_epochs:
-    for instrument in Pol_measurements_cart_E1:
-        for point in Pol_measurements_cart_E1[instrument]:
-            # Leica's strange way of describing angular precision to normal
-            StDev_HZ_Z = fc.StDev_angle(
-                    Pol_measurements_E1[instrument][point][0],cg.Ang_StDev)
-            # Combining ADM and IFM precision for polar measurements
-            StDev_S = cg.ADM_StDev + fc.StDev_sys_ppm(Pol_measurements_E1[
-                                            instrument][point][0],cg.IFM_StDev)
-            # Polar measurements precisions appended to the measured dictionary
-            StDev_meas = (StDev_S,StDev_HZ_Z,StDev_HZ_Z)
-            Pol_measurements_E1[instrument][point] = Pol_measurements_E1[
-                                                instrument][point] + StDev_meas
-            # X, Y, Z StDevs calculated and appended to the _cart measured data
-            StDevXYZ = fc.StDev_XYZ_from_Polar(Pol_measurements_E1[instrument][
-                                          point],StDev_S,StDev_HZ_Z,StDev_HZ_Z)
-            Pol_measurements_cart_E1[instrument][point] = \
-                         Pol_measurements_cart_E1[instrument][point] + StDevXYZ
-        del point, instrument, StDevXYZ, StDev_HZ_Z, StDev_S, StDev_meas
+#for instrument in Pol_measurements_cart:
+#    for point in Pol_measurements_cart[instrument]:
+#        # Leica's strange way of describing angular precision to normal
+#        StDev_HZ_Z = fc.gon2rad(cg.Ang_StDev/1000)
+#        # Combining ADM and IFM precision for polar measurements
+#        StDev_S = cg.ADM_StDev + fc.StDev_sys_ppm(Pol_measurements[instrument][
+#                                                        point][0],cg.IFM_StDev)
+#        # Polar measurements precisions appended to the measured dictionary
+#        StDev_meas = (StDev_S,StDev_HZ_Z,StDev_HZ_Z)
+#        Pol_measurements[instrument][point] = Pol_measurements[instrument][
+#                                                            point] + StDev_meas
+#        # X, Y, Z StDevs calculated and appended to the _cart measured data
+#        StDevXYZ = fc.StDev_XYZ_from_Polar(Pol_measurements[instrument][
+#                                          point],StDev_S,StDev_HZ_Z,StDev_HZ_Z)
+#        Pol_measurements_cart[instrument][point] = Pol_measurements_cart[
+#                instrument][point] + StDevXYZ
+#    del point, instrument, StDevXYZ, StDev_HZ_Z, StDev_S, StDev_meas
+#
+#if Two_epochs:
+#    for instrument in Pol_measurements_cart_E1:
+#        for point in Pol_measurements_cart_E1[instrument]:
+#            # Leica's strange way of describing angular precision to normal
+#            StDev_HZ_Z = fc.StDev_angle(
+#                    Pol_measurements_E1[instrument][point][0],cg.Ang_StDev)
+#            # Combining ADM and IFM precision for polar measurements
+#            StDev_S = cg.ADM_StDev + fc.StDev_sys_ppm(Pol_measurements_E1[
+#                                            instrument][point][0],cg.IFM_StDev)
+#            # Polar measurements precisions appended to the measured dictionary
+#            StDev_meas = (StDev_S,StDev_HZ_Z,StDev_HZ_Z)
+#            Pol_measurements_E1[instrument][point] = Pol_measurements_E1[
+#                                                instrument][point] + StDev_meas
+#            # X, Y, Z StDevs calculated and appended to the _cart measured data
+#            StDevXYZ = fc.StDev_XYZ_from_Polar(Pol_measurements_E1[instrument][
+#                                          point],StDev_S,StDev_HZ_Z,StDev_HZ_Z)
+#            Pol_measurements_cart_E1[instrument][point] = \
+#                         Pol_measurements_cart_E1[instrument][point] + StDevXYZ
+#        del point, instrument, StDevXYZ, StDev_HZ_Z, StDev_S, StDev_meas
 
 """ ^^^ AFTER MAKING SURE IT DOES THE SAME, CAN BE DELETED ^^^ """
 
