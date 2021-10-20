@@ -35,7 +35,7 @@ Names_of_magnets = ['PQK36','PQL6','PQK62']
 Print_all_troubleshooting = False
 Using_nominal_compare = False
 Print_typos = False #Printing error messages
-Print_2F_checks = False
+Print_2F_checks = True
 Print_real2nominal_checks = False
 Print_epoch_checks = False
 
@@ -55,8 +55,8 @@ Group aka Line name 'space' Point name 'space' Sd [mm] 'space' Hz [gon] 'space' 
 """
 Epochs_dictionary = {'LoS':{},'Pol':{}}
 Epochs_dictionary['LoS'][0] = "LoS_measurements_01Sep21.txt"
-Epochs_dictionary['LoS'][1] = "Testing_measurements_Epoch1.txt"
-Epochs_dictionary['Pol'][0] = "Polar_measurements_01Sep21"
+Epochs_dictionary['LoS'][1] = "LoS_measurements_20Sep21.txt"
+Epochs_dictionary['Pol'][0] = "Polar_measurements_01Sep21.txt"
 Epochs_dictionary['Pol'][1] = "Polar_measurements_20Sep21.txt"
 
 """Which Epochs gonna be used and adding the data into the code"""

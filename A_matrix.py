@@ -43,7 +43,7 @@ count_Pico_measurements = 0
 count_Pol_measurements = (sum([len(v) for k, v in Pol_measurements.items()]))
                         
 count_all_observations = count_Pico_measurements \
-                         + 3*count_Pol_measurements + count_IFM_measurements
+                         + 3*count_Pol_measurements# + count_IFM_measurements
 
 del count_IFM_measurements, count_Pico_measurements
 
@@ -84,10 +84,10 @@ sumz=0
 c=0
 for i,unknown in enumerate(unknowns):
     if i < (len(unknowns) - 2*count_instruments):
-        sumx = sumx + Aproximates[unknown][0]
-        sumy = sumy + Aproximates[unknown][0]
-        sumz = sumz + Aproximates[unknown][0]
-        c=c+1
+        sumx += Aproximates[unknown][0]
+        sumy += Aproximates[unknown][1]
+        sumz += Aproximates[unknown][2]
+        c+=1
 meanx = sumx/c
 meany = sumy/c
 meanz = sumz/c
@@ -101,7 +101,7 @@ for i,unknown in enumerate(unknowns):
         G_matrix[iii+2,2] = 1
         G_matrix[iii,3] =     (Aproximates[unknown][1] - meany)/10000
         G_matrix[iii+1,3] = - (Aproximates[unknown][0] - meanx)/10000
-del i, iii, unknown
+del i, iii, unknown, meany, meanx, meanz
 
     
 #   ______  _  _  _  _                            _        _____    _      __   __ ___  
@@ -120,8 +120,8 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
                       measured_distances_in_lines,
                       Pol_measurements,
                       ):
-    A_matrix = np.zeros([count_all_observations + count_constraints, count_unknowns])
-                                                         
+    A_matrix = np.zeros([count_all_observations, count_unknowns])
+                                #+ count_constraints                          
     A_matrixHR = {}
     
     L_vector = np.array([])
@@ -131,42 +131,42 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
     
     P_vector = np.array([])
     
-    # Filling A and L with IFM measurements
-    for line in measured_distances_in_lines:
-        # meas_i is index of the measurand in line, so I can pair it with the
-        # Point IDs from sorted points in lines, first measured point is on the
-        # same index as the distance and second point is on index + 1
-        for meas_i,distance in enumerate(measured_distances_in_lines[line]):
-            # I need index of the measurement in L vector, so I can put it on
-            # correct corresponding row in First plan matrix A
-            L_i = len(L_vector)
-            L_vector = np.append(L_vector, distance)
-            StDev = fc.StDev_sys_ppm(distance,cg.IFM_StDev)
-            P_vector = np.append(P_vector,pow(cg.Sigma_0,2) / pow(StDev,2))
-            """Now figuring the index of points in the unknowns list, so I know
-               which column of the A matrix. The original index is multiplied 
-               by 3 because unknowns are names of points (and instrument 
-               orientations) 
-               not a complete list of unknowns = Point X,Y and Z => *3      """
-            PointFrom = sorted_measured_points_in_lines[line][meas_i]
-            PointTo = sorted_measured_points_in_lines[line][meas_i+1]
-            LX0_vector = np.append(LX0_vector, fc.slope_distance(
-                                  Aproximates[PointTo],Aproximates[PointFrom]))
-            PointFrom_i = 3*unknowns.index(PointFrom) 
-            PointTo_i = 3*unknowns.index(PointTo)
-            dX,dY,dZ = fc.ParD_Sd(Aproximates[PointTo],Aproximates[PointFrom])
-            A_matrix[L_i,PointTo_i:PointTo_i+3] = dX,dY,dZ
-            # for point "From" the partial derivatives change sign
-            A_matrix[L_i,PointFrom_i:PointFrom_i+3] = -dX,-dY,-dZ
-            # Documenting in human readible format the A and L elements
-            L_vectorHR.append((line, PointFrom, PointTo))
-            A_matrixHR[(L_i,PointFrom_i)] = ['dX', line, PointFrom, PointTo]
-            A_matrixHR[(L_i,PointFrom_i+1)] = ['dY', line, PointFrom, PointTo]
-            A_matrixHR[(L_i,PointFrom_i+2)] = ['dZ', line, PointFrom, PointTo]
-            A_matrixHR[(L_i,PointTo_i)] = ['dX', line, PointTo, PointFrom]
-            A_matrixHR[(L_i,PointTo_i+1)] = ['dY', line, PointTo, PointFrom]
-            A_matrixHR[(L_i,PointTo_i+2)] = ['dZ', line, PointTo, PointFrom]
-    del PointFrom,PointTo, PointFrom_i,PointTo_i,dX,dY,dZ,L_i, meas_i, distance
+#    # Filling A and L with IFM measurements
+#    for line in measured_distances_in_lines:
+#        # meas_i is index of the measurand in line, so I can pair it with the
+#        # Point IDs from sorted points in lines, first measured point is on the
+#        # same index as the distance and second point is on index + 1
+#        for meas_i,distance in enumerate(measured_distances_in_lines[line]):
+#            # I need index of the measurement in L vector, so I can put it on
+#            # correct corresponding row in First plan matrix A
+#            L_i = len(L_vector)
+#            L_vector = np.append(L_vector, distance)
+#            StDev = fc.StDev_sys_ppm(distance,cg.IFM_StDev)
+#            P_vector = np.append(P_vector,pow(cg.Sigma_0,2) / pow(StDev,2))
+#            """Now figuring the index of points in the unknowns list, so I know
+#               which column of the A matrix. The original index is multiplied 
+#               by 3 because unknowns are names of points (and instrument 
+#               orientations) 
+#               not a complete list of unknowns = Point X,Y and Z => *3      """
+#            PointFrom = sorted_measured_points_in_lines[line][meas_i]
+#            PointTo = sorted_measured_points_in_lines[line][meas_i+1]
+#            LX0_vector = np.append(LX0_vector, fc.slope_distance(
+#                                  Aproximates[PointTo],Aproximates[PointFrom]))
+#            PointFrom_i = 3*unknowns.index(PointFrom) 
+#            PointTo_i = 3*unknowns.index(PointTo)
+#            dX,dY,dZ = fc.ParD_Sd(Aproximates[PointTo],Aproximates[PointFrom])
+#            A_matrix[L_i,PointTo_i:PointTo_i+3] = dX,dY,dZ
+#            # for point "From" the partial derivatives change sign
+#            A_matrix[L_i,PointFrom_i:PointFrom_i+3] = -dX,-dY,-dZ
+#            # Documenting in human readible format the A and L elements
+#            L_vectorHR.append((line, PointFrom, PointTo))
+#            A_matrixHR[(L_i,PointFrom_i)] = ['dX', line, PointFrom, PointTo]
+#            A_matrixHR[(L_i,PointFrom_i+1)] = ['dY', line, PointFrom, PointTo]
+#            A_matrixHR[(L_i,PointFrom_i+2)] = ['dZ', line, PointFrom, PointTo]
+#            A_matrixHR[(L_i,PointTo_i)] = ['dX', line, PointTo, PointFrom]
+#            A_matrixHR[(L_i,PointTo_i+1)] = ['dY', line, PointTo, PointFrom]
+#            A_matrixHR[(L_i,PointTo_i+2)] = ['dZ', line, PointTo, PointFrom]
+#    del PointFrom,PointTo, PointFrom_i,PointTo_i,dX,dY,dZ,L_i, meas_i, distance
     
     L_subv_Hz = np.array([])
     L_subv_V = np.array([])
@@ -244,11 +244,11 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
             A_matrix[Sd_offset+counter,Point_i:Point_i+3] = Sd_dX, Sd_dY, Sd_dZ
             A_matrix[Hz_offset+counter,Ori_inst_i] = Hz_dO
             A_matrix[Hz_offset+counter,instrument_i:instrument_i+3] = \
-                                                             -Hz_dX, -Hz_dY, -Hz_dZ
+                                                       -Hz_dX, -Hz_dY, -Hz_dZ
             A_matrix[V_offset+counter,instrument_i:instrument_i+3] = \
-                                                                -V_dX, -V_dY, -V_dZ
+                                                          -V_dX, -V_dY, -V_dZ
             A_matrix[Sd_offset+counter,instrument_i:instrument_i+3] = \
-                                                             -Sd_dX, -Sd_dY, -Sd_dZ
+                                                        -Sd_dX, -Sd_dY, -Sd_dZ
             # Filling Human readible A matrix
             A_matrixHR[(Hz_offset+counter,Point_i)] = ['Hz/dX', inst, point]
             A_matrixHR[(Hz_offset+counter,Point_i+1)] = ['Hz/dY', inst, point]
@@ -259,6 +259,15 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
             A_matrixHR[(Sd_offset+counter,Point_i)] = ['Sd/dX', inst, point]
             A_matrixHR[(Sd_offset+counter,Point_i+1)] = ['Sd/dY', inst, point]
             A_matrixHR[(Sd_offset+counter,Point_i+2)] = ['Sd/dZ', inst, point]
+            A_matrixHR[(Hz_offset+counter,instrument_i)] = ['Hz/dX',point,inst]
+            A_matrixHR[(Hz_offset+counter,instrument_i+1)] = ['Hz/dY',point,inst]
+            A_matrixHR[(Hz_offset+counter,instrument_i+2)] = ['Hz/dZ',point,inst]
+            A_matrixHR[(V_offset+counter,instrument_i)] = ['V/dX',point,inst]
+            A_matrixHR[(V_offset+counter,instrument_i+1)] = ['V/dY',point,inst]
+            A_matrixHR[(V_offset+counter,instrument_i+2)] = ['V/dZ',point,inst]
+            A_matrixHR[(Sd_offset+counter,instrument_i)] = ['Sd/dX',point,inst]
+            A_matrixHR[(Sd_offset+counter,instrument_i+1)] = ['Sd/dY',point,inst]
+            A_matrixHR[(Sd_offset+counter,instrument_i+2)] = ['Sd/dZ',point,inst]
             counter += 1
     L_vector = np.append(L_vector,[L_subv_Hz,L_subv_V,L_subv_Sd])
     LX0_vector = np.append(LX0_vector,[LX0_subv_Hz,LX0_subv_V,LX0_subv_Sd])
@@ -268,37 +277,37 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
     
     # Filling A and L, and A and L Human Readable with constraint rows
     
-    L_lenght = len(L_vector)
-    for index, const in enumerate(Combinations_for_constraints):
-        A_row_index = L_lenght + index
-        PointFrom = Combinations_for_constraints[index][0]
-        PointTo = Combinations_for_constraints[index][1]
-        #Probably needs to take the coordinates from somewhere else!
-        dX,dY,dZ = fc.ParD_Sd(Nominal_coords[PointTo],Nominal_coords[PointFrom])
-        Sd = fc.slope_distance(Nominal_coords[PointFrom],Nominal_coords[PointTo])
-        Sd_aprox = fc.slope_distance(Aproximates[PointFrom],Aproximates[PointTo])
-        PointFrom_i = 3*unknowns.index(PointFrom) 
-        PointTo_i = 3*unknowns.index(PointTo)
-        A_matrix[A_row_index,PointTo_i:PointTo_i+3] = dX,dY,dZ
-        # for point "From" the partial derivatives change sign
-        A_matrix[A_row_index,PointFrom_i:PointFrom_i+3] = -dX,-dY,-dZ
-        # Documenting in human readible format what are the A and L elements
-        L_vector = np.append(L_vector,Sd)
-        LX0_vector = np.append(LX0_vector,Sd_aprox)
-        P_vector = np.append(P_vector,pow(cg.Sigma_0,2)/pow(cg.Constraint_StDev,2))
-        L_vectorHR.append(('constraint', PointFrom, PointTo))
-        A_matrixHR[(A_row_index,PointFrom_i)] = ['dX', 'distance constraint', 
-                   PointFrom, PointTo]
-        A_matrixHR[(A_row_index,PointFrom_i+1)] = ['dY', 'distance constraint', 
-                   PointFrom, PointTo]
-        A_matrixHR[(A_row_index,PointFrom_i+2)] = ['dZ', 'distance constraint', 
-                   PointFrom, PointTo]
-        A_matrixHR[(A_row_index,PointTo_i)] = ['dX', 'distance constraint', 
-                   PointTo, PointFrom]
-        A_matrixHR[(A_row_index,PointTo_i+1)] = ['dY', 'distance constraint', 
-                   PointTo, PointFrom]
-        A_matrixHR[(A_row_index,PointTo_i+2)] = ['dZ', 'distance constraint', 
-                   PointTo, PointFrom]
+#    L_lenght = len(L_vector)
+#    for index, const in enumerate(Combinations_for_constraints):
+#        A_row_index = L_lenght + index
+#        PointFrom = Combinations_for_constraints[index][0]
+#        PointTo = Combinations_for_constraints[index][1]
+#        #Probably needs to take the coordinates from somewhere else!
+#        dX,dY,dZ = fc.ParD_Sd(Nominal_coords[PointTo],Nominal_coords[PointFrom])
+#        Sd = fc.slope_distance(Nominal_coords[PointFrom],Nominal_coords[PointTo])
+#        Sd_aprox = fc.slope_distance(Aproximates[PointFrom],Aproximates[PointTo])
+#        PointFrom_i = 3*unknowns.index(PointFrom) 
+#        PointTo_i = 3*unknowns.index(PointTo)
+#        A_matrix[A_row_index,PointTo_i:PointTo_i+3] = dX,dY,dZ
+#        # for point "From" the partial derivatives change sign
+#        A_matrix[A_row_index,PointFrom_i:PointFrom_i+3] = -dX,-dY,-dZ
+#        # Documenting in human readible format what are the A and L elements
+#        L_vector = np.append(L_vector,Sd)
+#        LX0_vector = np.append(LX0_vector,Sd_aprox)
+#        P_vector = np.append(P_vector,pow(cg.Sigma_0,2)/pow(cg.Constraint_StDev,2))
+#        L_vectorHR.append(('constraint', PointFrom, PointTo))
+#        A_matrixHR[(A_row_index,PointFrom_i)] = ['dX', 'distance constraint', 
+#                   PointFrom, PointTo]
+#        A_matrixHR[(A_row_index,PointFrom_i+1)] = ['dY', 'distance constraint', 
+#                   PointFrom, PointTo]
+#        A_matrixHR[(A_row_index,PointFrom_i+2)] = ['dZ', 'distance constraint', 
+#                   PointFrom, PointTo]
+#        A_matrixHR[(A_row_index,PointTo_i)] = ['dX', 'distance constraint', 
+#                   PointTo, PointFrom]
+#        A_matrixHR[(A_row_index,PointTo_i+1)] = ['dY', 'distance constraint', 
+#                   PointTo, PointFrom]
+#        A_matrixHR[(A_row_index,PointTo_i+2)] = ['dZ', 'distance constraint', 
+#                   PointTo, PointFrom]
     
     P_matrix = np.diagflat(P_vector)
         
@@ -331,7 +340,7 @@ LSM_can_be_done,A_matrix,L_vector,P_matrix,LX0_vector,A_matrixHR,L_vectorHR \
                           MC.measured_distances_in_lines,
                           MC.Pol_measurements)
 
-threshold = 1e-7 #fraction of basic unit
+threshold = 1e-5 #fraction of basic unit
 metric = threshold + 1
 counter = 0
 

@@ -201,8 +201,10 @@ def Polar_2F_meas_read_in(Meas_filename,
                 Measurements[words[0]].update({words[1]: (new_Sd, new_Hz,
                             new_V, max_diff_Sd/m.sqrt(2), Hz_StDev, V_StDev)})
     for instrument in Measurements:
-        Diffs[instrument]['Corr_median'] = (np.median(Diffs[instrument]['Sd']),
-        np.median(Diffs[instrument]['Hz']),np.median(Diffs[instrument]['V']))
+        Diffs[instrument]['Corr_median'] = (np.nanmedian(Diffs[instrument]['Sd']),
+        np.nanmedian(Diffs[instrument]['Hz']),np.nanmedian(Diffs[instrument]['V']))
+        if np.isnan(Diffs[instrument]['Corr_median']).all():
+            Diffs[instrument]['Corr_median'] = (0,0,0)
         for point in Measurements[instrument]:
             if '1F' in Measurements[instrument][point]:
                 # Calculating StDevs for 1F Measurements

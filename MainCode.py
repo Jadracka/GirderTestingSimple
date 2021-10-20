@@ -31,14 +31,14 @@ else:
 # =============================================================================
 Nominal_coords = fc.Coords_read_in(cg.Coords_file_name)
 LoS_measurements = fc.Measurements_read_in(cg.LoS_Measurements_file_name)
-Pol_measurements = fc.Polar_2F_meas_read_in(cg.Epochs_dictionary['Pol'][1],
+Pol_measurements = fc.Polar_2F_meas_read_in(cg.Pol_Measurements_file_name,
 											Sd_StDev = cg.Dist_StDev, 
 											Hz_StDev = cg.Hz_StDev, 
 											V_StDev = cg.V_StDev)
 if Two_epochs:
     LoS_measurements_E1 = fc.Measurements_read_in(
                                                cg.LoS_Measurements_file_name_1)
-    Pol_measurements_E1 = fc.Measurements_read_in(
+    Pol_measurements_E1 = fc.Polar_2F_meas_read_in(
                                                cg.Pol_Measurements_file_name_1)
 
 # =============================================================================
