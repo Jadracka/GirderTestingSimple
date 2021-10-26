@@ -13,7 +13,11 @@ import numpy as np
 import math as m
 import config as cg
 import functions as fc
+from numpy.linalg import inv
+from angle import Angle as a
 
+from datetime import datetime as dt
+date_time = dt.fromtimestamp(dt.timestamp(dt.now()))
 #import Helmert3Dtransform as helm
 
 #from operator import itemgetter
@@ -59,11 +63,12 @@ nominal_points_all_measured = True
 all_points_in_lines_measured = True
 
 for line in LoS_measurements:
+    Epoch_num = cg.Which_epochs[0]
     if (cg.Print_typos) and (line not in cg.Lines_of_sight):
 # printing which lines are in measurements input but are not in the
 # default naming either due to typo or just simply missing in the nominal
 # LoS decription
-        print("Epoch0: Line %s was measured, but not expected." % (line))
+        print("Epoch_%s: Line %s was measured, but not expected." % (str(Epoch_num), line))
         measured_lines_all_good = False
     else:
         line_points_sorted = []
@@ -74,39 +79,39 @@ for line in LoS_measurements:
         if line_points_sorted != list(cg.Lines_of_sight[line]):
             all_points_in_lines_measured = False
             if cg.Print_typos:
-                print("Epoch0: Not all points were measured in %s line"
-                      % (line))
+                print("Epoch_%s: Not all points were measured in %s line"
+                      % (str(Epoch_num), line))
         del line_points_sorted
     for point in LoS_measurements[line]:
         if (cg.Print_typos) and (point not in Nominal_coords):
-            print("Epoch0: Measured point with name %s in %s is not in the "
-                  "Nominal Coordinate file." % (point, line))
+            print("Epoch_%s: Measured point with name %s in %s is not in the "
+                  "Nominal Coordinate file." % (str(Epoch_num), point, line))
             LoS_measured_points_all_good = False
         if point not in cg.Lines_of_sight[line]:
             LoS_measured_points_all_good = False
             if cg.Print_typos:
-                print("Epoch0: Point %s does not nominally belong to %s line"
-                      % (point, line))
+                print("Epoch_%s: Point %s does not nominally belong to %s line"
+                      % (str(Epoch_num), point, line))
         if point not in all_measured_points:
             all_measured_points.append(point)
     del line, point
 for point in Nominal_coords.keys():
     if (cg.Print_typos) and (point not in all_measured_points):
-        print("Epoch0: Point %s was not measured in any line." % (point))
+        print("Epoch_%s: Point %s was not measured in any line." % (str(Epoch_num),point))
         nominal_points_all_measured = False
     del point
 
 if (cg.Print_real2nominal_checks) and (measured_lines_all_good):
-    print("Epoch0: All measured lines were expected, no typos found.")
+    print("Epoch_%s: All measured lines were expected, no typos found." % (str(Epoch_num)))
 if (cg.Print_real2nominal_checks) and (LoS_measured_points_all_good):
-    print("Epoch0: All measured points are correct, in correct lines, no typos"
-          " found.")
+    print("Epoch_%s: All measured points are correct, in correct lines, no typos"
+          " found." % (str(Epoch_num)))
 if (cg.Print_real2nominal_checks) and (nominal_points_all_measured):
-    print("Epoch0: All nominal points in IFM lines were measured at least "
-          "once.")
+    print("Epoch_%s: All nominal points in IFM lines were measured at least "
+          "once." % (str(Epoch_num)))
 if (cg.Print_real2nominal_checks) and not (all_points_in_lines_measured):
-    print("Epoch0: Not all points in lines were measured. Continuing in "
-          "analysis.")
+    print("Epoch_%s: Not all points in lines were measured. Continuing in "
+          "analysis." % (str(Epoch_num)))
 
 
 del all_measured_points, nominal_points_all_measured, \
@@ -126,8 +131,8 @@ for instrument in Pol_measurements_cart:
         Measured = fc.slope_distance(Pol_measurements_cart[instrument][
                      points[i]],Pol_measurements_cart[instrument][points[i-1]])
         if points[i-1] not in Nominal_coords.keys() and cg.Print_typos:
-            print('Epoch0: Point %s measured by %s is not in Nominals.'
-                  %(points[i-1], instrument))
+            print('Epoch_%s: Point %s measured by %s is not in Nominals.'
+                  %(str(Epoch_num), points[i-1], instrument))
         if (points[i] in Nominal_coords.keys()) and ((points[i-1]) in
                                                         Nominal_coords.keys()):
             Nominal = fc.slope_distance(Nominal_coords[points[i]],
@@ -179,10 +184,10 @@ if measured_lines_all_good and LoS_measured_points_all_good:
                                                 differences_in_distances[line])
         del line
 else:
-    print("Analysis for Epoch 0 cannot be performed as there are typos and "
+    print("Analysis for Epoch_%s cannot be performed as there are typos and "
           "errors in input data. Please correct before running the script "
           "again. To help troubleshoot, change Print_typos in config.py to "
-          "True.")
+          "True." % (str(Epoch_num)))
 
 # Checking the distance from line for LT-IFM measurements
 for line in LoS_measurements:
@@ -199,11 +204,11 @@ for line in LoS_measurements:
         Diff = m.sqrt(m.pow(Hz_diff,2)+m.pow(V_diff,2))
         if cg.Max_diff_from_line < Diff:
             counter = counter + 1
-            print("Line: %s, in Epoch 0, point %s exceeds Maximum difference "
+            print("Line: %s, in Epoch_%s, point %s exceeds Maximum difference "
                   "from line of %1.3f. The total difference is %1.3f mm, "
                   " with horizontal component %1.3f mm and vertical component "
-                  "%1.3f mm" %(line, point, cg.Max_diff_from_line, abs(Diff),
-                               abs(Hz_diff), abs(V_diff)))
+                  "%1.3f mm" %(line, str(Epoch_num), point, cg.Max_diff_from_line,
+																    abs(Diff),abs(Hz_diff), abs(V_diff)))
 #    print(line, counter)
 del line, average_Hz, average_V, counter, point, Hz_diff, V_diff, Diff
 """
@@ -384,7 +389,7 @@ for line in measured_distances_in_lines:
         std = fc.StDev_sys_ppm(distance,cg.IFM_StDev)
         stdev_distance = stdev_distance + (std,)
     StDevs_IFM_measurements[line] = stdev_distance
-del line, stdev_distance, std, distance
+    del line, stdev_distance, std, distance
 
 if Two_epochs:
     StDevs_IFM_measurements_E1 = {}
@@ -396,51 +401,7 @@ if Two_epochs:
         StDevs_IFM_measurements_E1[line] = stdev_distance
     del line, stdev_distance, std, distance
 
-# Calculating XYZ StDevs for polar measurements, adding the results to the
-# Pol_measurements_cart(_E1) as extension of the existing tuple format:
-# X, Y, Z, StDev_X, StDev_Y, StDev_Z
 
-""" vvv DOESN'T HAVE TO BE HERE - I DO THIS IN THE DATA INPUT FUNCTION! vvv """
-
-#for instrument in Pol_measurements_cart:
-#    for point in Pol_measurements_cart[instrument]:
-#        # Leica's strange way of describing angular precision to normal
-#        StDev_HZ_Z = fc.gon2rad(cg.Ang_StDev/1000)
-#        # Combining ADM and IFM precision for polar measurements
-#        StDev_S = cg.ADM_StDev + fc.StDev_sys_ppm(Pol_measurements[instrument][
-#                                                        point][0],cg.IFM_StDev)
-#        # Polar measurements precisions appended to the measured dictionary
-#        StDev_meas = (StDev_S,StDev_HZ_Z,StDev_HZ_Z)
-#        Pol_measurements[instrument][point] = Pol_measurements[instrument][
-#                                                            point] + StDev_meas
-#        # X, Y, Z StDevs calculated and appended to the _cart measured data
-#        StDevXYZ = fc.StDev_XYZ_from_Polar(Pol_measurements[instrument][
-#                                          point],StDev_S,StDev_HZ_Z,StDev_HZ_Z)
-#        Pol_measurements_cart[instrument][point] = Pol_measurements_cart[
-#                instrument][point] + StDevXYZ
-#    del point, instrument, StDevXYZ, StDev_HZ_Z, StDev_S, StDev_meas
-#
-#if Two_epochs:
-#    for instrument in Pol_measurements_cart_E1:
-#        for point in Pol_measurements_cart_E1[instrument]:
-#            # Leica's strange way of describing angular precision to normal
-#            StDev_HZ_Z = fc.StDev_angle(
-#                    Pol_measurements_E1[instrument][point][0],cg.Ang_StDev)
-#            # Combining ADM and IFM precision for polar measurements
-#            StDev_S = cg.ADM_StDev + fc.StDev_sys_ppm(Pol_measurements_E1[
-#                                            instrument][point][0],cg.IFM_StDev)
-#            # Polar measurements precisions appended to the measured dictionary
-#            StDev_meas = (StDev_S,StDev_HZ_Z,StDev_HZ_Z)
-#            Pol_measurements_E1[instrument][point] = Pol_measurements_E1[
-#                                                instrument][point] + StDev_meas
-#            # X, Y, Z StDevs calculated and appended to the _cart measured data
-#            StDevXYZ = fc.StDev_XYZ_from_Polar(Pol_measurements_E1[instrument][
-#                                          point],StDev_S,StDev_HZ_Z,StDev_HZ_Z)
-#            Pol_measurements_cart_E1[instrument][point] = \
-#                         Pol_measurements_cart_E1[instrument][point] + StDevXYZ
-#        del point, instrument, StDevXYZ, StDev_HZ_Z, StDev_S, StDev_meas
-
-""" ^^^ AFTER MAKING SURE IT DOES THE SAME, CAN BE DELETED ^^^ """
 
 # =============================================================================
 # EPOCH comparisons, only happens if there are 2 Epochs
@@ -470,4 +431,153 @@ if Two_epochs:
 
 
 
-print('End of MainCode')
+print('End of Original MainCode')
+
+count_IFM_measurements = sum([len(v) for k, v in\
+                                         measured_distances_in_lines.items()])
+count_Pico_measurements = 0
+count_Pol_measurements = (sum([len(v) for k, v in Pol_measurements.items()]))
+                        
+count_all_observations = count_Pico_measurements \
+                         + 3*count_Pol_measurements + count_IFM_measurements
+
+del count_IFM_measurements, count_Pico_measurements
+
+unknowns,count_unknowns, instruments, count_instruments = fc.find_unknowns(
+                                                  Transformed_Pol_measurements)
+Aproximates = fc.merge_measured_coordinates(Transformed_Pol_measurements)
+
+
+# Creating a list of tuple pairs filled with PointIDs of point to point pairs
+# on magnets. This will be used to fill the A matrix with pseudomeasurements
+# instead of constraints.
+Combinations_for_constraints = []
+for magnet in cg.Names_of_magnets:
+    points_on_magnet = [key for key in Aproximates.keys() if magnet in key]
+    magnet_combinations = [(PointA, PointB) for index, PointA in enumerate(
+            points_on_magnet) for PointB in points_on_magnet[index + 1:]]
+    Combinations_for_constraints.extend(magnet_combinations)
+count_constraints = len(Combinations_for_constraints)
+
+X_vector, X_vectorHR = fc.filling_X(
+                      Aproximates, unknowns, count_unknowns, count_instruments)
+
+# filling G matrix
+
+G_matrix = np.zeros([count_unknowns,4])
+
+sumx=0
+sumy=0
+sumz=0
+c=0
+for i,unknown in enumerate(unknowns):
+    if i < (len(unknowns) - 2*count_instruments):
+        sumx += Aproximates[unknown][0]
+        sumy += Aproximates[unknown][1]
+        sumz += Aproximates[unknown][2]
+        c+=1
+meanx = sumx/c
+meany = sumy/c
+meanz = sumz/c
+del c,sumx,sumy,sumz
+
+for i,unknown in enumerate(unknowns):
+    if i < (len(unknowns) - 2*count_instruments):
+        iii = 3*i
+        G_matrix[iii,0]   = 1 
+        G_matrix[iii+1,1] = 1
+        G_matrix[iii+2,2] = 1
+        G_matrix[iii,3] =     (Aproximates[unknown][1] - meany)/10000
+        G_matrix[iii+1,3] = - (Aproximates[unknown][0] - meanx)/10000
+del i, iii, unknown, meany, meanx, meanz
+
+    
+#   __  __         _        
+#  |  \/  |       (_)       
+#  | \  / |  __ _  _  _ __  
+#  | |\/| | / _` || || '_ \ 
+#  | |  | || (_| || || | | |
+#  |_|  |_| \__,_||_||_| |_|
+#                         
+LSM_can_be_done,A_matrix,L_vector,P_matrix,LX0_vector,A_matrixHR,L_vectorHR \
+      = fc.Filling_A_L_P_LX0(Nominal_coords,Aproximates,
+							                 Combinations_for_constraints,
+							                 measured_distances_in_lines,
+							                 sorted_measured_points_in_lines,
+							                 instruments, count_instruments,
+							                 Pol_measurements,unknowns,count_unknowns,
+							                 X_vector, X_vectorHR
+							                 )
+
+threshold = 1e-6 #fraction of basic unit
+metric = threshold + 1
+counter = 0
+
+while (metric > threshold) and (counter <= 16):
+    print('\n Iteration', counter)
+    l = np.ndarray(L_vector.size)
+    for i, lelement in enumerate(L_vector):
+        if L_vectorHR[i][0] == "Hz":
+            l[i] = (a(LX0_vector[i] - L_vector[i],a.T_RAD,True).angle)
+        else:
+            l[i] = LX0_vector[i] - L_vector[i]
+    N = A_matrix.transpose() @ P_matrix @ A_matrix
+    print(np.linalg.det(A_matrix.transpose() @ A_matrix))
+    O = np.zeros([4,4])
+    N_extended = np.block([[N,G_matrix],[np.transpose(G_matrix),O]])
+    print('Rank N_extended:', np.linalg.matrix_rank(N_extended))
+    try:
+        print("Log-Determinant of G-extended N: ", np.linalg.slogdet(N_extended))
+    except:
+        print("Log-Determinant of G-extended N gives overflow ")
+    print("Condition number N: ", np.linalg.cond(N_extended))
+    n = A_matrix.transpose() @ P_matrix @ l
+    N_inv = inv(N_extended)[:-4,:-4]
+    dx = N_inv @ n
+    print('dx',max(abs(dx)), np.argmax(abs(dx)))
+    X_vector += dx
+    v = A_matrix @ dx - l
+    print('v max ', v[np.argmax(abs(v))], np.argmax(abs(v)))
+    print('[vv]  ', sum(v*v))
+    print('[v]  ', sum(v))
+
+    Aproximates = fc.filling_Aproximates(unknowns, X_vector, instruments)
+    LSM_can_be_done,A_matrix,L_vector,P_matrix,LX0_vector,A_matrixHR,L_vectorHR \
+      = fc.Filling_A_L_P_LX0(Nominal_coords,Aproximates,
+							                 Combinations_for_constraints,
+							                 measured_distances_in_lines,
+							                 sorted_measured_points_in_lines,
+							                 instruments, count_instruments,
+							                 Pol_measurements,unknowns,count_unknowns,
+							                 X_vector, X_vectorHR
+							                 )
+    
+    metric = max(abs(dx))
+    counter += 1
+
+Results = open(cg.Res_file_name, "w")
+
+L = ["Results from Epoch" + str(
+		cg.Which_epochs[0]) + " [RHCS]\n", "created:" + str(date_time) 
+		+ "\nUsing source files:\n" + '-' + str(
+				cg.LoS_Measurements_file_name) + '\n', '-' + str(
+				cg.Pol_Measurements_file_name) + '\n', '-' + str(
+				cg.Coords_file_name) + '\n']
+  
+# Writing multiple strings
+# at a time
+Results.writelines(L)
+
+for point in Aproximates:
+    if 'Ori' not in point:
+        s =  '\n' + point + '\t' + str(
+									Aproximates[point][0]) + '\t' + str(
+									-Aproximates[point][1]) + '\t' + str(
+									Aproximates[point][2])
+#        print(s)
+        Results.write(str(s))
+  
+# Closing file
+Results.close()
+
+print('End of appended A_matrix code')

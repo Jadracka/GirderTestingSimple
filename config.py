@@ -17,27 +17,27 @@ Created on Thu Feb 11 10:54:43 2021
 """
 """Data analysis tools"""
 """CAN BE CHANGED"""
-Which_epochs = (0,) #the comma must stay, otherwise the variable will be int
+Which_epochs = (2,) #the comma must stay, otherwise the variable will be int
 Pico_StDev = 0.00000001 #mm, PicoScale Standard Deviation
 IFM_StDev = (0.0004,0.00015) #mm, LT IFM, based on Leica's white paper
 ADM_StDev = 0.010 #mm, from 2-5m based on Leica's typical errors
-Ang_StDev = 0.15
+#Ang_StDev = 0.15
 Hz_StDev = 0.15 #mgon same like Leica TM50
-V_StDev = 0.15 #mgon same like Leica TM50
+V_StDev = 0.17 #mgon same like Leica TM50
 Constraint_StDev = 0.000001 #mm
 Max_diff_from_line = 1.7 #mm - maximum distance from line, report the excess
 Sigma_0 = 1
 Print_FIDs = False
-Line_differences_checking = False
+Line_differences_checking = True
 Names_of_magnets = ['PQK36','PQL6','PQK62']
 
 # Print troubleshooting messages:
 Print_all_troubleshooting = False
-Using_nominal_compare = False
-Print_typos = False #Printing error messages
-Print_2F_checks = True
-Print_real2nominal_checks = False
-Print_epoch_checks = False
+Using_nominal_compare = True
+Print_typos =  True #Printing error messages
+Print_2F_checks = False
+Print_real2nominal_checks = True
+Print_epoch_checks = True
 
 
 Dist_StDev = (IFM_StDev[0]+ADM_StDev,IFM_StDev[1])
@@ -46,23 +46,34 @@ Dist_StDev = (IFM_StDev[0]+ADM_StDev,IFM_StDev[1])
 Standard SA format with spaces as delimiters and no comments:
 Point name 'space' X [mm] 'space' Y [mm] 'space' Z [mm] 
 """
-Coords_file_name = "BestCoords.txt"
+#Coords_file_name = "BestCoords.txt"
 #Coords_file_name = "BetterCoords.txt"
 
 """Measured Lines
 Standard SA format with spaces as delimiters and no comments:
-Group aka Line name 'space' Point name 'space' Sd [mm] 'space' Hz [gon] 'space' V [gon] 
+Group aka Line name 'space' Point name 'space' Hz [gon] 'space' V [gon] 'space' Sd [mm]
 """
-Epochs_dictionary = {'LoS':{},'Pol':{}}
-Epochs_dictionary['LoS'][0] = "LoS_measurements_01Sep21.txt"
-Epochs_dictionary['LoS'][1] = "LoS_measurements_20Sep21.txt"
-Epochs_dictionary['Pol'][0] = "Polar_measurements_01Sep21.txt"
-Epochs_dictionary['Pol'][1] = "Polar_measurements_20Sep21.txt"
+Epochs_dictionary = {'LoS':{},'Pol':{},'Coord':{}}
+Epochs_dictionary['LoS'][-1] = "LoS_measurements_01Sep21.txt"
+Epochs_dictionary['Pol'][-1] = "Polar_measurements_01Sep21.txt"
+Epochs_dictionary['Coord'][-1] = "Point_List_20Sep21.txt"
+Epochs_dictionary['LoS'][0] = "LoS_measurements_20Sep21.txt"
+Epochs_dictionary['Pol'][0] = "Polar_measurements_20Sep21.txt"
+Epochs_dictionary['Coord'][0] = "Point_List_20Sep21.txt"
+Epochs_dictionary['LoS'][1] = "LoS_measurements_22Sep21.txt"
+Epochs_dictionary['Pol'][1] = "Polar_measurements_22Sep21.txt"
+Epochs_dictionary['Coord'][1] = "Point_List_22Sep21.txt"
+Epochs_dictionary['LoS'][2] = "LoS_measurements_29Sep21.txt"
+Epochs_dictionary['Pol'][2] = "Polar_measurements_29Sep21.txt"
+Epochs_dictionary['Coord'][2] = "Point_List_29Sep21.txt"
+
 
 """Which Epochs gonna be used and adding the data into the code"""
 if len(Which_epochs) == 1:
     LoS_Measurements_file_name = Epochs_dictionary['LoS'][Which_epochs[0]]
     Pol_Measurements_file_name = Epochs_dictionary['Pol'][Which_epochs[0]]
+    Coords_file_name = Epochs_dictionary['Coord'][Which_epochs[0]]
+    Res_file_name = 'Results_Epoch_' + str(Which_epochs[0]) + '.txt'
 elif len(Which_epochs) == 2:
     LoS_Measurements_file_name = Epochs_dictionary['LoS'][Which_epochs[0]]
     LoS_Measurements_file_name_1 = Epochs_dictionary['LoS'][Which_epochs[1]]
@@ -74,6 +85,7 @@ elif len(Which_epochs) == 0:
 else:
     print('Too many epochs are chosen, choose just two. Go and correct it in Which_epochs in config.py.')
     
+
 Lines_of_sight = {
 'Hor_Left_Bottom_UP_t': ('PQK62_7','PQK62_1','Girder_5','PQL6_7',
                        'PQL6_1','Girder_13','PQK36_7','PQK36_1'),
