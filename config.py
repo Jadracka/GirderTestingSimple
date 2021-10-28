@@ -17,7 +17,7 @@ Created on Thu Feb 11 10:54:43 2021
 """
 """Data analysis tools"""
 """CAN BE CHANGED"""
-Which_epochs = (1,2) #the comma must stay, otherwise the variable will be int
+Which_epochs = (0,) #the comma must stay, otherwise the variable will be int
 Names_of_magnets = ['PQK36','PQL6','PQK62']
 
 Pico_StDev = 0.00000001 #mm, PicoScale Standard Deviation
@@ -28,7 +28,7 @@ V_StDev = 0.17 #mgon same like Leica TM50
 Constraint_StDev = 0.000001 #mm
 
 Max_diff_from_line = 1.7 #mm - maximum distance from line, report the excess
-LSM_Threshold = 1e-6
+LSM_Threshold = 1e-5
 LSM_Max_iterations = 10
 
 Sigma_0 = 1
@@ -37,23 +37,17 @@ Print_FIDs = False
 
 
 # Print troubleshooting messages:
-Line_differences_checking = True
+Line_differences_checking = False
 Print_all_troubleshooting = False
-Using_nominal_compare = True
-Print_typos =  True #Printing error messages
+Using_nominal_compare = False
+Print_typos =  False #Printing error messages
 Print_2F_checks = False
-Print_real2nominal_checks = True
-Print_epoch_checks = True
+Print_real2nominal_checks = False
+Print_epoch_checks = False
 
 
 Dist_StDev = (IFM_StDev[0]+ADM_StDev,IFM_StDev[1])
 
-"""Nominal CAD coordinates of Fiducials
-Standard SA format with spaces as delimiters and no comments:
-Point name 'space' X [mm] 'space' Y [mm] 'space' Z [mm] 
-"""
-#Coords_file_name = "BestCoords.txt"
-#Coords_file_name = "BetterCoords.txt"
 
 """Measured Lines
 Standard SA format with spaces as delimiters and no comments:
