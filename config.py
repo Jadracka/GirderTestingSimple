@@ -17,21 +17,27 @@ Created on Thu Feb 11 10:54:43 2021
 """
 """Data analysis tools"""
 """CAN BE CHANGED"""
-Which_epochs = (2,) #the comma must stay, otherwise the variable will be int
+Which_epochs = (1,2) #the comma must stay, otherwise the variable will be int
+Names_of_magnets = ['PQK36','PQL6','PQK62']
+
 Pico_StDev = 0.00000001 #mm, PicoScale Standard Deviation
 IFM_StDev = (0.0004,0.00015) #mm, LT IFM, based on Leica's white paper
 ADM_StDev = 0.010 #mm, from 2-5m based on Leica's typical errors
-#Ang_StDev = 0.15
 Hz_StDev = 0.15 #mgon same like Leica TM50
 V_StDev = 0.17 #mgon same like Leica TM50
 Constraint_StDev = 0.000001 #mm
+
 Max_diff_from_line = 1.7 #mm - maximum distance from line, report the excess
+LSM_Threshold = 1e-6
+LSM_Max_iterations = 10
+
 Sigma_0 = 1
+
 Print_FIDs = False
-Line_differences_checking = True
-Names_of_magnets = ['PQK36','PQL6','PQK62']
+
 
 # Print troubleshooting messages:
+Line_differences_checking = True
 Print_all_troubleshooting = False
 Using_nominal_compare = True
 Print_typos =  True #Printing error messages
@@ -79,12 +85,25 @@ elif len(Which_epochs) == 2:
     LoS_Measurements_file_name_1 = Epochs_dictionary['LoS'][Which_epochs[1]]
     Pol_Measurements_file_name = Epochs_dictionary['Pol'][Which_epochs[0]]
     Pol_Measurements_file_name_1 = Epochs_dictionary['Pol'][Which_epochs[1]]
+    Coords_file_name = Epochs_dictionary['Coord'][Which_epochs[0]]
+    Coords_file_name_1 = Epochs_dictionary['Coord'][Which_epochs[1]]
+    Res_file_name = 'Results_Epoch_' + str(Which_epochs[0]) + '.txt'
+    Res_file_name_1 = 'Results_Epoch_' + str(Which_epochs[1]) + '.txt'
 elif len(Which_epochs) == 0:
     print('No epoch(s) were chosen to analyze. Go to config.py and '
           'change it in a variable Which_epochs')
 else:
     print('Too many epochs are chosen, choose just two. Go and correct it in Which_epochs in config.py.')
     
+Common_points = ['Girder_1', 'Girder_2', 'Girder_3', 
+									  'Girder_4', 'Girder_5', 'Girder_6',
+									  'Girder_7', 'Girder_8', 'Girder_9',
+									  'Girder_10', 'Girder_11', 'Girder_12',
+									  'Girder_13', 'Girder_14', 'Girder_15',
+									  'Girder_16', 'Girder_17', 'Girder_18',
+#									  'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',
+#									  'J', 'K', 'M', 'L', 'M'
+									  ]
 
 Lines_of_sight = {
 'Hor_Left_Bottom_UP_t': ('PQK62_7','PQK62_1','Girder_5','PQL6_7',

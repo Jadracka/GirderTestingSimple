@@ -438,10 +438,10 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
                          + 3*count_Pol_measurements + count_IFM_measurements
 
     del count_IFM_measurements, count_Pico_measurements
-    count_constraints = len(Combinations_for_constraints)
+#    count_constraints = len(Combinations_for_constraints)
 	
-    A_matrix = np.zeros([count_all_observations+ count_constraints, count_unknowns])
-                                #                          
+    A_matrix = np.zeros([count_all_observations, count_unknowns])
+                                #   + count_constraints                       
     A_matrixHR = {}
     
     L_vector = np.array([])
@@ -595,40 +595,41 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
     L_vectorHR = L_vectorHR + L_subv_Hz_HR + L_subv_V_HR + L_subv_Sd_HR
     P_vector = np.append(P_vector,[P_subv_Hz,P_subv_V,P_subv_Sd])
 
-    
-    # Filling A and L, and A and L Human Readable with constraint rows
-    
-    L_lenght = len(L_vector)
-    for index, const in enumerate(Combinations_for_constraints):
-        A_row_index = L_lenght + index
-        PointFrom = Combinations_for_constraints[index][0]
-        PointTo = Combinations_for_constraints[index][1]
-        #Probably needs to take the coordinates from somewhere else!
-        dX,dY,dZ = ParD_Sd(Nominal_coords[PointTo],Nominal_coords[PointFrom])
-        Sd = slope_distance(Nominal_coords[PointFrom],Nominal_coords[PointTo])
-        Sd_aprox = slope_distance(Aproximates[PointFrom],Aproximates[PointTo])
-        PointFrom_i = 3*unknowns.index(PointFrom) 
-        PointTo_i = 3*unknowns.index(PointTo)
-        A_matrix[A_row_index,PointTo_i:PointTo_i+3] = dX,dY,dZ
-        # for point "From" the partial derivatives change sign
-        A_matrix[A_row_index,PointFrom_i:PointFrom_i+3] = -dX,-dY,-dZ
-        # Documenting in human readible format what are the A and L elements
-        L_vector = np.append(L_vector,Sd)
-        LX0_vector = np.append(LX0_vector,Sd_aprox)
-        P_vector = np.append(P_vector,pow(cg.Sigma_0,2)/pow(cg.Constraint_StDev,2))
-        L_vectorHR.append(('constraint', PointFrom, PointTo))
-        A_matrixHR[(A_row_index,PointFrom_i)] = ['dX', 'distance constraint', 
-                   PointFrom, PointTo]
-        A_matrixHR[(A_row_index,PointFrom_i+1)] = ['dY', 'distance constraint', 
-                   PointFrom, PointTo]
-        A_matrixHR[(A_row_index,PointFrom_i+2)] = ['dZ', 'distance constraint', 
-                   PointFrom, PointTo]
-        A_matrixHR[(A_row_index,PointTo_i)] = ['dX', 'distance constraint', 
-                   PointTo, PointFrom]
-        A_matrixHR[(A_row_index,PointTo_i+1)] = ['dY', 'distance constraint', 
-                   PointTo, PointFrom]
-        A_matrixHR[(A_row_index,PointTo_i+2)] = ['dZ', 'distance constraint', 
-                   PointTo, PointFrom]
+# =============================================================================    
+# Constraints - filling A, L, LX0, P and HR versions
+# =============================================================================
+
+#    L_lenght = len(L_vector)
+#    for index, const in enumerate(Combinations_for_constraints):
+#        A_row_index = L_lenght + index
+#        PointFrom = Combinations_for_constraints[index][0]
+#        PointTo = Combinations_for_constraints[index][1]
+#        #Probably needs to take the coordinates from somewhere else!
+#        dX,dY,dZ = ParD_Sd(Nominal_coords[PointTo],Nominal_coords[PointFrom])
+#        Sd = slope_distance(Nominal_coords[PointFrom],Nominal_coords[PointTo])
+#        Sd_aprox = slope_distance(Aproximates[PointFrom],Aproximates[PointTo])
+#        PointFrom_i = 3*unknowns.index(PointFrom) 
+#        PointTo_i = 3*unknowns.index(PointTo)
+#        A_matrix[A_row_index,PointTo_i:PointTo_i+3] = dX,dY,dZ
+#        # for point "From" the partial derivatives change sign
+#        A_matrix[A_row_index,PointFrom_i:PointFrom_i+3] = -dX,-dY,-dZ
+#        # Documenting in human readible format what are the A and L elements
+#        L_vector = np.append(L_vector,Sd)
+#        LX0_vector = np.append(LX0_vector,Sd_aprox)
+#        P_vector = np.append(P_vector,pow(cg.Sigma_0,2)/pow(cg.Constraint_StDev,2))
+#        L_vectorHR.append(('constraint', PointFrom, PointTo))
+#        A_matrixHR[(A_row_index,PointFrom_i)] = ['dX', 'distance constraint', 
+#                   PointFrom, PointTo]
+#        A_matrixHR[(A_row_index,PointFrom_i+1)] = ['dY', 'distance constraint', 
+#                   PointFrom, PointTo]
+#        A_matrixHR[(A_row_index,PointFrom_i+2)] = ['dZ', 'distance constraint', 
+#                   PointFrom, PointTo]
+#        A_matrixHR[(A_row_index,PointTo_i)] = ['dX', 'distance constraint', 
+#                   PointTo, PointFrom]
+#        A_matrixHR[(A_row_index,PointTo_i+1)] = ['dY', 'distance constraint', 
+#                   PointTo, PointFrom]
+#        A_matrixHR[(A_row_index,PointTo_i+2)] = ['dZ', 'distance constraint', 
+#                   PointTo, PointFrom]
     
     P_matrix = np.diagflat(P_vector)
         
