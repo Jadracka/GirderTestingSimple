@@ -401,7 +401,6 @@ def filling_X(Aproximates, unknowns, count_unknowns, count_instruments):
     for i, unknown in enumerate(unknowns[:-count_instruments]):
         iii = 3*i
         X[iii:iii+3] = np.array(Aproximates[unknown])
-### Hier muss noch die Berechnung des Abrisses für die O-Unbek rein!        
         # Human readible version of X
         XHR.append(('X ' + unknown))
         XHR.append(('Y ' + unknown))
@@ -468,8 +467,8 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
     del count_IFM_measurements, count_Pico_measurements
     count_constraints = len(Combinations_for_constraints)
 	
-    A_matrix = np.zeros([count_all_observations + count_constraints , count_unknowns])
-                                #                         
+    A_matrix = np.zeros([count_all_observations , count_unknowns])
+                                # + count_constraints          
     A_matrixHR = {}
     
     L_vector = np.array([])
@@ -542,7 +541,7 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
             count += 1
         Aproximates['Ori_' + instrument] = a(ori_sum/count,a.T_GON,True).angle
         X_vector[X_vectorHR.index('Ori_' + instrument)] = a(-ori_sum/\
-																															  count,a.T_GON,True).angle
+				count,a.T_GON,True).angle
         
     counter = 0
     for inst,points in Pol_measurements.items():
@@ -628,37 +627,37 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
  # Constraints - filling A, L, LX0, P and HR versions
  # =============================================================================
 
-    L_lenght = len(L_vector)
-    for index, const in enumerate(Combinations_for_constraints):
-        A_row_index = L_lenght + index
-        PointFrom = Combinations_for_constraints[index][0]
-        PointTo = Combinations_for_constraints[index][1]
-        #Probably needs to take the coordinates from somewhere else!
-        dX,dY,dZ = ParD_Sd(Nominal_coords[PointTo],Nominal_coords[PointFrom])
-        Sd = slope_distance(Nominal_coords[PointFrom],Nominal_coords[PointTo])
-        Sd_aprox = slope_distance(Aproximates[PointFrom],Aproximates[PointTo])
-        PointFrom_i = 3*unknowns.index(PointFrom) 
-        PointTo_i = 3*unknowns.index(PointTo)
-        A_matrix[A_row_index,PointTo_i:PointTo_i+3] = dX,dY,dZ
-        # for point "From" the partial derivatives change sign
-        A_matrix[A_row_index,PointFrom_i:PointFrom_i+3] = -dX,-dY,-dZ
-        # Documenting in human readible format what are the A and L elements
-        L_vector = np.append(L_vector,Sd)
-        LX0_vector = np.append(LX0_vector,Sd_aprox)
-        P_vector = np.append(P_vector,pow(cg.Sigma_0,2)/pow(cg.Constraint_StDev,2))
-        L_vectorHR.append(('constraint', PointFrom, PointTo))
-        A_matrixHR[(A_row_index,PointFrom_i)] = ['dX', 'distance constraint', 
-                   PointFrom, PointTo]
-        A_matrixHR[(A_row_index,PointFrom_i+1)] = ['dY', 'distance constraint', 
-                   PointFrom, PointTo]
-        A_matrixHR[(A_row_index,PointFrom_i+2)] = ['dZ', 'distance constraint', 
-                   PointFrom, PointTo]
-        A_matrixHR[(A_row_index,PointTo_i)] = ['dX', 'distance constraint', 
-                   PointTo, PointFrom]
-        A_matrixHR[(A_row_index,PointTo_i+1)] = ['dY', 'distance constraint', 
-                   PointTo, PointFrom]
-        A_matrixHR[(A_row_index,PointTo_i+2)] = ['dZ', 'distance constraint', 
-                   PointTo, PointFrom]
+#    L_lenght = len(L_vector)
+#    for index, const in enumerate(Combinations_for_constraints):
+#        A_row_index = L_lenght + index
+#        PointFrom = Combinations_for_constraints[index][0]
+#        PointTo = Combinations_for_constraints[index][1]
+#        #Probably needs to take the coordinates from somewhere else!
+#        dX,dY,dZ = ParD_Sd(Nominal_coords[PointTo],Nominal_coords[PointFrom])
+#        Sd = slope_distance(Nominal_coords[PointFrom],Nominal_coords[PointTo])
+#        Sd_aprox = slope_distance(Aproximates[PointFrom],Aproximates[PointTo])
+#        PointFrom_i = 3*unknowns.index(PointFrom) 
+#        PointTo_i = 3*unknowns.index(PointTo)
+#        A_matrix[A_row_index,PointTo_i:PointTo_i+3] = dX,dY,dZ
+#        # for point "From" the partial derivatives change sign
+#        A_matrix[A_row_index,PointFrom_i:PointFrom_i+3] = -dX,-dY,-dZ
+#        # Documenting in human readible format what are the A and L elements
+#        L_vector = np.append(L_vector,Sd)
+#        LX0_vector = np.append(LX0_vector,Sd_aprox)
+#        P_vector = np.append(P_vector,pow(cg.Sigma_0,2)/pow(cg.Constraint_StDev,2))
+#        L_vectorHR.append(('constraint', PointFrom, PointTo))
+#        A_matrixHR[(A_row_index,PointFrom_i)] = ['dX', 'distance constraint', 
+#                   PointFrom, PointTo]
+#        A_matrixHR[(A_row_index,PointFrom_i+1)] = ['dY', 'distance constraint', 
+#                   PointFrom, PointTo]
+#        A_matrixHR[(A_row_index,PointFrom_i+2)] = ['dZ', 'distance constraint', 
+#                   PointFrom, PointTo]
+#        A_matrixHR[(A_row_index,PointTo_i)] = ['dX', 'distance constraint', 
+#                   PointTo, PointFrom]
+#        A_matrixHR[(A_row_index,PointTo_i+1)] = ['dY', 'distance constraint', 
+#                   PointTo, PointFrom]
+#        A_matrixHR[(A_row_index,PointTo_i+2)] = ['dZ', 'distance constraint', 
+#                   PointTo, PointFrom]
     
     P_matrix = np.diagflat(P_vector)
         
@@ -684,7 +683,6 @@ def create_constraints(Aproximates):
     count_constraints = len(Combinations_for_constraints)
     return Combinations_for_constraints, count_constraints
 
-# =============================================================================
 
 def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
 				 sorted_measured_points_in_lines,instruments, count_instruments,
@@ -693,6 +691,7 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
 	
     Combinations_for_constraints,count_constraints =\
 																	create_constraints(Aproximates)
+    count_constraints = 0
     G_matrix = filling_G(count_unknowns, unknowns, 
 									Aproximates,count_instruments)
     X_vector, X_vectorHR = filling_X(Aproximates, unknowns, 
@@ -763,7 +762,6 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
         for i,vi in enumerate(v):
             if Qvv[i,i] < 0:
                 print(i, vi, Qvv[i,i])
-           
         s02_IFM = np.nan
         s02_con = np.nan
         i = count_IFM
@@ -790,4 +788,4 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
         metric = max(abs(dx))
         counter += 1
     del metric, counter, i, p, cc
-    return LSM_results, Qxx, Qvv, s02, dof, w, s02_IFM, s02_Hz, s02_V, s02_Sd, s02_con
+    return LSM_results, Qxx, Qvv, s02, dof, w, s02_IFM, s02_Hz, s02_V, s02_Sd, s02_con, L_vectorHR

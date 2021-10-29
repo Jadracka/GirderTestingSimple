@@ -461,8 +461,8 @@ Aproximates = fc.merge_measured_coordinates(Transformed_Pol_measurements)
 # =============================================================================
 # Least Square Method for pre-transport epoch
 # =============================================================================
-Results, Cov_matrix, Qvv, sO2, dof, w, s02_IFM, s02_Hz, s02_V, s02_Sd, \
-						s02_con = fc.LSM(Epoch_num, 
+Results, Cov_matrix, Qvv, s02, dof, w, s02_IFM, s02_Hz, s02_V, s02_Sd, \
+						s02_con, L_vectorHR = fc.LSM(Epoch_num, 
 										Nominal_coords, Aproximates,
 									   measured_distances_in_lines,				
 									   sorted_measured_points_in_lines,
@@ -527,8 +527,8 @@ if Two_epochs:
 # =============================================================================
 # Least Square Method for post-transport epoch
 # =============================================================================
-    Results_E1, Cov_matrix_E1, Qvv_E1, sO2_E1, dof_E1, w_E1, s02_IFM_E1,\
-	s02_Hz_E1, s02_V_E1, s02_Sd_E1, s02_con_E1 = fc.LSM(Epoch_num1, 
+    Results_E1, Cov_matrix_E1, Qvv_E1, s02_E1, dof_E1, w_E1, s02_IFM_E1,\
+	s02_Hz_E1, s02_V_E1, s02_Sd_E1, s02_con_E1, L_vectorHR_E1 = fc.LSM(Epoch_num1, 
 										Nominal_coords_E1, Aproximates_E1, 
 										measured_distances_in_lines_E1,				
 									   sorted_measured_points_in_lines_E1,
