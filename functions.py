@@ -102,10 +102,10 @@ def Measurements_read_in(Meas_filename):
         if words[0] not in Measurements.keys():
             Measurements[words[0]] = {}
             Measurements[words[0]][words[1]] =                         \
-              (float(words[4]), float(words[2]), float(words[3]))
+              (float(words[4])/1000, float(words[2]), float(words[3]))
         else: 
             Measurements[words[0]][words[1]] =                         \
-              (float(words[4]), float(words[2]), float(words[3]))
+              (float(words[4])/1000, float(words[2]), float(words[3]))
     del words, row
     Meas_file.close()
     return Measurements
@@ -127,29 +127,30 @@ def Polar_2F_meas_read_in(Meas_filename,
         - Ignores point notes at the end.
         - It can handle multiple occurences of delimeters but not a
           combination of them.
-        - handles possible 2 face measurements and their statistics"""
+        - handles possible 2 face measurements and their statistics
+        - outputs distances in meters"""
         words = re.split(';+|,+|\t+| +', row.strip())
         if words[0] not in Measurements.keys():
             Measurements[words[0]] = {}
             Measurements[words[0]][words[1]] =                         \
-                (float(words[4]), float(words[2]), float(words[3]), '1F')
+                (float(words[4])/1000, float(words[2]), float(words[3]), '1F')
             Diffs[words[0]] = {'Hz': (), 'V': (), 'Sd': ()}
         else:
             if words[1] not in Measurements[words[0]].keys():
                 Measurements[words[0]][words[1]] =                         \
-                (float(words[4]), float(words[2]), float(words[3]), '1F')
+                (float(words[4])/1000, float(words[2]), float(words[3]), '1F')
             else:
                 Meas1 = Measurements[words[0]][words[1]][:3]
-                Meas2 = (float(words[4]), float(words[2]), float(words[3]))
+                Meas2 = (float(words[4])/1000, float(words[2]), float(words[3]))
                 # checking difference of distance measurements for both faces
                 new_Sd = (Meas1[0] + Meas2[0])/2
-                max_diff_Sd = m.sqrt(2) * StDev_sys_ppm(new_Sd, Sd_StDev)
+                max_diff_Sd = (m.sqrt(2) * StDev_sys_ppm(new_Sd, Sd_StDev))/1000
                 diff_Sd = Meas2[0] - Meas1[0]
                 Diffs[words[0]]['Sd'] = Diffs[words[0]]['Sd'] + (diff_Sd/2,)
                 if (diff_Sd > max_diff_Sd) and cg.Print_2F_checks:
                     print("Point: %s, measured by %s fails 2Face check in "
-                          "distance. Maximum difference is %1.4f mm and "
-                          "measured difference is %1.4f mm.\n"
+                          "distance. Maximum difference is %1.4f m and "
+                          "measured difference is %1.4f m.\n"
                           % (words[1], words[0], max_diff_Sd, diff_Sd))
                 # assigning face one and face two:
                 if Meas2[2] >= 200 and Meas1[2] < 200:
@@ -212,8 +213,8 @@ def Polar_2F_meas_read_in(Meas_filename,
         for point in Measurements[instrument]:
             if '1F' in Measurements[instrument][point]:
                 # Calculating StDevs for 1F Measurements
-                Sd_StDev_p = m.sqrt(2) * (StDev_sys_ppm(
-                                Measurements[instrument][point][0],Sd_StDev))
+                Sd_StDev_p = (m.sqrt(2) * (StDev_sys_ppm(
+                                Measurements[instrument][point][0],Sd_StDev)))/1000
                 """ tuple(map(sum, zip(a,b)) returns a tuple with element-wise
                 addition.
                 Here adding median corrections to the original measured values,
@@ -236,9 +237,9 @@ def Coords_read_in(Coords_file_name):
            It can handle multiple occurences of delimeters,
            but not a combination of them."""
         words = re.split(';+|,+|\t+| +',line.strip())
-        Coords[words[0]] = (float(words[1]), 
-                                    -float(words[2]), 
-                                    float(words[3]))
+        Coords[words[0]] = (float(words[1])/1000, 
+                            -float(words[2])/1000, 
+                            float(words[3])/1000)
         del line, words
     Coords_file.close()
     return Coords
@@ -254,39 +255,39 @@ def Helmert_calc_for_PolMeas(From,To):
         Transformed_From[instrument][instrument] = (tuple(x[:3]))
     return Transformed_From
 
-def StDev_XYZ_from_Polar(Point, StDev_S, StDev_Hz, StDev_Z):
-    '''takes in Point measured in Polar coordinates and outputs tuple of 
-    standard deviations for the XYZ components using config.py's values for 
-    standard deviations of the measurements.'''
-    S = Point[0]/1000
-    Hz = Point[1]
-    Z = Point[2]
-    StDev_X = m.sqrt(m.pow(StDev_S,2) * m.pow(cosg(Hz) * sing(Z),2)\
-              + m.pow(StDev_Hz,2) * m.pow(-S * sing(Hz) * sing(Z),2)\
-              + m.pow(StDev_Z,2) * m.pow(S * cosg(Hz) * cosg(Z),2))
-    StDev_Y = m.sqrt(m.pow(StDev_S,2) * m.pow(sing(Hz) * sing(Z),2)\
-              + m.pow(StDev_Hz,2) * m.pow(S * cosg(Hz) * sing(Z),2)\
-              + m.pow(StDev_Z,2) * m.pow(S * sing(Hz) * cosg(Z),2))
-    StDev_Zz = m.sqrt(m.pow(StDev_S,2) * m.pow(cosg(Z),2)\
-              + m.pow(StDev_Z,2) * m.pow(-S * sing(Z),2))
-    return (StDev_X,StDev_Y,StDev_Zz)
+#def StDev_XYZ_from_Polar(Point, StDev_S, StDev_Hz, StDev_Z):
+#    '''takes in Point measured in Polar coordinates and outputs tuple of 
+#    standard deviations for the XYZ components using config.py's values for 
+#    standard deviations of the measurements.'''
+#    S = Point[0]/1000
+#    Hz = Point[1]
+#    Z = Point[2]
+#    StDev_X = m.sqrt(m.pow(StDev_S,2) * m.pow(cosg(Hz) * sing(Z),2)\
+#              + m.pow(StDev_Hz,2) * m.pow(-S * sing(Hz) * sing(Z),2)\
+#              + m.pow(StDev_Z,2) * m.pow(S * cosg(Hz) * cosg(Z),2))
+#    StDev_Y = m.sqrt(m.pow(StDev_S,2) * m.pow(sing(Hz) * sing(Z),2)\
+#              + m.pow(StDev_Hz,2) * m.pow(S * cosg(Hz) * sing(Z),2)\
+#              + m.pow(StDev_Z,2) * m.pow(S * sing(Hz) * cosg(Z),2))
+#    StDev_Zz = m.sqrt(m.pow(StDev_S,2) * m.pow(cosg(Z),2)\
+#              + m.pow(StDev_Z,2) * m.pow(-S * sing(Z),2))
+#    return (StDev_X,StDev_Y,StDev_Zz)
 
-def StDev_distance(Point_From, Point_To, StDevXYZ_From, StDevXYZ_To):
-    Sd = slope_distance(Point_From, Point_To)
-    StDev_S = m.sqrt(m.pow(StDevXYZ_From[0],2) * m.pow((Point_To[0] \
-                                                    - Point_From[0])/Sd,2)
-                 + m.pow(StDevXYZ_To[0],2) * m.pow((Point_To[0] \
-                                                    - Point_From[0])/-Sd,2)
-                 + m.pow(StDevXYZ_From[1],2) * m.pow((Point_To[1] \
-                                                    - Point_From[1])/Sd,2)
-                 + m.pow(StDevXYZ_To[1],2) * m.pow((Point_To[1] \
-                                                    - Point_From[1])/-Sd,2)
-                 + m.pow(StDevXYZ_From[2],2) * m.pow((Point_To[2] \
-                                                    - Point_From[2])/Sd,2)
-                 + m.pow(StDevXYZ_To[2],2) * m.pow((Point_To[2] \
-                                                    - Point_From[2])/-Sd,2)
-        )
-    return StDev_S
+#def StDev_distance(Point_From, Point_To, StDevXYZ_From, StDevXYZ_To):
+#    Sd = slope_distance(Point_From, Point_To)
+#    StDev_S = m.sqrt(m.pow(StDevXYZ_From[0],2) * m.pow((Point_To[0] \
+#                                                    - Point_From[0])/Sd,2)
+#                 + m.pow(StDevXYZ_To[0],2) * m.pow((Point_To[0] \
+#                                                    - Point_From[0])/-Sd,2)
+#                 + m.pow(StDevXYZ_From[1],2) * m.pow((Point_To[1] \
+#                                                    - Point_From[1])/Sd,2)
+#                 + m.pow(StDevXYZ_To[1],2) * m.pow((Point_To[1] \
+#                                                    - Point_From[1])/-Sd,2)
+#                 + m.pow(StDevXYZ_From[2],2) * m.pow((Point_To[2] \
+#                                                    - Point_From[2])/Sd,2)
+#                 + m.pow(StDevXYZ_To[2],2) * m.pow((Point_To[2] \
+#                                                    - Point_From[2])/-Sd,2)
+#        )
+#    return StDev_S
 
 def ParD_Hz(PointTo, PointFrom):
     # This function returns derivatives of the horizontal angle with respect to
@@ -434,8 +435,8 @@ def filling_G(number_of_unknowns, unknowns, Aproximates,
             G_matrix[iii,0]   = 1
             G_matrix[iii+1,1] = 1
             G_matrix[iii+2,2] = 1
-            G_matrix[iii,3] =     (Aproximates[unknown][1] - meany)/10000
-            G_matrix[iii+1,3] = - (Aproximates[unknown][0] - meanx)/10000
+            G_matrix[iii,3] =     (Aproximates[unknown][1] - meany)/100
+            G_matrix[iii+1,3] = - (Aproximates[unknown][0] - meanx)/100
     del i, iii, unknown, meany, meanx, meanz
     return G_matrix
 
@@ -488,7 +489,7 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
             # correct corresponding row in First plan matrix A
             L_i = len(L_vector)
             L_vector = np.append(L_vector, distance)
-            StDev = StDev_sys_ppm(distance,cg.IFM_StDev)
+            StDev = (StDev_sys_ppm(distance,cg.IFM_StDev))/1000
             P_vector = np.append(P_vector,pow(cg.Sigma_0,2) / pow(StDev,2))
             """Now figuring the index of points in the unknowns list, so I know
                which column of the A matrix. The original index is multiplied 
@@ -761,7 +762,8 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
         w = []
         for i,vi in enumerate(v):
             if Qvv[i,i] < 0:
-                print(i, vi, Qvv[i,i])
+#                print(i, vi, Qvv[i,i])
+                pass
         s02_IFM = np.nan
         s02_con = np.nan
         i = count_IFM
@@ -788,4 +790,4 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
         metric = max(abs(dx))
         counter += 1
     del metric, counter, i, p, cc
-    return LSM_results, Qxx, Qvv, s02, dof, w, s02_IFM, s02_Hz, s02_V, s02_Sd, s02_con, L_vectorHR
+    return P_matrix, LSM_results, Qxx, Qvv, s02, dof, w, s02_IFM, s02_Hz, s02_V, s02_Sd, s02_con, L_vectorHR

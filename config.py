@@ -19,21 +19,21 @@ import math as m
 """
 """Data analysis tools"""
 """CAN BE CHANGED"""
-Which_epochs = (1,1) #the comma must stay, otherwise the variable will be int
+Which_epochs = (1,2) #the comma must stay, otherwise the variable will be int
 Names_of_magnets = ['PQK36','PQL6','PQK62']
 
 Pico_StDev = 0.00000001 #mm, PicoScale Standard Deviation
-IFM_StDev = (0.0004 * m.sqrt(25),0.00015 * m.sqrt(25)) #mm, LT IFM, based on Leica's white paper
+IFM_StDev = (0.0004 * m.sqrt(1),0.00015 * m.sqrt(1)) #mm, LT IFM, based on Leica's white paper
 ADM_StDev = 0.010 * m.sqrt(1) #mm, from 2-5m based on Leica's typical errors
-Hz_StDev = 0.15 * m.sqrt(18) #mgon same like Leica TM50
-V_StDev = 0.17 * m.sqrt(140)#mgon same like Leica TM50
+Hz_StDev = 0.15 * m.sqrt(1) #mgon same like Leica TM50
+V_StDev = 0.17 * m.sqrt(1)#mgon same like Leica TM50
 Constraint_StDev = 0.000001 #mm
 
 Max_diff_from_line = 1.7 #mm - maximum distance from line, report the excess
-LSM_Threshold = 1e-5
+LSM_Threshold = 1e-7
 LSM_Max_iterations = 10
 
-Sigma_0 = 1
+Sigma_0 = 0.000001
 
 Print_FIDs = False
 

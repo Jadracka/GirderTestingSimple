@@ -404,7 +404,7 @@ StDevs_IFM_measurements = {}
 for line in measured_distances_in_lines:
     stdev_distance = ()
     for distance in measured_distances_in_lines[line]:
-        std = fc.StDev_sys_ppm(distance,cg.IFM_StDev)
+        std = (fc.StDev_sys_ppm(distance,cg.IFM_StDev))/1000
         stdev_distance = stdev_distance + (std,)
     StDevs_IFM_measurements[line] = stdev_distance
     del line, stdev_distance, std, distance
@@ -414,7 +414,7 @@ if Two_epochs:
     for line in measured_distances_in_lines_E1:
         stdev_distance = ()
         for distance in measured_distances_in_lines_E1[line]:
-            std = fc.StDev_sys_ppm(distance,cg.IFM_StDev)
+            std = (fc.StDev_sys_ppm(distance,cg.IFM_StDev))/1000
             stdev_distance = stdev_distance + (std,)
         StDevs_IFM_measurements_E1[line] = stdev_distance
     del line, stdev_distance, std, distance
@@ -459,7 +459,7 @@ Aproximates = fc.merge_measured_coordinates(Transformed_Pol_measurements)
 # =============================================================================
 # Least Square Method for pre-transport epoch
 # =============================================================================
-Results, Cov_matrix, Qvv, s02, dof, w, s02_IFM, s02_Hz, s02_V, s02_Sd, \
+P_matrix, Results, Cov_matrix, Qvv, s02, dof, w, s02_IFM, s02_Hz, s02_V, s02_Sd, \
 						s02_con, L_vectorHR = fc.LSM(Epoch_num, 
 										Nominal_coords, Aproximates,
 									   measured_distances_in_lines,				
@@ -525,7 +525,7 @@ if Two_epochs:
 # =============================================================================
 # Least Square Method for post-transport epoch
 # =============================================================================
-    Results_E1, Cov_matrix_E1, Qvv_E1, s02_E1, dof_E1, w_E1, s02_IFM_E1,\
+    P_matrix_E1,Results_E1, Cov_matrix_E1, Qvv_E1, s02_E1, dof_E1, w_E1, s02_IFM_E1,\
 	s02_Hz_E1, s02_V_E1, s02_Sd_E1, s02_con_E1, L_vectorHR_E1 = fc.LSM(Epoch_num1, 
 										Nominal_coords_E1, Aproximates_E1, 
 										measured_distances_in_lines_E1,				
@@ -622,7 +622,7 @@ if Two_epochs:
 	Movements = {}
 	for point in Res_set.intersection(Res_E1_set):
 		diffs = tuple(np.array(Results[point][:3]) - np.array(Transformed_Results_E1[point][:3]))
-		mag = round(fc.slope_distance(Results[point], Transformed_Results_E1[point]),5)
+		mag = round(fc.slope_distance(Results[point], Transformed_Results_E1[point]),10)
 		result = diffs + (mag,)
 		# delta X, Y, Z and magnitude:
 		Movements[point] = result
