@@ -13,8 +13,6 @@ import numpy as np
 import math as m
 import config as cg
 import functions as fc
-from numpy.linalg import inv
-from angle import Angle as a
 import Helmert3Dtransform as ht
 
 from datetime import datetime as dt
@@ -490,7 +488,7 @@ for point in Aproximates:
     if 'Ori' not in point:
         fill =  '\n' + point + '\t' + str(
                                     Aproximates[point][0]) + '\t' + str(
-                                    -Aproximates[point][1]) + '\t' + str(
+                                   -Aproximates[point][1]) + '\t' + str(
                                     Aproximates[point][2])
 
         Results_file.write(str(fill))
@@ -623,9 +621,8 @@ if Two_epochs:
 	Res_E1_set = set(Transformed_Results_E1)
 	Movements = {}
 	for point in Res_set.intersection(Res_E1_set):
-		diffs = tuple(np.array(Results[point][:3]) - \
-					np.array(Transformed_Results_E1[point][:3]))
-		mag = fc.slope_distance(Results[point], Transformed_Results_E1[point])
+		diffs = tuple(np.array(Results[point][:3]) - np.array(Transformed_Results_E1[point][:3]))
+		mag = round(fc.slope_distance(Results[point], Transformed_Results_E1[point]),5)
 		result = diffs + (mag,)
 		# delta X, Y, Z and magnitude:
 		Movements[point] = result

@@ -19,7 +19,7 @@ import math as m
 """
 """Data analysis tools"""
 """CAN BE CHANGED"""
-Which_epochs = (1,2) #the comma must stay, otherwise the variable will be int
+Which_epochs = (1,1) #the comma must stay, otherwise the variable will be int
 Names_of_magnets = ['PQK36','PQL6','PQK62']
 
 Pico_StDev = 0.00000001 #mm, PicoScale Standard Deviation
