@@ -6,6 +6,7 @@ Created on Tue Sep 14 09:45:14 2021
 """
 
 import math as m
+import numpy
 
 class Angle():
     T_RAD=0
@@ -28,7 +29,7 @@ class Angle():
     a_symmetric=False
     
     def __init__(self, angle=0, type=T_RAD, symmetric=False, minimum=0, maximum=m.tau):
-        if not isinstance(angle, (float,int)):
+        if not isinstance(angle, (float,numpy.longdouble,int)):
             raise TypeError("Type of angle has to be float or int")
         if not isinstance(symmetric, (bool)):
             raise TypeError("Type of symmetric has to be Boolean")

@@ -30,7 +30,7 @@ V_StDev = 0.17 * m.sqrt(1)#mgon same like Leica TM50
 Constraint_StDev = 0.000001 #mm
 
 Max_diff_from_line = 1.7 #mm - maximum distance from line, report the excess
-LSM_Threshold = 1e-7
+LSM_Threshold = 1e-6
 LSM_Max_iterations = 10
 
 Sigma_0 = 0.000001

@@ -7,6 +7,8 @@ Created on Thu Feb 11 12:53:33 2021
 import math as m
 from numpy import pi
 import numpy as np
+import scipy as sp
+from scipy import linalg
 from numpy.linalg import inv
 import re
 import Helmert3Dtransform as helmt
@@ -37,7 +39,7 @@ def horizontal_distance(Point_From,Point_To):
     return hd
 
 def gon2rad(gons):
-    """Function takes an angle in gons, transforms to a float and converts
+    """Function takes an angle in gons, transforms to a longdouble and converts
        to radians"""
     rads = float(gons)*pi/200
     return rads
@@ -540,9 +542,9 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
 														  Aproximates[instrument]),a.T_RAD)
             ori_sum += ori_local
             count += 1
-        Aproximates['Ori_' + instrument] = a(ori_sum/count,a.T_GON,True).angle
+        Aproximates['Ori_' + instrument] = a(ori_sum/count,a.T_GON,False).angle
         X_vector[X_vectorHR.index('Ori_' + instrument)] = a(-ori_sum/\
-				count,a.T_GON,True).angle
+				count,a.T_GON,False).angle
         
     counter = 0
     for inst,points in Pol_measurements.items():
@@ -723,7 +725,7 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
                 l[i] = LX0_vector[i] - L_vector[i]
         del lelement, i
         N = A_matrix.transpose() @ P_matrix @ A_matrix
-        print(np.linalg.det(A_matrix.transpose() @ A_matrix))
+        print("Determinant: ",linalg.det(A_matrix.transpose() @ A_matrix))
         O = np.zeros([4,4])
         N_extended = np.block([[N,G_matrix],[np.transpose(G_matrix),O]])
         print('Rank N_extended:', np.linalg.matrix_rank(N_extended))
@@ -743,27 +745,38 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
         print('[vv]  ', sum(v*v))
         print('[v]  ', sum(v))
 
-        Aproximates = filling_Aproximates(unknowns, X_vector, instruments)
-        LSM_can_be_done,A_matrix,L_vector,P_matrix,LX0_vector,A_matrixHR, \
-        L_vectorHR = Filling_A_L_P_LX0(Nominal_coords,Aproximates,
-                                      Combinations_for_constraints,
-                                      measured_distances_in_lines,
-                                      sorted_measured_points_in_lines,
-                                      instruments, count_instruments,
-                                      Pol_measurements,unknowns,count_unknowns,
-                                      X_vector, X_vectorHR
-                                      )
-        P_inv = inv(P_matrix)
-        Qvv = P_inv - A_matrix @ N_inv @ A_matrix.transpose()
+#        Aproximates = filling_Aproximates(unknowns, X_vector, instruments)
+#        LSM_can_be_done,A_matrix,L_vector,P_matrix,LX0_vector,A_matrixHR, \
+#        L_vectorHR = Filling_A_L_P_LX0(Nominal_coords,Aproximates,
+#                                      Combinations_for_constraints,
+#                                      measured_distances_in_lines,
+#                                      sorted_measured_points_in_lines,
+#                                      instruments, count_instruments,
+#                                      Pol_measurements,unknowns,count_unknowns,
+#                                      X_vector, X_vectorHR
+#                                      )
+#        P_inv = inv(P_matrix)
+        Qllest = A_matrix @ N_inv @ A_matrix.transpose()
+#        Qvv = P_inv - Qllest
+        Qvv = Q_matrix - Qllest
+#        Qvv = P_inv - A_matrix @ N_inv @ A_matrix.transpose()
         dof = int(round(np.trace(Qvv@P_matrix)))
+        print("dof from Qvv: ",dof)
         s02 = (v @ P_matrix @ v)/dof
         LSM_results = Aproximates.copy()
         Qxx = s02 * N_inv
         w = []
+        vcount=0
         for i,vi in enumerate(v):
             if Qvv[i,i] < 0:
-#                print(i, vi, Qvv[i,i])
-                pass
+                vcount += 1
+#                print(f"{i}, vi {vi:8.2}, Qll {Q_matrix[i,i]:7.2}, Ql^l^ {Qllest[i][i]:8.2}, {Qvv[i,i]:8.2}, {L_vectorHR[i]}")
+#                pass
+            else:
+                if (vi/(m.sqrt(s02*Qvv[i,i]))>4):
+                    print(f"{vi/(m.sqrt(s02*Qvv[i,i])):16.12}, {L_vectorHR[i]}")
+
+        print("n/o diag elem <0: ",vcount)
         s02_IFM = np.nan
         s02_con = np.nan
         i = count_IFM
@@ -789,5 +802,24 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
 										round(np.trace(Qvv[-cc:,-cc:] @ P_matrix[-cc:,-cc:]))
         metric = max(abs(dx))
         counter += 1
+
+        Aproximates = filling_Aproximates(unknowns, X_vector, instruments)
+        LSM_can_be_done,A_matrix,L_vector,P_matrix,Q_matrix,LX0_vector,A_matrixHR, \
+        L_vectorHR = Filling_A_L_P_LX0(Nominal_coords,Aproximates,
+                                      Combinations_for_constraints,
+                                      measured_distances_in_lines,
+                                      sorted_measured_points_in_lines,
+                                      instruments, count_instruments,
+                                      Pol_measurements,unknowns,count_unknowns,
+                                      X_vector, X_vectorHR
+                                      )
+
+
+
+    print (f"s02    {s02:8.3}")
+    print (f"s02ifm {s02_IFM:8.3}")
+    print (f"s02Hz  {s02_Hz:8.3}")
+    print (f"s02V   {s02_V:8.3}")
+    print (f"s02Sd  {s02_Sd:8.3}")
     del metric, counter, i, p, cc
     return P_matrix, LSM_results, Qxx, Qvv, s02, dof, w, s02_IFM, s02_Hz, s02_V, s02_Sd, s02_con, L_vectorHR
