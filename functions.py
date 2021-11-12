@@ -253,6 +253,7 @@ def Helmert_calc_for_PolMeas(From,To):
     Transformed_From = {}
     for instrument in From:
         x = helmt.Helmert_transform(From[instrument],To)
+        print(x)
         Transformed_From[instrument] = helmt.Transformation(x,From[instrument])
         Transformed_From[instrument][instrument] = (tuple(x[:3]))
     return Transformed_From
@@ -470,16 +471,17 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
     del count_IFM_measurements, count_Pico_measurements
     count_constraints = len(Combinations_for_constraints)
 	
-    A_matrix = np.zeros([count_all_observations , count_unknowns])
-                                # + count_constraints          
+    A_matrix = np.zeros([count_all_observations+ count_constraints , count_unknowns], dtype=float)
+                                #           
     A_matrixHR = {}
     
-    L_vector = np.array([])
-    LX0_vector = np.array([])
+    L_vector = np.array([], dtype=float)
+    LX0_vector = np.array([], dtype=float)
     
     L_vectorHR = []
     
-    P_vector = np.array([])
+    P_vector = np.array([],dtype=float)
+    Q_vector = np.array([],dtype=float)
     
     # Filling A and L with IFM measurements
     for line in measured_distances_in_lines:
@@ -493,6 +495,7 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
             L_vector = np.append(L_vector, distance)
             StDev = (StDev_sys_ppm(distance,cg.IFM_StDev))/1000
             P_vector = np.append(P_vector,pow(cg.Sigma_0,2) / pow(StDev,2))
+            Q_vector = np.append(Q_vector,1/pow(cg.Sigma_0,2) * pow(StDev,2))
             """Now figuring the index of points in the unknowns list, so I know
                which column of the A matrix. The original index is multiplied 
                by 3 because unknowns are names of points (and instrument 
@@ -528,11 +531,16 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
     P_subv_Hz = np.array([])
     P_subv_V = np.array([])
     P_subv_Sd = np.array([])
+
+    Q_subv_Hz = np.array([])
+    Q_subv_V = np.array([])
+    Q_subv_Sd = np.array([])
     
     LX0_subv_Hz = np.array([])
     LX0_subv_V = np.array([])
     LX0_subv_Sd = np.array([])
 
+    # Estimate orientation unknowns
     for instrument in instruments:
         ori_sum = 0
         count = 0
@@ -563,6 +571,8 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
             L_subv_Hz = np.append(L_subv_Hz, a(Hz,a.T_GON,True).angle)
             P_subv_Hz = np.append(P_subv_Hz, pow(cg.Sigma_0,2) / pow(gon2rad(
                                                              StDev_Hz/1000),2))
+            Q_subv_Hz = np.append(Q_subv_Hz, 1/pow(cg.Sigma_0,2) * pow(gon2rad(
+                                                             StDev_Hz/1000),2))
             Hz_angle_from_aprox = a(horizontal_angle_from_Coords(
                                     Aproximates[point],Aproximates[inst]) - \
                                     X_vector[Ori_inst_i],a.T_RAD,True).angle
@@ -571,12 +581,16 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
             L_subv_V = np.append(L_subv_V, a(V,a.T_GON,True).angle)
             P_subv_V = np.append(P_subv_V, pow(cg.Sigma_0,2) / pow(
                                                   gon2rad(StDev_V/1000),2))
+            Q_subv_V = np.append(Q_subv_V, 1/pow(cg.Sigma_0,2) * pow(
+                                                  gon2rad(StDev_V/1000),2))
             LX0_subv_V = np.append(LX0_subv_V, vertical_angle_from_Coords(
                                         Aproximates[point],Aproximates[inst]))
             
             L_subv_Sd = np.append(L_subv_Sd, Sd)
             P_subv_Sd = np.append(P_subv_Sd, pow(cg.Sigma_0,2) / pow(
-																												StDev_Sd,2))
+																StDev_Sd,2))
+            Q_subv_Sd = np.append(Q_subv_Sd, 1/pow(cg.Sigma_0,2) * pow(
+																StDev_Sd,2))
             LX0_subv_Sd = np.append(LX0_subv_Sd, slope_distance(
                                          Aproximates[point],Aproximates[inst]))
             
@@ -625,44 +639,46 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
     LX0_vector = np.append(LX0_vector,[LX0_subv_Hz,LX0_subv_V,LX0_subv_Sd])
     L_vectorHR = L_vectorHR + L_subv_Hz_HR + L_subv_V_HR + L_subv_Sd_HR
     P_vector = np.append(P_vector,[P_subv_Hz,P_subv_V,P_subv_Sd])
+    Q_vector = np.append(Q_vector,[Q_subv_Hz,Q_subv_V,Q_subv_Sd])
 
  # =============================================================================    
  # Constraints - filling A, L, LX0, P and HR versions
  # =============================================================================
 
-#    L_lenght = len(L_vector)
-#    for index, const in enumerate(Combinations_for_constraints):
-#        A_row_index = L_lenght + index
-#        PointFrom = Combinations_for_constraints[index][0]
-#        PointTo = Combinations_for_constraints[index][1]
-#        #Probably needs to take the coordinates from somewhere else!
-#        dX,dY,dZ = ParD_Sd(Nominal_coords[PointTo],Nominal_coords[PointFrom])
-#        Sd = slope_distance(Nominal_coords[PointFrom],Nominal_coords[PointTo])
-#        Sd_aprox = slope_distance(Aproximates[PointFrom],Aproximates[PointTo])
-#        PointFrom_i = 3*unknowns.index(PointFrom) 
-#        PointTo_i = 3*unknowns.index(PointTo)
-#        A_matrix[A_row_index,PointTo_i:PointTo_i+3] = dX,dY,dZ
-#        # for point "From" the partial derivatives change sign
-#        A_matrix[A_row_index,PointFrom_i:PointFrom_i+3] = -dX,-dY,-dZ
-#        # Documenting in human readible format what are the A and L elements
-#        L_vector = np.append(L_vector,Sd)
-#        LX0_vector = np.append(LX0_vector,Sd_aprox)
-#        P_vector = np.append(P_vector,pow(cg.Sigma_0,2)/pow(cg.Constraint_StDev,2))
-#        L_vectorHR.append(('constraint', PointFrom, PointTo))
-#        A_matrixHR[(A_row_index,PointFrom_i)] = ['dX', 'distance constraint', 
-#                   PointFrom, PointTo]
-#        A_matrixHR[(A_row_index,PointFrom_i+1)] = ['dY', 'distance constraint', 
-#                   PointFrom, PointTo]
-#        A_matrixHR[(A_row_index,PointFrom_i+2)] = ['dZ', 'distance constraint', 
-#                   PointFrom, PointTo]
-#        A_matrixHR[(A_row_index,PointTo_i)] = ['dX', 'distance constraint', 
-#                   PointTo, PointFrom]
-#        A_matrixHR[(A_row_index,PointTo_i+1)] = ['dY', 'distance constraint', 
-#                   PointTo, PointFrom]
-#        A_matrixHR[(A_row_index,PointTo_i+2)] = ['dZ', 'distance constraint', 
-#                   PointTo, PointFrom]
+    L_lenght = len(L_vector)
+    for index, const in enumerate(Combinations_for_constraints):
+        A_row_index = L_lenght + index
+        PointFrom = Combinations_for_constraints[index][0]
+        PointTo = Combinations_for_constraints[index][1]
+        #Probably needs to take the coordinates from somewhere else!
+        dX,dY,dZ = ParD_Sd(Nominal_coords[PointTo],Nominal_coords[PointFrom])
+        Sd = slope_distance(Nominal_coords[PointFrom],Nominal_coords[PointTo])
+        Sd_aprox = slope_distance(Aproximates[PointFrom],Aproximates[PointTo])
+        PointFrom_i = 3*unknowns.index(PointFrom) 
+        PointTo_i = 3*unknowns.index(PointTo)
+        A_matrix[A_row_index,PointTo_i:PointTo_i+3] = dX,dY,dZ
+        # for point "From" the partial derivatives change sign
+        A_matrix[A_row_index,PointFrom_i:PointFrom_i+3] = -dX,-dY,-dZ
+        # Documenting in human readible format what are the A and L elements
+        L_vector = np.append(L_vector,Sd)
+        LX0_vector = np.append(LX0_vector,Sd_aprox)
+        P_vector = np.append(P_vector,pow(cg.Sigma_0,2)/pow(cg.Constraint_StDev,2))
+        L_vectorHR.append(('constraint', PointFrom, PointTo))
+        A_matrixHR[(A_row_index,PointFrom_i)] = ['dX', 'distance constraint', 
+                   PointFrom, PointTo]
+        A_matrixHR[(A_row_index,PointFrom_i+1)] = ['dY', 'distance constraint', 
+                   PointFrom, PointTo]
+        A_matrixHR[(A_row_index,PointFrom_i+2)] = ['dZ', 'distance constraint', 
+                   PointFrom, PointTo]
+        A_matrixHR[(A_row_index,PointTo_i)] = ['dX', 'distance constraint', 
+                   PointTo, PointFrom]
+        A_matrixHR[(A_row_index,PointTo_i+1)] = ['dY', 'distance constraint', 
+                   PointTo, PointFrom]
+        A_matrixHR[(A_row_index,PointTo_i+2)] = ['dZ', 'distance constraint', 
+                   PointTo, PointFrom]
     
     P_matrix = np.diagflat(P_vector)
+    Q_matrix = np.diagflat(Q_vector)
         
     LSM_can_be_done = (len(P_vector) ==  len(L_vector)) and (
                     len(L_vector) == A_matrix.shape[0]) and (
@@ -673,7 +689,7 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
     if len(X_vector) != A_matrix.shape[1]:
         print("Error during filling A, X, sizes don't match.")
         LSM_can_be_done = False
-    return LSM_can_be_done,A_matrix,L_vector,P_matrix,\
+    return LSM_can_be_done,A_matrix,L_vector,P_matrix,Q_matrix,\
            LX0_vector,A_matrixHR,L_vectorHR
 		   
 def create_constraints(Aproximates):
@@ -694,13 +710,13 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
 	
     Combinations_for_constraints,count_constraints =\
 																	create_constraints(Aproximates)
-    count_constraints = 0
+
     G_matrix = filling_G(count_unknowns, unknowns, 
 									Aproximates,count_instruments)
     X_vector, X_vectorHR = filling_X(Aproximates, unknowns, 
 														   count_unknowns, count_instruments)
 	
-    LSM_can_be_done,A_matrix,L_vector,P_matrix,LX0_vector,A_matrixHR,L_vectorHR \
+    LSM_can_be_done,A_matrix,L_vector,P_matrix,Q_matrix,LX0_vector,A_matrixHR,L_vectorHR \
       = Filling_A_L_P_LX0(Nominal_coords,Aproximates,
                              Combinations_for_constraints,
                              measured_distances_in_lines,
@@ -736,7 +752,7 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
             print("Log-Determinant of G-extended N gives overflow ")
         print("Condition number N: ", np.linalg.cond(N_extended))
         n = A_matrix.transpose() @ P_matrix @ l
-        N_inv = inv(N_extended)[:-4,:-4]
+        N_inv = np.linalg.inv(N_extended)[:-4,:-4]
         dx = N_inv @ n
         print('dx',max(abs(dx)), np.argmax(abs(dx)))
         X_vector += dx
@@ -755,11 +771,11 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
 #                                      Pol_measurements,unknowns,count_unknowns,
 #                                      X_vector, X_vectorHR
 #                                      )
-#        P_inv = inv(P_matrix)
-        Qllest = A_matrix @ N_inv @ A_matrix.transpose()
+        P_inv = inv(P_matrix)
+#        Qllest = A_matrix @ N_inv @ A_matrix.transpose()
 #        Qvv = P_inv - Qllest
-        Qvv = Q_matrix - Qllest
-#        Qvv = P_inv - A_matrix @ N_inv @ A_matrix.transpose()
+#        Qvv = Q_matrix - Qllest
+        Qvv = P_inv - A_matrix @ N_inv @ A_matrix.transpose()
         dof = int(round(np.trace(Qvv@P_matrix)))
         print("dof from Qvv: ",dof)
         s02 = (v @ P_matrix @ v)/dof
@@ -778,27 +794,27 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
 
         print("n/o diag elem <0: ",vcount)
         s02_IFM = np.nan
-        s02_con = np.nan
+#        s02_con = np.nan
         i = count_IFM
         p = count_Pol_measurements
         cc = count_constraints
         if count_IFM > 0:
-            s02_IFM = (v[0:i-1] @ P_matrix[0:i-1,0:i-1] @ v[0:i-1])/\
+            s02_IFM = pow(cg.Sigma_0,-2)*(v[0:i-1] @ P_matrix[0:i-1,0:i-1] @ v[0:i-1])/\
 										round(np.trace(Qvv[0:i-1,0:i-1] @ P_matrix[0:i-1,0:i-1]))
 										
-        s02_Hz = (v[i:i+p-1] @ P_matrix[i:i+p-1,i:i+p-1] @ v[i:i+p-1])/\
-								round(np.trace(Qvv[i:i+p-1,i:i+p-1] @ P_matrix[i:i+p-1,i:i+p-1]))
+        s02_Hz = pow(cg.Sigma_0,-2)*(v[i:i+p-1] @ P_matrix[i:i+p-1,i:i+p-1] @ v[i:i+p-1])/ \
+                  round(np.trace(Qvv[i:i+p-1,i:i+p-1] @ P_matrix[i:i+p-1,i:i+p-1]))
 								
-        s02_V = (v[i+p:i+2*p-1] @ P_matrix[i+p:i+2*p-1,i+p:i+2*p-1] @ v[i+p:i+2*p-1])/\
-							round(np.trace(Qvv[i+p:i+2*p-1,i+p:i+2*p-1] @ P_matrix[
-																								i+p:i+2*p-1,i+p:i+2*p-1]))
+        s02_V = pow(cg.Sigma_0,-2)*(v[i+p:i+2*p-1] @ P_matrix[i+p:i+2*p-1,i+p:i+2*p-1] @ v[i+p:i+2*p-1])/\
+				 round(np.trace(Qvv[i+p:i+2*p-1,i+p:i+2*p-1] @ P_matrix[
+																	i+p:i+2*p-1,i+p:i+2*p-1]))
 			
-        s02_Sd = (v[i+2*p:i+3*p-1] @ P_matrix[i+2*p:i+3*p-1,i+2*p:i+3*p-1] @ \
+        s02_Sd = pow(cg.Sigma_0,-2)*(v[i+2*p:i+3*p-1] @ P_matrix[i+2*p:i+3*p-1,i+2*p:i+3*p-1] @ \
 									   v[i+2*p:i+3*p-1]) / round(np.trace(Qvv[
 											   i+2*p:i+3*p-1,i+2*p:i+3*p-1]\
 									   @ P_matrix[i+2*p:i+3*p-1,i+2*p:i+3*p-1]))
         if count_constraints > 0:
-            s02_con = (v[-cc:] @ P_matrix[-cc:,-cc:] @ v[-cc:])/\
+            s02_con = pow(cg.Sigma_0,-2)*(v[-cc:] @ P_matrix[-cc:,-cc:] @ v[-cc:])/\
 										round(np.trace(Qvv[-cc:,-cc:] @ P_matrix[-cc:,-cc:]))
         metric = max(abs(dx))
         counter += 1
@@ -816,7 +832,9 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
 
 
 
-    print (f"s02    {s02:8.3}")
+#    print (f"s02    {s02:8.3}")
+    print (f"s0     {m.sqrt(s02):8.3}")
+    print (f"sig0   {cg.Sigma_0:8.3}")
     print (f"s02ifm {s02_IFM:8.3}")
     print (f"s02Hz  {s02_Hz:8.3}")
     print (f"s02V   {s02_V:8.3}")

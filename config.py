@@ -19,14 +19,33 @@ import math as m
 """
 """Data analysis tools"""
 """CAN BE CHANGED"""
-Which_epochs = (1,2) #the comma must stay, otherwise the variable will be int
+Which_epochs = (0,2) #the comma must stay, otherwise the variable will be int
 Names_of_magnets = ['PQK36','PQL6','PQK62']
 
+#Epoch 0
+#Pico_StDev = 0.00000001 #mm, PicoScale Standard Deviation
+#IFM_StDev = (0.0004 * 5.75, 0.00015 * 5.75) #mm, LT IFM, based on Leica's white paper
+#ADM_StDev = 0.010 * 0.90 #mm, from 2-5m based on Leica's typical errors
+#Hz_StDev = 0.15 * 3.95 #mgon same like Leica TM50
+#V_StDev = 0.17 * 12.66 #mgon same like Leica TM50
+#Constraint_StDev = 0.000001 #mm
+
+
+#Epoch 1
+#Pico_StDev = 0.00000001 #mm, PicoScale Standard Deviation
+#IFM_StDev = (0.0004 * 6.32,0.00015 * 6.32) #mm, LT IFM, based on Leica's white paper
+#ADM_StDev = 0.010 * 0.90 #mm, from 2-5m based on Leica's typical errors
+#Hz_StDev = 0.15 * 8.90 #mgon same like Leica TM50
+#V_StDev = 0.17 * 48.8 #mgon same like Leica TM50
+#Constraint_StDev = 0.000001 #mm
+
+
+#Epoch 2
 Pico_StDev = 0.00000001 #mm, PicoScale Standard Deviation
-IFM_StDev = (0.0004 * m.sqrt(1),0.00015 * m.sqrt(1)) #mm, LT IFM, based on Leica's white paper
-ADM_StDev = 0.010 * m.sqrt(1) #mm, from 2-5m based on Leica's typical errors
-Hz_StDev = 0.15 * m.sqrt(1) #mgon same like Leica TM50
-V_StDev = 0.17 * m.sqrt(1)#mgon same like Leica TM50
+IFM_StDev = (0.0004 * 5.52,0.00015 * 5.52) #mm, LT IFM, based on Leica's white paper
+ADM_StDev = 0.010 * 1.33 #mm, from 2-5m based on Leica's typical errors
+Hz_StDev = 0.15 * 8.9 #mgon same like Leica TM50
+V_StDev = 0.17 * 37 #mgon same like Leica TM50
 Constraint_StDev = 0.000001 #mm
 
 Max_diff_from_line = 1.7 #mm - maximum distance from line, report the excess
@@ -91,12 +110,13 @@ elif len(Which_epochs) == 0:
 else:
     print('Too many epochs are chosen, choose just two. Go and correct it in Which_epochs in config.py.')
     
-Common_points = ['Girder_1', 'Girder_2', 'Girder_3', 
+Common_points = [#
+									  'Girder_1', 'Girder_2', 'Girder_3', 
 									  'Girder_4', 'Girder_5', 'Girder_6',
-									  'Girder_7', 'Girder_8', 'Girder_9',
-									  'Girder_10', 'Girder_11', 'Girder_12',
-									  'Girder_13', 'Girder_14', 'Girder_15',
-									  'Girder_16', 'Girder_17', 'Girder_18',
+#									  'Girder_7', 'Girder_8', 'Girder_9',
+#									  'Girder_10', 'Girder_11', 'Girder_12',
+#									  'Girder_13', 'Girder_14', 'Girder_15',
+#									  'Girder_16', 'Girder_17', 'Girder_18',
 #									  'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',
 #									  'J', 'K', 'M', 'L', 'M'
 									  ]

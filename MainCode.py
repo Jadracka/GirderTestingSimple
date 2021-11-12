@@ -199,9 +199,9 @@ else:
 # Checking the distance from line for LT-IFM measurements
 for line in LoS_measurements:
     average_Hz = sum(v[1] for v in LoS_measurements[line].values()) /\
-                float(len(LoS_measurements[line]))
+                np.longdouble(len(LoS_measurements[line]))
     average_V = sum(v[2] for v in LoS_measurements[line].values()) /\
-                float(len(LoS_measurements[line]))
+                np.longdouble(len(LoS_measurements[line]))
     counter = 0
     for point in LoS_measurements[line]:
         Hz_diff = fc.gon2rad(average_Hz - LoS_measurements[line][point][1])\
@@ -372,9 +372,9 @@ if Two_epochs:
 if Two_epochs:
     for line in LoS_measurements_E1:
         average_Hz = sum(v[1] for v in LoS_measurements_E1[line].values()) /\
-                    float(len(LoS_measurements_E1[line]))
+                    np.longdouble(len(LoS_measurements_E1[line]))
         average_V = sum(v[2] for v in LoS_measurements_E1[line].values()) /\
-                    float(len(LoS_measurements_E1[line]))
+                    np.longdouble(len(LoS_measurements_E1[line]))
         counter = 0
         for point in LoS_measurements_E1[line]:
             Hz_diff = fc.gon2rad(average_Hz - LoS_measurements_E1[line][
@@ -459,8 +459,8 @@ Aproximates = fc.merge_measured_coordinates(Transformed_Pol_measurements)
 # =============================================================================
 # Least Square Method for pre-transport epoch
 # =============================================================================
-P_matrix, Results, Cov_matrix, Qvv, s02, dof, w, s02_IFM, s02_Hz, s02_V, s02_Sd, \
-						s02_con, L_vectorHR = fc.LSM(Epoch_num, 
+P_matrix, Results, Cov_matrix, Qvv, s02, dof, w, s02_IFM, s02_Hz, s02_V,  \
+s02_Sd, s02_con, L_vectorHR = fc.LSM(Epoch_num, 
 										Nominal_coords, Aproximates,
 									   measured_distances_in_lines,				
 									   sorted_measured_points_in_lines,
@@ -628,6 +628,6 @@ if Two_epochs:
 		Movements[point] = result
 	del point, diffs, mag, result
 
-		
+
 
 print('End of MainCode')
