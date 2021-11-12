@@ -43,9 +43,9 @@ if Two_epochs:
                                                cg.LoS_Measurements_file_name_1)
     Pol_measurements_E1 = fc.Polar_2F_meas_read_in(
                                              cg.Pol_Measurements_file_name_1,
-                                             Sd_StDev = cg.Dist_StDev,
-                                             Hz_StDev = cg.Hz_StDev,
-                                             V_StDev = cg.V_StDev)
+                                             Sd_StDev = cg.Dist_StDev_E1,
+                                             Hz_StDev = cg.Hz_StDev_E1,
+                                             V_StDev = cg.V_StDev_E1)
     Nominal_coords_E1 = fc.Coords_read_in(cg.Coords_file_name_1)
 
 
@@ -414,7 +414,7 @@ if Two_epochs:
     for line in measured_distances_in_lines_E1:
         stdev_distance = ()
         for distance in measured_distances_in_lines_E1[line]:
-            std = (fc.StDev_sys_ppm(distance,cg.IFM_StDev))/1000
+            std = (fc.StDev_sys_ppm(distance,cg.IFM_StDev_E1))/1000
             stdev_distance = stdev_distance + (std,)
         StDevs_IFM_measurements_E1[line] = stdev_distance
     del line, stdev_distance, std, distance
@@ -467,7 +467,7 @@ s02_Sd, s02_con, L_vectorHR = fc.LSM(Epoch_num,
 									   instruments, count_instruments,
 									   Pol_measurements,count_Pol_measurements,
 									   count_IFM_measurements,
-									   unknowns,count_unknowns)
+									   unknowns,count_unknowns, cg.IFM_StDev)
 
 # =============================================================================
 # LSM - results writing into file - pre-transport Epoch
@@ -534,7 +534,7 @@ if Two_epochs:
 									   Pol_measurements_E1,
 									   count_Pol_measurements_E1,
 									   count_IFM_measurements_E1,
-									   unknowns_E1, count_unknowns_E1) 
+									   unknowns_E1, count_unknowns_E1, cg.IFM_StDev_E1) 
 
 # =============================================================================
 # LSM - results writing into file - post-transport Epoch

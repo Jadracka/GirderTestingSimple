@@ -22,37 +22,42 @@ import math as m
 Which_epochs = (0,2) #the comma must stay, otherwise the variable will be int
 Names_of_magnets = ['PQK36','PQL6','PQK62']
 
-#Epoch 0
-#Pico_StDev = 0.00000001 #mm, PicoScale Standard Deviation
-#IFM_StDev = (0.0004 * 5.75, 0.00015 * 5.75) #mm, LT IFM, based on Leica's white paper
-#ADM_StDev = 0.010 * 0.90 #mm, from 2-5m based on Leica's typical errors
-#Hz_StDev = 0.15 * 3.95 #mgon same like Leica TM50
-#V_StDev = 0.17 * 12.66 #mgon same like Leica TM50
-#Constraint_StDev = 0.000001 #mm
+Pico_StDev_basic = 0.00000001 #mm, PicoScale Standard Deviation
+IFM_StDev_basic = (0.0004,0.00015) #mm, LT IFM, based on Leica's white paper
+ADM_StDev_basic = 0.010 #mm, from 2-5m based on Leica's typical errors
+Hz_StDev_basic = 0.15 #mgon same like Leica TM50
+V_StDev_basic = 0.15 #mgon same like Leica TM50
+Constraint_StDev_basic = 0.000001 #mm
 
-
-#Epoch 1
-#Pico_StDev = 0.00000001 #mm, PicoScale Standard Deviation
-#IFM_StDev = (0.0004 * 6.32,0.00015 * 6.32) #mm, LT IFM, based on Leica's white paper
-#ADM_StDev = 0.010 * 0.90 #mm, from 2-5m based on Leica's typical errors
-#Hz_StDev = 0.15 * 8.90 #mgon same like Leica TM50
-#V_StDev = 0.17 * 48.8 #mgon same like Leica TM50
-#Constraint_StDev = 0.000001 #mm
-
-
-#Epoch 2
-Pico_StDev = 0.00000001 #mm, PicoScale Standard Deviation
-IFM_StDev = (0.0004 * 5.52,0.00015 * 5.52) #mm, LT IFM, based on Leica's white paper
-ADM_StDev = 0.010 * 1.33 #mm, from 2-5m based on Leica's typical errors
-Hz_StDev = 0.15 * 8.9 #mgon same like Leica TM50
-V_StDev = 0.17 * 37 #mgon same like Leica TM50
-Constraint_StDev = 0.000001 #mm
 
 Max_diff_from_line = 1.7 #mm - maximum distance from line, report the excess
 LSM_Threshold = 1e-6
 LSM_Max_iterations = 10
 
 Sigma_0 = 0.000001
+
+# Epoch specific factors
+Epoch_factors = {0:{}, 1:{}, 2:{}}
+Epoch_factors[0]['Pico'] = 1
+Epoch_factors[0]['IFM'] = 5.75
+Epoch_factors[0]['ADM'] = 0.90
+Epoch_factors[0]['Hz'] = 3.95
+Epoch_factors[0]['V'] = 12.66
+Epoch_factors[0]['Con'] = 1
+
+Epoch_factors[1]['Pico'] = 1
+Epoch_factors[1]['IFM'] = 6.32
+Epoch_factors[1]['ADM'] = 0.90
+Epoch_factors[1]['Hz'] = 8.90
+Epoch_factors[1]['V'] = 48.8
+Epoch_factors[1]['Con'] = 1
+
+Epoch_factors[2]['Pico'] = 1
+Epoch_factors[2]['IFM'] = 5.52
+Epoch_factors[2]['ADM'] = 1.33
+Epoch_factors[2]['Hz'] = 8.9
+Epoch_factors[2]['V'] = 37
+Epoch_factors[2]['Con'] = 1
 
 Print_FIDs = False
 
@@ -65,9 +70,6 @@ Print_typos =  False #Printing error messages
 Print_2F_checks = False
 Print_real2nominal_checks = False
 Print_epoch_checks = False
-
-
-Dist_StDev = (IFM_StDev[0]+ADM_StDev,IFM_StDev[1])
 
 
 """Measured Lines
@@ -95,6 +97,15 @@ if len(Which_epochs) == 1:
     Pol_Measurements_file_name = Epochs_dictionary['Pol'][Which_epochs[0]]
     Coords_file_name = Epochs_dictionary['Coord'][Which_epochs[0]]
     Res_file_name = 'Results_Epoch_' + str(Which_epochs[0]) + '.txt'
+    Pico_StDev = Pico_StDev_basic * Epoch_factors[Which_epochs[0]]['Pico']
+    IFM_StDev = (IFM_StDev_basic[0] * Epoch_factors[Which_epochs[0]]['IFM'],
+                 IFM_StDev_basic[1] * Epoch_factors[Which_epochs[0]]['IFM'])
+    ADM_StDev = ADM_StDev_basic * Epoch_factors[Which_epochs[0]]['ADM']
+    Hz_StDev = Hz_StDev_basic * Epoch_factors[Which_epochs[0]]['Hz']
+    V_StDev = V_StDev_basic * Epoch_factors[Which_epochs[0]]['V']
+    Constraint_StDev = Constraint_StDev_basic * Epoch_factors[
+                                                    Which_epochs[0]]['Con']
+    Dist_StDev = (IFM_StDev[0]+ADM_StDev,IFM_StDev[1])
 elif len(Which_epochs) == 2:
     LoS_Measurements_file_name = Epochs_dictionary['LoS'][Which_epochs[0]]
     LoS_Measurements_file_name_1 = Epochs_dictionary['LoS'][Which_epochs[1]]
@@ -104,19 +115,41 @@ elif len(Which_epochs) == 2:
     Coords_file_name_1 = Epochs_dictionary['Coord'][Which_epochs[1]]
     Res_file_name = 'Results_Epoch_' + str(Which_epochs[0]) + '.txt'
     Res_file_name_1 = 'Results_Epoch_' + str(Which_epochs[1]) + '.txt'
+    Pico_StDev = Pico_StDev_basic * Epoch_factors[Which_epochs[0]]['Pico']
+    IFM_StDev = (IFM_StDev_basic[0] * Epoch_factors[Which_epochs[0]]['IFM'],
+                 IFM_StDev_basic[1] * Epoch_factors[Which_epochs[0]]['IFM'])
+    ADM_StDev = ADM_StDev_basic * Epoch_factors[Which_epochs[0]]['ADM']
+    Hz_StDev = Hz_StDev_basic * Epoch_factors[Which_epochs[0]]['Hz']
+    V_StDev = V_StDev_basic * Epoch_factors[Which_epochs[0]]['V']
+    Constraint_StDev = Constraint_StDev_basic * Epoch_factors[
+                                                    Which_epochs[0]]['Con']
+    Dist_StDev = (IFM_StDev[0]+ADM_StDev,IFM_StDev[1])
+    
+    Pico_StDev_E1 = Pico_StDev_basic * Epoch_factors[Which_epochs[1]]['Pico']
+    IFM_StDev_E1 = (IFM_StDev_basic[0] * Epoch_factors[Which_epochs[1]]['IFM'],
+                 IFM_StDev_basic[1] * Epoch_factors[Which_epochs[1]]['IFM'])
+    ADM_StDev_E1 = ADM_StDev_basic * Epoch_factors[Which_epochs[1]]['ADM']
+    Hz_StDev_E1 = Hz_StDev_basic * Epoch_factors[Which_epochs[1]]['Hz']
+    V_StDev_E1 = V_StDev_basic * Epoch_factors[Which_epochs[1]]['V']
+    Constraint_StDev_E1 = Constraint_StDev_basic * Epoch_factors[
+                                                    Which_epochs[1]]['Con']
+    Dist_StDev_E1 = (IFM_StDev_E1[0]+ADM_StDev_E1,IFM_StDev_E1[1])
 elif len(Which_epochs) == 0:
     print('No epoch(s) were chosen to analyze. Go to config.py and '
           'change it in a variable Which_epochs')
 else:
     print('Too many epochs are chosen, choose just two. Go and correct it in Which_epochs in config.py.')
-    
+
+
+
+
 Common_points = [#
 									  'Girder_1', 'Girder_2', 'Girder_3', 
 									  'Girder_4', 'Girder_5', 'Girder_6',
-#									  'Girder_7', 'Girder_8', 'Girder_9',
-#									  'Girder_10', 'Girder_11', 'Girder_12',
-#									  'Girder_13', 'Girder_14', 'Girder_15',
-#									  'Girder_16', 'Girder_17', 'Girder_18',
+									  'Girder_7', 'Girder_8', 'Girder_9',
+									  'Girder_10', 'Girder_11', 'Girder_12',
+									  'Girder_13', 'Girder_14', 'Girder_15',
+									  'Girder_16', 'Girder_17', 'Girder_18',
 #									  'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',
 #									  'J', 'K', 'M', 'L', 'M'
 									  ]

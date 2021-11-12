@@ -459,7 +459,7 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
                       sorted_measured_points_in_lines,
                       instruments, count_instruments,
                       Pol_measurements,unknowns,count_unknowns,
-                      X_vector, X_vectorHR
+                      X_vector, X_vectorHR, IFM_StDev
                       ):
     count_IFM_measurements = sum([len(v) for k, v in\
                                          measured_distances_in_lines.items()])
@@ -493,7 +493,7 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
             # correct corresponding row in First plan matrix A
             L_i = len(L_vector)
             L_vector = np.append(L_vector, distance)
-            StDev = (StDev_sys_ppm(distance,cg.IFM_StDev))/1000
+            StDev = (StDev_sys_ppm(distance,IFM_StDev))/1000
             P_vector = np.append(P_vector,pow(cg.Sigma_0,2) / pow(StDev,2))
             Q_vector = np.append(Q_vector,1/pow(cg.Sigma_0,2) * pow(StDev,2))
             """Now figuring the index of points in the unknowns list, so I know
@@ -706,7 +706,7 @@ def create_constraints(Aproximates):
 def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
 				 sorted_measured_points_in_lines,instruments, count_instruments,
 				 Pol_measurements,count_Pol_measurements, count_IFM,
-				 unknowns, count_unknowns):
+				 unknowns, count_unknowns, IFM_StDev):
 	
     Combinations_for_constraints,count_constraints =\
 																	create_constraints(Aproximates)
@@ -724,7 +724,7 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
                              instruments, count_instruments,
                              Pol_measurements,
                              unknowns,count_unknowns,
-                             X_vector, X_vectorHR
+                             X_vector, X_vectorHR, IFM_StDev
                              )
 
 
@@ -827,7 +827,7 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
                                       sorted_measured_points_in_lines,
                                       instruments, count_instruments,
                                       Pol_measurements,unknowns,count_unknowns,
-                                      X_vector, X_vectorHR
+                                      X_vector, X_vectorHR, IFM_StDev
                                       )
 
 
