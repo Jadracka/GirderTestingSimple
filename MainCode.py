@@ -28,6 +28,8 @@ if len(cg.Which_epochs)>1:
 else:
     Two_epochs = False
 
+# Developing the 6DoF version of the analysis
+
 # =============================================================================
 # Loading measurement files and Coordinates, if two epochs are set, files load
 # for them as well.
