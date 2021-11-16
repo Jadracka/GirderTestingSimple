@@ -70,14 +70,17 @@ def atan2g(dx,dy):
     result = rad2gon(m.atan2(dy,dx))
     return result
 
+def StDev_sys_ppm(Value,StDev_tuple):
+    return float(StDev_tuple[0] + Value * StDev_tuple[1]/1000)
+
 def polar2cart3Dgon(Point):
     return (
-         Point[0] * sing(Point[2]) * cosg(Point[1]),
-         Point[0] * sing(Point[2]) * sing(Point[1]),
-         Point[0] * cosg(Point[2])
+         Point['Sd'] * sing(Point['V']) * cosg(Point['Hz']),
+         Point['Sd'] * sing(Point['V']) * sing(Point['Hz']),
+         Point['Sd'] * cosg(Point['V'])
     )
 
-def cart2polal3Dgon(Point):
+def cart2polar3Dgon(Point):
     return (
          m.sqrt(m.pow(Point[0],2) + m.pow(Point[1],2) + m.pow(Point[2],2)),
          atan2g(m.sqrt(m.pow(Point[0],2) + m.pow(Point[1],2)),Point[2]),
@@ -134,31 +137,32 @@ def Polar_2F_meas_read_in(Meas_filename,
         words = re.split(';+|,+|\t+| +', row.strip())
         if words[0] not in Measurements.keys():
             Measurements[words[0]] = {}
-            Measurements[words[0]][words[1]] =                         \
-                (float(words[4])/1000, float(words[2]), float(words[3]), '1F')
+            Measurements[words[0]][words[1]] = {'Sd': float(words[4])/1000, 
+                        'Hz': float(words[2]), 'V': float(words[3]), 'Face':1}
             Diffs[words[0]] = {'Hz': (), 'V': (), 'Sd': ()}
         else:
             if words[1] not in Measurements[words[0]].keys():
-                Measurements[words[0]][words[1]] =                         \
-                (float(words[4])/1000, float(words[2]), float(words[3]), '1F')
+                Measurements[words[0]][words[1]] = {'Sd':float(words[4])/1000, 
+                 'Hz': float(words[2]), 'V': float(words[3]), 'Face':1}
             else:
-                Meas1 = Measurements[words[0]][words[1]][:3]
-                Meas2 = (float(words[4])/1000, float(words[2]), float(words[3]))
+                Meas1 = Measurements[words[0]][words[1]]
+                Meas2 = {'Sd':float(words[4])/1000, 'Hz': float(words[2]), 
+                         'V':float(words[3])}
                 # checking difference of distance measurements for both faces
-                new_Sd = (Meas1[0] + Meas2[0])/2
+                new_Sd = (Meas1['Sd'] + Meas2['Sd'])/2
                 max_diff_Sd = (m.sqrt(2) * StDev_sys_ppm(new_Sd, Sd_StDev))/1000
-                diff_Sd = Meas2[0] - Meas1[0]
+                diff_Sd = Meas2['Sd'] - Meas1['Sd']
                 Diffs[words[0]]['Sd'] = Diffs[words[0]]['Sd'] + (diff_Sd/2,)
-                if (diff_Sd > max_diff_Sd) and cg.Print_2F_checks:
+                if (abs(diff_Sd) > max_diff_Sd) and cg.Print_2F_checks:
                     print("Point: %s, measured by %s fails 2Face check in "
                           "distance. Maximum difference is %1.4f m and "
                           "measured difference is %1.4f m.\n"
-                          % (words[1], words[0], max_diff_Sd, diff_Sd))
+                          % (words[1], words[0], max_diff_Sd, abs(diff_Sd)))
                 # assigning face one and face two:
-                if Meas2[2] >= 200 and Meas1[2] < 200:
+                if Meas2['V'] >= 200 and Meas1['V'] < 200:
                     Face1 = Meas1
                     Face2 = Meas2
-                elif Meas1[2] >= 200 and Meas2[2] < 200:
+                elif Meas1['V'] >= 200 and Meas2['V'] < 200:
                     Face1 = Meas2
                     Face2 = Meas1
                 else:
@@ -166,20 +170,20 @@ def Polar_2F_meas_read_in(Meas_filename,
                           "vertical angles don't make sense for point %s "
                           "measured by %s.\n" % (words[1], words[0]))
                 # averaging V 1,2
-                index_err = -(Face1[2] + Face2[2] - 400)/2
+                index_err = -(Face1['V'] + Face2['V'] - 400)/2
                 Diffs[words[0]]['V'] = Diffs[words[0]]['V'] + (index_err,)
                 if (abs(index_err) > max_index_err) and cg.Print_2F_checks:
                     print("Index error is higher than expected. Point %s, meas"
                           "ured by %s has an index error of %1.4f, and maximum"
                           " error is %1.4f.\n"
                           % (words[1], words[0], index_err, max_index_err))
-                new_V = Face1[2] + index_err
+                new_V = Face1['V'] + index_err
                 # averaging Hz
-                if Face1[1] > 200:
+                if Face1['Hz'] > 200:
                     # for angles above 200g is better to switch to -200,200,
                     # so there is no 400 overflow problem:
-                    Face2Hz = Face2[1] + 200
-                    conv_Face1 = Face1[1] - 400
+                    Face2Hz = Face2['Hz'] + 200
+                    conv_Face1 = Face1['Hz'] - 400
                     conv_Face2 = Face2Hz - 400
                     diff_Hz = conv_Face2 - conv_Face1
                     Diffs[words[0]]['Hz'] = Diffs[words[0]]['Hz'] + (diff_Hz/2,)
@@ -191,9 +195,9 @@ def Polar_2F_meas_read_in(Meas_filename,
                     new_Hz = ((conv_Face1 + conv_Face2)/2) + 400
                 else:
                     # Otherwise just simple averaging is ok:
-                    Face2Hz = Face2[1] - 200
-                    new_Hz = (Face1[1] + Face2Hz)/2
-                    diff_Hz = Face2Hz - Face1[1]
+                    Face2Hz = Face2['Hz'] - 200
+                    new_Hz = (Face1['Hz'] + Face2Hz)/2
+                    diff_Hz = Face2Hz - Face1['Hz']
                     Diffs[words[0]]['Hz'] = Diffs[words[0]]['Hz'] + (diff_Hz/2,)
                     if (abs(diff_Hz) > max_diff_Hz) and cg.Print_2F_checks:
                         print("Two face difference in Hz angle is higher than "
@@ -202,35 +206,67 @@ def Polar_2F_meas_read_in(Meas_filename,
                               "is %1.4f.\n"
                               % (words[1], words[0], index_err, max_index_err))
 # Now updating the original dictionary entry with averaged values:
-                Measurements[words[0]].update({words[1]: (new_Sd, new_Hz,
-                            new_V, max_diff_Sd/m.sqrt(2), Hz_StDev, V_StDev)})
+                Measurements[words[0]].update({words[1]: {'Sd': new_Sd, 
+                            'Hz': new_Hz, 'V': new_V, 'Face':2,
+                            'StDev_Sd': max_diff_Sd/m.sqrt(2), 
+                            'StDev_Hz': Hz_StDev, 'StDev_V': V_StDev}})
     for instrument in Measurements:
         if len(Diffs[instrument]['Sd']) > 0 and len(
             Diffs[instrument]['Hz']) > 0 and len(Diffs[instrument]['V']) > 0:
 			
-            Diffs[instrument]['Corr_median'] = (np.median(Diffs[instrument]['Sd']),
-            np.median(Diffs[instrument]['Hz']), np.median(Diffs[instrument]['V']))
+            Diffs[instrument]['Corr_median'] = {
+                    'Med_Sd': np.median(Diffs[instrument]['Sd']),
+                    'Med_Hz': np.median(Diffs[instrument]['Hz']), 
+                    'Med_V': np.median(Diffs[instrument]['V'])}
         else:
-            Diffs[instrument]['Corr_median'] = (0,0,0)
+            Diffs[instrument]['Corr_median'] = {'Med_Sd': 0,'Med_Hz': 0, 
+                                                'Med_V': 0}
         for point in Measurements[instrument]:
-            if '1F' in Measurements[instrument][point]:
+            if Measurements[instrument][point]['Face'] == 1:
                 # Calculating StDevs for 1F Measurements
                 Sd_StDev_p = (m.sqrt(2) * (StDev_sys_ppm(
-                                Measurements[instrument][point][0],Sd_StDev)))/1000
+                        Measurements[instrument][point]['Sd'],Sd_StDev)))/1000
                 """ tuple(map(sum, zip(a,b)) returns a tuple with element-wise
                 addition.
                 Here adding median corrections to the original measured values,
                 for only 1F measured """
-                Measurements[instrument].update({point: tuple(map(sum,
-                    zip(Measurements[instrument][point][:3],
-                    Diffs[instrument]['Corr_median']))) + (
-                    Sd_StDev_p, Hz_StDev*m.sqrt(2), V_StDev*m.sqrt(2))})
+                Measurements[instrument].update({point: {
+                        'Hz': Measurements[instrument][point]['Hz'] + 
+                        Diffs[instrument]['Corr_median']['Med_Hz'],
+                        'Sd': Measurements[instrument][point]['Sd'] + 
+                        Diffs[instrument]['Corr_median']['Med_Sd'],
+                        'V': Measurements[instrument][point]['V'] + 
+                        Diffs[instrument]['Corr_median']['Med_V'],
+                        'StDev_Sd': Sd_StDev_p,'StDev_Hz': Hz_StDev*m.sqrt(2), 
+                        'StDev_V':V_StDev*m.sqrt(2)}})
 
     del words, row
     Meas_file.close()
     return Measurements
 
+def Count_meas_types(d, meas_type):
+    c = int(meas_type in d)
+    for v in d.values():
+        if isinstance(v, dict):
+            c += Count_meas_types(v, meas_type)
+    return c
 
+#counter_Hz = 0
+#counter_Sd = 0
+#counter_V = 0
+#for instrument in Measurements:
+#    for point in Measurements[instrument]:
+#        for types in Measurements[instrument][point].keys():
+#            if types == 'Hz':
+#                counter_Hz +=1
+#            if types == 'Sd':
+#                counter_Sd +=1
+#            if types == 'V':
+#                counter_V +=1
+
+Measurements = Polar_2F_meas_read_in("Polar_measurements_20Sep21.txt")
+
+           
 def Coords_read_in(Coords_file_name):
     Coords_file = open(Coords_file_name,'r')
     Coords = {}
@@ -246,62 +282,21 @@ def Coords_read_in(Coords_file_name):
     Coords_file.close()
     return Coords
 
-def StDev_sys_ppm(Value,StDev_tuple):
-    return float(StDev_tuple[0] + Value * StDev_tuple[1]/1000)
 
 def Helmert_calc_for_PolMeas(From,To):
     Transformed_From = {}
+    Trans_par = {}
     for instrument in From:
         x = helmt.Helmert_transform(From[instrument],To)
-        print(x)
+        Trans_par[instrument] = x
         Transformed_From[instrument] = helmt.Transformation(x,From[instrument])
         Transformed_From[instrument][instrument] = (tuple(x[:3]))
-    return Transformed_From
-
-#def StDev_XYZ_from_Polar(Point, StDev_S, StDev_Hz, StDev_Z):
-#    '''takes in Point measured in Polar coordinates and outputs tuple of 
-#    standard deviations for the XYZ components using config.py's values for 
-#    standard deviations of the measurements.'''
-#    S = Point[0]/1000
-#    Hz = Point[1]
-#    Z = Point[2]
-#    StDev_X = m.sqrt(m.pow(StDev_S,2) * m.pow(cosg(Hz) * sing(Z),2)\
-#              + m.pow(StDev_Hz,2) * m.pow(-S * sing(Hz) * sing(Z),2)\
-#              + m.pow(StDev_Z,2) * m.pow(S * cosg(Hz) * cosg(Z),2))
-#    StDev_Y = m.sqrt(m.pow(StDev_S,2) * m.pow(sing(Hz) * sing(Z),2)\
-#              + m.pow(StDev_Hz,2) * m.pow(S * cosg(Hz) * sing(Z),2)\
-#              + m.pow(StDev_Z,2) * m.pow(S * sing(Hz) * cosg(Z),2))
-#    StDev_Zz = m.sqrt(m.pow(StDev_S,2) * m.pow(cosg(Z),2)\
-#              + m.pow(StDev_Z,2) * m.pow(-S * sing(Z),2))
-#    return (StDev_X,StDev_Y,StDev_Zz)
-
-#def StDev_distance(Point_From, Point_To, StDevXYZ_From, StDevXYZ_To):
-#    Sd = slope_distance(Point_From, Point_To)
-#    StDev_S = m.sqrt(m.pow(StDevXYZ_From[0],2) * m.pow((Point_To[0] \
-#                                                    - Point_From[0])/Sd,2)
-#                 + m.pow(StDevXYZ_To[0],2) * m.pow((Point_To[0] \
-#                                                    - Point_From[0])/-Sd,2)
-#                 + m.pow(StDevXYZ_From[1],2) * m.pow((Point_To[1] \
-#                                                    - Point_From[1])/Sd,2)
-#                 + m.pow(StDevXYZ_To[1],2) * m.pow((Point_To[1] \
-#                                                    - Point_From[1])/-Sd,2)
-#                 + m.pow(StDevXYZ_From[2],2) * m.pow((Point_To[2] \
-#                                                    - Point_From[2])/Sd,2)
-#                 + m.pow(StDevXYZ_To[2],2) * m.pow((Point_To[2] \
-#                                                    - Point_From[2])/-Sd,2)
-#        )
-#    return StDev_S
+    return Transformed_From, Trans_par
 
 def ParD_Hz(PointTo, PointFrom):
     # This function returns derivatives of the horizontal angle with respect to
     # all unknowns, X, Y, Z, O (orientation) for point
     # For PointFrom add '-' in front of dX and dY
-#    dX =-(PointTo[1] - PointFrom[1]) / (pow(PointTo[0] - PointFrom[0],2) \
-#            + pow(PointTo[1] - PointFrom[1],2))
-#    dY =+(PointTo[0] - PointFrom[0]) / (pow(PointTo[0] - PointFrom[0],2) \
-#            + pow(PointTo[1] - PointFrom[1],2))
-#    dZ = 0
-#    dO = -1
     dX = (PointTo[1] - PointFrom[1]) / (pow(PointTo[0] - PointFrom[0],2) \
             + pow(PointTo[1] - PointFrom[1],2))
     dY =-(PointTo[0] - PointFrom[0]) / (pow(PointTo[0] - PointFrom[0],2) \
@@ -317,11 +312,6 @@ def ParD_V(PointTo, PointFrom):
     dist_squared = pow(PointTo[0] - PointFrom[0],2) \
     + pow(PointTo[1] - PointFrom[1],2) + pow(PointTo[2] - PointFrom[2],2)
     h_distance = horizontal_distance(PointTo, PointFrom)
-#    dX = -((PointTo[0]-PointFrom[0]) * (PointTo[2]-PointFrom[2])) \
-#        / (dist_squared * h_distance)
-#    dY = ((PointTo[1]-PointFrom[1]) * (PointTo[2]-PointFrom[2])) \
-#        / (dist_squared * h_distance)
-#    dZ = - h_distance / dist_squared
     dX = -((PointTo[0]-PointFrom[0]) * (PointTo[2]-PointFrom[2])) \
         / (dist_squared * h_distance)
     dY = -((PointTo[1]-PointFrom[1]) * (PointTo[2]-PointFrom[2])) \

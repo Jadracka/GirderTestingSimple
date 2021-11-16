@@ -8,7 +8,7 @@ Created on Wed Apr  7 08:02:05 2021
 #import scipy as sp
 import numpy as np
 
-#import sys
+import sys
 #import string
 import math as m
 import config as cg
@@ -25,14 +25,18 @@ date_time = dt.fromtimestamp(dt.timestamp(dt.now()))
 # Are there two epochs to calculate?
 if len(cg.Which_epochs)>1:
     Two_epochs = True
+    Epoch_num = cg.Which_epochs[0]
+    Epoch_num1 = cg.Which_epochs[1]
 else:
     Two_epochs = False
+    Epoch_num = cg.Which_epochs[0]
 
 # Developing the 6DoF version of the analysis
 
 # =============================================================================
 # Loading measurement files and Coordinates, if two epochs are set, files load
 # for them as well.
+# Measurements indicated for exclusion at config will be eliminated.
 # =============================================================================
 Nominal_coords = fc.Coords_read_in(cg.Coords_file_name)
 LoS_measurements = fc.Measurements_read_in(cg.LoS_Measurements_file_name)
@@ -40,6 +44,10 @@ Pol_measurements = fc.Polar_2F_meas_read_in(cg.Pol_Measurements_file_name,
                                             Sd_StDev = cg.Dist_StDev,
                                             Hz_StDev = cg.Hz_StDev,
                                             V_StDev = cg.V_StDev)
+for meas in cg.LSM_Excluded_measurements[Epoch_num]:
+    Pol_measurements[meas[1]][meas[2]].pop(meas[0])
+del meas
+
 if Two_epochs:
     LoS_measurements_E1 = fc.Measurements_read_in(
                                                cg.LoS_Measurements_file_name_1)
@@ -49,6 +57,9 @@ if Two_epochs:
                                              Hz_StDev = cg.Hz_StDev_E1,
                                              V_StDev = cg.V_StDev_E1)
     Nominal_coords_E1 = fc.Coords_read_in(cg.Coords_file_name_1)
+    for meas in cg.LSM_Excluded_measurements[Epoch_num1]:
+        Pol_measurements_E1[meas[1]][meas[2]].pop(meas[0])
+    del meas
 
 
 # =============================================================================
@@ -69,7 +80,6 @@ nominal_points_all_measured = True
 all_points_in_lines_measured = True
 
 for line in LoS_measurements:
-    Epoch_num = cg.Which_epochs[0]
     if (cg.Print_typos) and (line not in cg.Lines_of_sight):
 # printing which lines are in measurements input but are not in the
 # default naming either due to typo or just simply missing in the nominal
@@ -124,6 +134,10 @@ if (cg.Print_real2nominal_checks) and not (all_points_in_lines_measured):
 
 del all_measured_points, nominal_points_all_measured, \
     all_points_in_lines_measured
+
+# =============================================================================
+# POTENTIAL PROBLEM WITH MEASUREMENT DICTIONARY
+# =============================================================================
 
 Pol_measurements_cart = {}
 for instrument in Pol_measurements:
@@ -239,7 +253,6 @@ if Two_epochs:
     all_points_in_lines_measured_E1 = True
 
     for line in LoS_measurements_E1:
-        Epoch_num1 = cg.Which_epochs[1]
         if (cg.Print_typos) and (line not in cg.Lines_of_sight):
     # printing which lines are in measurements input but are not in the
     # default naming either due to typo or just simply missing in the nominal
@@ -443,15 +456,26 @@ if Two_epochs:
 # =============================================================================
 # Calculating Helmert transformations for measured cartesian coordinates
 # =============================================================================
-Transformed_Pol_measurements = fc.Helmert_calc_for_PolMeas(
+Transformed_Pol_measurements, Trans_par = fc.Helmert_calc_for_PolMeas(
                                           Pol_measurements_cart,Nominal_coords)
 
 count_IFM_measurements = sum([len(v) for k, v in\
                                          measured_distances_in_lines.items()])
 
-count_Pol_measurements = (sum([len(v) for k, v in Pol_measurements.items()]))
+count_Sd = fc.Count_meas_types(Pol_measurements, 'Sd')
+count_Hz = fc.Count_meas_types(Pol_measurements, 'Hz')
+count_V = fc.Count_meas_types(Pol_measurements, 'V')
 
-count_all_observations = 3*count_Pol_measurements + count_IFM_measurements
+count_Pol_measurements = (sum([len(v) for k, v in Pol_measurements.items()]))
+excluded_count = len(cg.LSM_Excluded_measurements[Epoch_num])
+
+if count_Sd + count_Hz + count_V == 3*count_Pol_measurements - excluded_count:
+    count_all_observations = count_Sd + count_Hz + count_V + count_IFM_measurements
+else:
+    sys.exit("Counts of measurements don't agree.")
+    
+
+#count_all_observations = 3*count_Pol_measurements + count_IFM_measurements
 
 unknowns,count_unknowns, instruments, count_instruments = fc.find_unknowns(
                                                   Transformed_Pol_measurements)
@@ -504,7 +528,7 @@ if Two_epochs:
 # Calculating Helmert transformations for measured cartesian coordinates
 # =============================================================================
 
-    Transformed_Pol_measurements_E1 = fc.Helmert_calc_for_PolMeas(
+    Transformed_Pol_measurements_E1, Trans_par_E1 = fc.Helmert_calc_for_PolMeas(
                                    Pol_measurements_cart_E1,Nominal_coords_E1)
     
     count_IFM_measurements_E1 = sum([len(v) for k, v in\
@@ -521,7 +545,6 @@ if Two_epochs:
             
     Aproximates_E1 = fc.merge_measured_coordinates(
 											 Transformed_Pol_measurements_E1)
-    #Aproximates_E1_copy = Aproximates_E1.copy()
        
     
 # =============================================================================

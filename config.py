@@ -36,6 +36,8 @@ LSM_Max_iterations = 10
 
 Sigma_0 = 0.000001
 
+
+
 # Epoch specific factors
 Epoch_factors = {0:{}, 1:{}, 2:{}}
 Epoch_factors[0]['Pico'] = 1
@@ -153,6 +155,14 @@ Common_points = [#
 #									  'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',
 #									  'J', 'K', 'M', 'L', 'M'
 									  ]
+
+LSM_Excluded_measurements = {
+        '-1':[],
+        '0':[('Sd', 'Instrument_1', 'PQL6_9'),
+             ('Sd', 'Instrument_1', 'PQL6_7')],
+        '1':[],
+        '2':[('Sd', 'Instrument_1', 'PQL6_9')]
+        }
 
 Lines_of_sight = {
 'Hor_Left_Bottom_UP_t': ('PQK62_7','PQK62_1','Girder_5','PQL6_7',
