@@ -14,6 +14,7 @@ import re
 import Helmert3Dtransform as helmt
 import config as cg
 from angle import Angle as a
+import sys
 
 """
 ______                _   _                 
@@ -288,7 +289,7 @@ def Helmert_calc_for_PolMeas(From,To):
     Trans_par = {}
     for instrument in From:
         x = helmt.Helmert_transform(From[instrument],To)
-        Trans_par[instrument] = x
+        Trans_par[instrument] = tuple(x)
         Transformed_From[instrument] = helmt.Transformation(x,From[instrument])
         Transformed_From[instrument][instrument] = (tuple(x[:3]))
     return Transformed_From, Trans_par
@@ -489,10 +490,6 @@ def filling_Aproximates(unknowns, X_vector, instruments, Instruments_6DoF):
             updated_Aproximates['Ori_' + instrument] = X_vector[-inst_count+i]
     return updated_Aproximates
 
-# =============================================================================
-# Needs changing
-# =============================================================================
-
 def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
                       Combinations_for_constraints,
                       measured_distances_in_lines,
@@ -598,14 +595,23 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
 #        Aproximates['Ori_' + instrument] = a(ori_sum/count,a.T_GON,False).angle
 #        X_vector[X_vectorHR.index('Ori_' + instrument)] = a(-ori_sum/\
 #				count,a.T_GON,False).angle
-        
+ 
     counter = 0
     for inst,points in Pol_measurements.items():
         instrument_i = 3 * unknowns.index(inst) # Starting column of the instrument
-        Ori_inst_i = X_vectorHR.index('Ori_'+inst) # Inst's Orientation index
         if Instruments_6DoF:
-            Ori_inst_i = X_vectorHR.index('RZ '+inst)
+            Ori_inst_i = X_vectorHR.index('RZ Ori_'+inst)
+        else:
+            Ori_inst_i = X_vectorHR.index('Ori_'+inst) # Inst's Orientation index
         for point in points:
+            # Row offsets of V and Sd measurements (allows filling in same loop)
+            Hz_offset = count_all_observations - (count_Hz + count_Sd + count_V)
+            V_offset = count_all_observations - (count_Hz + count_Sd)
+            Sd_offset = count_all_observations - count_Sd
+            
+            # Returning the starting column of the point
+            Point_i = 3*unknowns.index(point)
+            
             # evaluating the partial derivatives for all polar observations
             Hz_dX, Hz_dY, Hz_dZ, Hz_dO = ParD_Hz(Aproximates[point],
                                                     Aproximates[inst])
@@ -613,88 +619,118 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
             Sd_dX, Sd_dY, Sd_dZ = ParD_Sd(Aproximates[point],Aproximates[inst])
             # Returning measured values
             #Here are angles in (m)gons!!!
-            # Filling the L subvectors for Hz,V and Sd
-            Sd = Pol_measurements[inst][point]['Sd']
-            Hz = Pol_measurements[inst][point]['Hz']
-            V = Pol_measurements[inst][point]['V']
-            StDev_Sd = Pol_measurements[inst][point]['StDev_Sd']
-            StDev_Hz = Pol_measurements[inst][point]['StDev_Hz']
-            StDev_V = Pol_measurements[inst][point]['StDev_V']
             
-            L_subv_Hz = np.append(L_subv_Hz, a(Hz,a.T_GON,True).angle)
-            P_subv_Hz = np.append(P_subv_Hz, pow(cg.Sigma_0,2) / pow(gon2rad(
-                                                             StDev_Hz/1000),2))
-            Q_subv_Hz = np.append(Q_subv_Hz, 1/pow(cg.Sigma_0,2) * pow(gon2rad(
-                                                             StDev_Hz/1000),2))
-          
-            Hz_angle_from_aprox = a(horizontal_angle_from_Coords(
+            
+            # Filling the L subvectors for Hz,V and Sd
+            
+            # handeling of excluded measurements using KeyError for each type:
+            try:
+                Pol_measurements[inst][point]['Sd']
+            except KeyError:
+                pass#print(inst, point + " Sd")
+            else:
+                Sd = Pol_measurements[inst][point]['Sd']
+                StDev_Sd = Pol_measurements[inst][point]['StDev_Sd']
+                L_subv_Sd = np.append(L_subv_Sd, Sd)
+                P_subv_Sd = np.append(P_subv_Sd, pow(cg.Sigma_0,2) / pow(
+																StDev_Sd,2))
+                Q_subv_Sd = np.append(Q_subv_Sd, 1/pow(cg.Sigma_0,2) * pow(
+																StDev_Sd,2))
+                LX0_subv_Sd = np.append(LX0_subv_Sd, slope_distance(
+                                         Aproximates[point],Aproximates[inst]))
+                L_subv_Sd_HR.append(('Sd', inst, point))
+                A_matrix[Sd_offset+counter,Point_i:Point_i+3] = Sd_dX, Sd_dY, \
+                                                                       Sd_dZ
+                A_matrix[Sd_offset+counter,instrument_i:instrument_i+3] = \
+                                                        -Sd_dX, -Sd_dY, -Sd_dZ
+                
+                A_matrixHR[(Sd_offset+counter,Point_i)] = ['Sd/dX', inst, 
+                                                                   point]
+                A_matrixHR[(Sd_offset+counter,Point_i+1)] = ['Sd/dY', inst, 
+                                                                   point]
+                A_matrixHR[(Sd_offset+counter,Point_i+2)] = ['Sd/dZ', inst, 
+                                                                   point]
+                A_matrixHR[(Sd_offset+counter,instrument_i)] = ['Sd/dX',point,
+                                                                   inst]
+                A_matrixHR[(Sd_offset+counter,instrument_i+1)] = ['Sd/dY',
+                                                                   point,inst]
+                A_matrixHR[(Sd_offset+counter,instrument_i+2)] = ['Sd/dZ',
+                                                                   point,inst]
+            try:
+                Pol_measurements[inst][point]['Hz']
+            except KeyError:
+                pass#print(inst, point + " Hz")
+            else:
+                Hz = Pol_measurements[inst][point]['Hz']
+                StDev_Hz = Pol_measurements[inst][point]['StDev_Hz']
+                L_subv_Hz = np.append(L_subv_Hz, a(Hz,a.T_GON,True).angle)
+                P_subv_Hz = np.append(P_subv_Hz, pow(cg.Sigma_0,2) / pow(
+                                                    gon2rad(StDev_Hz/1000),2))
+                Q_subv_Hz = np.append(Q_subv_Hz, 1/pow(cg.Sigma_0,2) * pow(
+                                                    gon2rad(StDev_Hz/1000),2))
+                Hz_angle_from_aprox = a(horizontal_angle_from_Coords(
                                     Aproximates[point],Aproximates[inst]) - \
                                     X_vector[Ori_inst_i],a.T_RAD,True).angle
-
-            LX0_subv_Hz = np.append(LX0_subv_Hz, Hz_angle_from_aprox)
-    
-            L_subv_V = np.append(L_subv_V, a(V,a.T_GON,True).angle)
-            P_subv_V = np.append(P_subv_V, pow(cg.Sigma_0,2) / pow(
-                                                  gon2rad(StDev_V/1000),2))
-            Q_subv_V = np.append(Q_subv_V, 1/pow(cg.Sigma_0,2) * pow(
-                                                  gon2rad(StDev_V/1000),2))
-            LX0_subv_V = np.append(LX0_subv_V, vertical_angle_from_Coords(
-                                        Aproximates[point],Aproximates[inst]))
-            
-            L_subv_Sd = np.append(L_subv_Sd, Sd)
-            P_subv_Sd = np.append(P_subv_Sd, pow(cg.Sigma_0,2) / pow(
-																StDev_Sd,2))
-            Q_subv_Sd = np.append(Q_subv_Sd, 1/pow(cg.Sigma_0,2) * pow(
-																StDev_Sd,2))
-            LX0_subv_Sd = np.append(LX0_subv_Sd, slope_distance(
-                                         Aproximates[point],Aproximates[inst]))
-            
-            # Filling the Human readible version of L subvectors
-            L_subv_Hz_HR.append(('Hz', inst, point))
-            L_subv_V_HR.append(('V', inst, point))
-            L_subv_Sd_HR.append(('Sd', inst, point))
-            # Returning the starting column of the point
-            Point_i = 3*unknowns.index(point)
-            # Row offsets of V and Sd measurements (allows filling in same loop)
-            Hz_offset = count_all_observations - 3*count_Pol_measurements
-            V_offset = count_all_observations - 2*count_Pol_measurements
-            Sd_offset = count_all_observations - count_Pol_measurements
-            # Filling A with Hz partial derivatives
-            A_matrix[Hz_offset+counter,Point_i:Point_i+3] = Hz_dX, Hz_dY, Hz_dZ
-            A_matrix[V_offset+counter,Point_i:Point_i+3] = V_dX, V_dY, V_dZ
-            A_matrix[Sd_offset+counter,Point_i:Point_i+3] = Sd_dX, Sd_dY, Sd_dZ
-            A_matrix[Hz_offset+counter,Ori_inst_i] = Hz_dO
-            A_matrix[Hz_offset+counter,instrument_i:instrument_i+3] = \
+                LX0_subv_Hz = np.append(LX0_subv_Hz, Hz_angle_from_aprox)
+                L_subv_Hz_HR.append(('Hz', inst, point))
+                A_matrix[Hz_offset+counter,Point_i:Point_i+3] = Hz_dX, Hz_dY,\
+                                                                Hz_dZ
+                A_matrix[Hz_offset+counter,Ori_inst_i] = Hz_dO
+                A_matrix[Hz_offset+counter,instrument_i:instrument_i+3] = \
                                                        -Hz_dX, -Hz_dY, -Hz_dZ
-            A_matrix[V_offset+counter,instrument_i:instrument_i+3] = \
+                A_matrixHR[(Hz_offset+counter,Point_i)] = ['Hz/dX', inst, 
+                                                                   point]
+                A_matrixHR[(Hz_offset+counter,Point_i+1)] = ['Hz/dY', inst, 
+                                                                   point]
+                A_matrixHR[(Hz_offset+counter,Point_i+2)] = ['Hz/dZ', inst, 
+                                                                   point]
+                A_matrixHR[(Hz_offset+counter,instrument_i)] = ['Hz/dX',
+                                                               point,inst]
+                A_matrixHR[(Hz_offset+counter,instrument_i+1)] = ['Hz/dY',
+                                                               point,inst]
+                A_matrixHR[(Hz_offset+counter,instrument_i+2)] = ['Hz/dZ',
+                                                               point,inst]
+                
+            try:
+                Pol_measurements[inst][point]['V']
+            except KeyError:
+                pass#print(inst, point + " V")
+            else:
+                V = Pol_measurements[inst][point]['V']
+                StDev_V = Pol_measurements[inst][point]['StDev_V']
+                L_subv_V = np.append(L_subv_V, a(V,a.T_GON,True).angle)
+                P_subv_V = np.append(P_subv_V, pow(cg.Sigma_0,2) / pow(
+                                                  gon2rad(StDev_V/1000),2))
+                Q_subv_V = np.append(Q_subv_V, 1/pow(cg.Sigma_0,2) * pow(
+                                                  gon2rad(StDev_V/1000),2))
+                LX0_subv_V = np.append(LX0_subv_V, vertical_angle_from_Coords(
+                                        Aproximates[point],Aproximates[inst]))
+                L_subv_V_HR.append(('V', inst, point))
+                A_matrix[V_offset+counter,Point_i:Point_i+3] = V_dX, V_dY, V_dZ         
+                A_matrix[V_offset+counter,instrument_i:instrument_i+3] = \
                                                           -V_dX, -V_dY, -V_dZ
-            A_matrix[Sd_offset+counter,instrument_i:instrument_i+3] = \
-                                                        -Sd_dX, -Sd_dY, -Sd_dZ
-            # Filling Human readible A matrix
-            A_matrixHR[(Hz_offset+counter,Point_i)] = ['Hz/dX', inst, point]
-            A_matrixHR[(Hz_offset+counter,Point_i+1)] = ['Hz/dY', inst, point]
-            A_matrixHR[(Hz_offset+counter,Point_i+2)] = ['Hz/dZ', inst, point]
-            A_matrixHR[(V_offset+counter,Point_i)] = ['V/dX', inst, point]
-            A_matrixHR[(V_offset+counter,Point_i+1)] = ['V/dY', inst, point]
-            A_matrixHR[(V_offset+counter,Point_i+2)] = ['V/dZ', inst, point]
-            A_matrixHR[(Sd_offset+counter,Point_i)] = ['Sd/dX', inst, point]
-            A_matrixHR[(Sd_offset+counter,Point_i+1)] = ['Sd/dY', inst, point]
-            A_matrixHR[(Sd_offset+counter,Point_i+2)] = ['Sd/dZ', inst, point]
-            A_matrixHR[(Hz_offset+counter,instrument_i)] = ['Hz/dX',point,inst]
-            A_matrixHR[(Hz_offset+counter,instrument_i+1)] = ['Hz/dY',point,inst]
-            A_matrixHR[(Hz_offset+counter,instrument_i+2)] = ['Hz/dZ',point,inst]
-            A_matrixHR[(V_offset+counter,instrument_i)] = ['V/dX',point,inst]
-            A_matrixHR[(V_offset+counter,instrument_i+1)] = ['V/dY',point,inst]
-            A_matrixHR[(V_offset+counter,instrument_i+2)] = ['V/dZ',point,inst]
-            A_matrixHR[(Sd_offset+counter,instrument_i)] = ['Sd/dX',point,inst]
-            A_matrixHR[(Sd_offset+counter,instrument_i+1)] = ['Sd/dY',point,inst]
-            A_matrixHR[(Sd_offset+counter,instrument_i+2)] = ['Sd/dZ',point,inst]
+                A_matrixHR[(V_offset+counter,Point_i)] = ['V/dX', inst, point]
+                A_matrixHR[(V_offset+counter,Point_i+1)] = ['V/dY', inst, point]
+                A_matrixHR[(V_offset+counter,Point_i+2)] = ['V/dZ', inst, point]
+                
+                A_matrixHR[(V_offset+counter,instrument_i)] = ['V/dX',point,inst]
+                A_matrixHR[(V_offset+counter,instrument_i+1)] = ['V/dY',point,inst]
+                A_matrixHR[(V_offset+counter,instrument_i+2)] = ['V/dZ',point,inst]
+            
             counter += 1
-    L_vector = np.append(L_vector,[L_subv_Hz,L_subv_V,L_subv_Sd])
-    LX0_vector = np.append(LX0_vector,[LX0_subv_Hz,LX0_subv_V,LX0_subv_Sd])
+    L_vector = np.concatenate((L_vector,L_subv_Hz))
+    L_vector = np.concatenate((L_vector,L_subv_V))
+    L_vector = np.concatenate((L_vector,L_subv_Sd))
+    LX0_vector = np.concatenate((LX0_vector,LX0_subv_Hz))
+    LX0_vector = np.concatenate((LX0_vector,LX0_subv_V))
+    LX0_vector = np.concatenate((LX0_vector,LX0_subv_Sd))
     L_vectorHR = L_vectorHR + L_subv_Hz_HR + L_subv_V_HR + L_subv_Sd_HR
-    P_vector = np.append(P_vector,[P_subv_Hz,P_subv_V,P_subv_Sd])
-    Q_vector = np.append(Q_vector,[Q_subv_Hz,Q_subv_V,Q_subv_Sd])
+    P_vector = np.concatenate((P_vector,P_subv_Hz))
+    P_vector = np.concatenate((P_vector,P_subv_V))
+    P_vector = np.concatenate((P_vector,P_subv_Sd))
+    Q_vector = np.concatenate((Q_vector,Q_subv_Hz))
+    Q_vector = np.concatenate((Q_vector,Q_subv_V))
+    Q_vector = np.concatenate((Q_vector,Q_subv_Sd))
 
  # =============================================================================    
  # Constraints - filling A, L, LX0, P and HR versions
@@ -738,15 +774,16 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
     LSM_can_be_done = (len(P_vector) ==  len(L_vector)) and (
                     len(L_vector) == A_matrix.shape[0]) and (
                                          A_matrix.shape[0] == len(LX0_vector))
+
     if not LSM_can_be_done:
-        print("Error during filling P, L, A, and LX0, sizes are not same")
+        sys.exit("Error during filling P, L, A, and LX0, sizes are not same")
   
     if len(X_vector) != A_matrix.shape[1]:
-        print("Error during filling A, X, sizes don't match.")
+        sys.exit("Error during filling A, X, sizes don't match.")
         LSM_can_be_done = False
     return LSM_can_be_done,A_matrix,L_vector,P_matrix,Q_matrix,\
            LX0_vector,A_matrixHR,L_vectorHR
-		   
+
 def create_constraints(Aproximates):
     Combinations_for_constraints = []
     for magnet in cg.Names_of_magnets:
@@ -764,26 +801,27 @@ def create_constraints(Aproximates):
 def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
 				 sorted_measured_points_in_lines,instruments, count_instruments,
 				 Pol_measurements,count_Pol_measurements, count_IFM,
-				 unknowns, count_unknowns, IFM_StDev):
+				 unknowns, count_unknowns, IFM_StDev, Instruments_6DoF, Trans_par):
 	
     Combinations_for_constraints,count_constraints =\
 																	create_constraints(Aproximates)
 
     G_matrix = filling_G(count_unknowns, unknowns, 
-									Aproximates,count_instruments)
-    X_vector, X_vectorHR = filling_X(Aproximates, unknowns, 
-														   count_unknowns, count_instruments)
-	
+									Aproximates,count_instruments, Instruments_6DoF)
+
+    X_vector, X_vectorHR = filling_X(Aproximates, unknowns, count_unknowns, 
+                                     count_instruments, Instruments_6DoF)
+
     LSM_can_be_done,A_matrix,L_vector,P_matrix,Q_matrix,LX0_vector,A_matrixHR,L_vectorHR \
-      = Filling_A_L_P_LX0(Nominal_coords,Aproximates,
-                             Combinations_for_constraints,
-                             measured_distances_in_lines,
-                             sorted_measured_points_in_lines,
-                             instruments, count_instruments,
-                             Pol_measurements,
-                             unknowns,count_unknowns,
-                             X_vector, X_vectorHR, IFM_StDev
-                             )
+      = Filling_A_L_P_LX0(Nominal_coords,Aproximates,Trans_par,
+                          Combinations_for_constraints,
+                          measured_distances_in_lines,
+                          sorted_measured_points_in_lines,
+                          instruments, count_instruments,
+                          Pol_measurements,
+                          unknowns,count_unknowns,
+                          X_vector, X_vectorHR, IFM_StDev,Instruments_6DoF
+                          )
 
 
     metric = cg.LSM_Threshold + 1
@@ -800,7 +838,10 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
         del lelement, i
         N = A_matrix.transpose() @ P_matrix @ A_matrix
         print("Determinant: ",linalg.det(A_matrix.transpose() @ A_matrix))
-        O = np.zeros([4,4])
+        if Instruments_6DoF:
+            O = np.zeros([6,6])
+        else:
+            O = np.zeros([4,4])
         N_extended = np.block([[N,G_matrix],[np.transpose(G_matrix),O]])
         print('Rank N_extended:', np.linalg.matrix_rank(N_extended))
         try:
@@ -810,7 +851,10 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
             print("Log-Determinant of G-extended N gives overflow ")
         print("Condition number N: ", np.linalg.cond(N_extended))
         n = A_matrix.transpose() @ P_matrix @ l
-        N_inv = np.linalg.inv(N_extended)[:-4,:-4]
+        if Instruments_6DoF:
+            N_inv = np.linalg.inv(N_extended)[:-6,:-6]
+        else:
+            N_inv = np.linalg.inv(N_extended)[:-4,:-4]
         dx = N_inv @ n
         print('dx',max(abs(dx)), np.argmax(abs(dx)))
         X_vector += dx
@@ -867,15 +911,17 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
         metric = max(abs(dx))
         counter += 1
 
-        Aproximates = filling_Aproximates(unknowns, X_vector, instruments)
+        Aproximates = filling_Aproximates(unknowns, X_vector, instruments, 
+                                          Instruments_6DoF)
         LSM_can_be_done,A_matrix,L_vector,P_matrix,Q_matrix,LX0_vector,A_matrixHR, \
-        L_vectorHR = Filling_A_L_P_LX0(Nominal_coords,Aproximates,
+        L_vectorHR = Filling_A_L_P_LX0(Nominal_coords,Aproximates,Trans_par,
                                       Combinations_for_constraints,
                                       measured_distances_in_lines,
                                       sorted_measured_points_in_lines,
                                       instruments, count_instruments,
                                       Pol_measurements,unknowns,count_unknowns,
-                                      X_vector, X_vectorHR, IFM_StDev
+                                      X_vector, X_vectorHR, IFM_StDev, 
+                                      Instruments_6DoF
                                       )
 
 

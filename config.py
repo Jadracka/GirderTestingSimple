@@ -21,7 +21,7 @@ import math as m
 """CAN BE CHANGED"""
 Which_epochs = (0,2) #the comma must stay, otherwise the variable will be int
 Names_of_magnets = ['PQK36','PQL6','PQK62']
-Instruments_6DoF = True
+Instruments_6DoF = False
 
 Pico_StDev_basic = 0.00000001 #mm, PicoScale Standard Deviation
 IFM_StDev_basic = (0.0004,0.00015) #mm, LT IFM, based on Leica's white paper
@@ -159,8 +159,8 @@ Common_points = [#
 
 LSM_Excluded_measurements = {
         '-1':[],
-        '0':[('Sd', 'Instrument_1', 'PQL6_9'),
-             ('Sd', 'Instrument_1', 'PQL6_7')],
+        '0':[('Sd', 'Instrument_1', 'PQK62_8'),
+             ('Sd', 'Instrument_1', 'PQK62_9')],
         '1':[],
         '2':[('Sd', 'Instrument_1', 'PQL6_9')]
         }
