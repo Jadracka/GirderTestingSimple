@@ -44,9 +44,6 @@ Pol_measurements = fc.Polar_2F_meas_read_in(cg.Pol_Measurements_file_name,
                                             Sd_StDev = cg.Dist_StDev,
                                             Hz_StDev = cg.Hz_StDev,
                                             V_StDev = cg.V_StDev)
-for meas in cg.LSM_Excluded_measurements[Epoch_num]:
-    Pol_measurements[meas[1]][meas[2]].pop(meas[0])
-del meas
 
 if Two_epochs:
     LoS_measurements_E1 = fc.Measurements_read_in(
@@ -57,9 +54,7 @@ if Two_epochs:
                                              Hz_StDev = cg.Hz_StDev_E1,
                                              V_StDev = cg.V_StDev_E1)
     Nominal_coords_E1 = fc.Coords_read_in(cg.Coords_file_name_1)
-    for meas in cg.LSM_Excluded_measurements[Epoch_num1]:
-        Pol_measurements_E1[meas[1]][meas[2]].pop(meas[0])
-    del meas
+
 
 
 # =============================================================================
@@ -458,6 +453,9 @@ if Two_epochs:
 # =============================================================================
 Transformed_Pol_measurements, Trans_par = fc.Helmert_calc_for_PolMeas(
                                           Pol_measurements_cart,Nominal_coords)
+for meas in cg.LSM_Excluded_measurements[Epoch_num]:
+    Pol_measurements[meas[1]][meas[2]].pop(meas[0])
+del meas
 
 count_IFM_measurements = sum([len(v) for k, v in\
                                          measured_distances_in_lines.items()])
@@ -481,6 +479,9 @@ unknowns,count_unknowns, instruments, count_instruments = fc.find_unknowns(
                                                   Transformed_Pol_measurements)
 Aproximates = fc.merge_measured_coordinates(Transformed_Pol_measurements)
 
+for instrument in Trans_par:
+    Aproximates['Ori_'+instrument] = Trans_par[instrument][-3:]
+
 
 # =============================================================================
 # Least Square Method for pre-transport epoch
@@ -493,7 +494,7 @@ s02_Sd, s02_con, L_vectorHR = fc.LSM(Epoch_num,
 									   instruments, count_instruments,
 									   Pol_measurements,count_Pol_measurements,
 									   count_IFM_measurements,
-									   unknowns,count_unknowns, cg.IFM_StDev)
+									   unknowns,count_unknowns, cg.IFM_StDev, cg.Instruments_6DoF)
 
 # =============================================================================
 # LSM - results writing into file - pre-transport Epoch
@@ -536,16 +537,27 @@ if Two_epochs:
     
     count_Pol_measurements_E1 = (sum([len(v) for k, v in \
                                    Pol_measurements_E1.items()]))
-    
-    count_all_observations_E1 = 3*count_Pol_measurements_E1 + \
-                                                 count_IFM_measurements_E1
+    for meas in cg.LSM_Excluded_measurements[Epoch_num1]:
+        Pol_measurements_E1[meas[1]][meas[2]].pop(meas[0])
+    del meas
+    excluded_count_E1 = len(cg.LSM_Excluded_measurements[Epoch_num1])
+    count_Sd_E1 = fc.Count_meas_types(Pol_measurements_E1, 'Sd')
+    count_Hz_E1 = fc.Count_meas_types(Pol_measurements_E1, 'Hz')
+    count_V_E1 = fc.Count_meas_types(Pol_measurements_E1, 'V')
+ 
+    if count_Sd + count_Hz + count_V == \
+                            3*count_Pol_measurements - excluded_count:
+        count_all_observations = count_Sd + count_Hz + count_V + \
+                                 count_IFM_measurements
+    else:
+        sys.exit("Counts of measurements don't agree.")
     
     unknowns_E1,count_unknowns_E1, instruments_E1, \
     count_instruments_E1 = fc.find_unknowns(Transformed_Pol_measurements_E1)
             
     Aproximates_E1 = fc.merge_measured_coordinates(
 											 Transformed_Pol_measurements_E1)
-       
+
     
 # =============================================================================
 # Least Square Method for post-transport epoch

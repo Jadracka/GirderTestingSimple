@@ -339,7 +339,7 @@ def vertical_angle_from_Coords(PointTo,PointFrom):
     V = m.acos((PointTo[2]-PointFrom[2])/dist)
     return V
 
-def find_unknowns(Dict_of_measurements):
+def find_unknowns(Dict_of_measurements, Instruments_6DoF):
     # Dictionary of transformed measurements is input (must include instrument
     # station so it gets counted to unknowns!)
     unknowns = []
@@ -357,7 +357,10 @@ def find_unknowns(Dict_of_measurements):
     unknowns = unknown_points + unknown_instrument_stations +\
         unknown_instrument_orientations
     count_instruments = len(unknown_instrument_stations)
-    number_of_unknowns = len(unknown_points)*3 + count_instruments*4
+    if Instruments_6DoF:
+        number_of_unknowns = len(unknown_points)*3 + count_instruments*6
+    else:
+        number_of_unknowns = len(unknown_points)*3 + count_instruments*4
     return unknowns, number_of_unknowns, instruments, count_instruments
 
 
@@ -389,7 +392,8 @@ def merge_measured_coordinates(Dictionary):
 
     return result
 
-def filling_X(Aproximates, unknowns, count_unknowns, count_instruments):
+def filling_X(Aproximates, unknowns, count_unknowns, count_instruments, 
+              Instruments_6DoF):
     X = np.zeros(count_unknowns)
     XHR = []
     for i, unknown in enumerate(unknowns[:-count_instruments]):
@@ -399,69 +403,120 @@ def filling_X(Aproximates, unknowns, count_unknowns, count_instruments):
         XHR.append(('X ' + unknown))
         XHR.append(('Y ' + unknown))
         XHR.append(('Z ' + unknown))
-    for unknown in unknowns[-count_instruments:]:
-        XHR.append(unknown)
+    if Instruments_6DoF:
+        for unknown in unknowns[-count_instruments:]:
+            XHR.append(('RX ' + unknown))
+            XHR.append(('RY ' + unknown))
+            XHR.append(('RZ ' + unknown))
+    else:
+        for unknown in unknowns[-count_instruments:]:
+            XHR.append(unknown)
     return X, XHR
 
 def filling_G(number_of_unknowns, unknowns, Aproximates, 
-						    number_of_instruments):
-    G_matrix = np.zeros([number_of_unknowns,4])
-    
-    sumx=0
-    sumy=0
-    sumz=0
-    c=0
-    for i,unknown in enumerate(unknowns):
-        if i < (len(unknowns) - 2*number_of_instruments):
-            sumx += Aproximates[unknown][0]
-            sumy += Aproximates[unknown][1]
-            sumz += Aproximates[unknown][2]
-            c+=1
-    meanx = sumx/c
-    meany = sumy/c
-    meanz = sumz/c
-    del c,sumx,sumy,sumz
-    
-    for i,unknown in enumerate(unknowns):
-        if i < (len(unknowns) - 2*number_of_instruments):
-            iii = 3*i
-            G_matrix[iii,0]   = 1
-            G_matrix[iii+1,1] = 1
-            G_matrix[iii+2,2] = 1
-            G_matrix[iii,3] =     (Aproximates[unknown][1] - meany)/100
-            G_matrix[iii+1,3] = - (Aproximates[unknown][0] - meanx)/100
-    del i, iii, unknown, meany, meanx, meanz
+						    number_of_instruments, Instruments_6DoF):
+    if Instruments_6DoF:
+        G_matrix = np.zeros([number_of_unknowns,6])
+        sumx=0
+        sumy=0
+        sumz=0
+        c=0
+        for i,unknown in enumerate(unknowns):
+            if i < (len(unknowns) - 2*number_of_instruments):
+                sumx += Aproximates[unknown][0]
+                sumy += Aproximates[unknown][1]
+                sumz += Aproximates[unknown][2]
+                c+=1
+        meanx = sumx/c
+        meany = sumy/c
+        meanz = sumz/c
+        del c,sumx,sumy,sumz
+        
+        for i,unknown in enumerate(unknowns):
+            if i < (len(unknowns) - 2*number_of_instruments):
+                iii = 3*i
+                G_matrix[iii,2]   = 1
+                G_matrix[iii+1,3] = 1
+                G_matrix[iii+2,4] = 1
+                G_matrix[iii,1] =   - (Aproximates[unknown][2] - meanz)/100
+                G_matrix[iii,5] =     (Aproximates[unknown][1] - meany)/100
+                G_matrix[iii+1,0] =   (Aproximates[unknown][2] - meanz)/100
+                G_matrix[iii+1,5] = - (Aproximates[unknown][0] - meanx)/100
+                G_matrix[iii+2,0] = - (Aproximates[unknown][1] - meany)/100
+                G_matrix[iii+2,1] =   (Aproximates[unknown][0] - meanx)/100
+        del i, iii, unknown, meany, meanx, meanz
+    else:
+        G_matrix = np.zeros([number_of_unknowns,4])
+        
+        sumx=0
+        sumy=0
+        sumz=0
+        c=0
+        for i,unknown in enumerate(unknowns):
+            if i < (len(unknowns) - 2*number_of_instruments):
+                sumx += Aproximates[unknown][0]
+                sumy += Aproximates[unknown][1]
+                sumz += Aproximates[unknown][2]
+                c+=1
+        meanx = sumx/c
+        meany = sumy/c
+        meanz = sumz/c
+        del c,sumx,sumy,sumz
+        
+        for i,unknown in enumerate(unknowns):
+            if i < (len(unknowns) - 2*number_of_instruments):
+                iii = 3*i
+                G_matrix[iii,0]   = 1
+                G_matrix[iii+1,1] = 1
+                G_matrix[iii+2,2] = 1
+                G_matrix[iii,3] =     (Aproximates[unknown][1] - meany)/100
+                G_matrix[iii+1,3] = - (Aproximates[unknown][0] - meanx)/100
+        del i, iii, unknown, meany, meanx, meanz
     return G_matrix
 
-def filling_Aproximates(unknowns, X_vector, instruments):
+def filling_Aproximates(unknowns, X_vector, instruments, Instruments_6DoF):
     updated_Aproximates = dict()
     inst_count = len(instruments)
-    for i, point in enumerate(unknowns[:-inst_count]):
-        iii = 3*i
-        updated_Aproximates[point] = tuple(X_vector[iii:iii+3])
-    for i,instrument in enumerate(instruments):
-        updated_Aproximates['Ori_' + instrument] = X_vector[-inst_count+i]
+    if Instruments_6DoF:
+        for i, unknown in enumerate(unknowns):
+            iii = 3*i
+            updated_Aproximates[unknown] = tuple(X_vector[iii:iii+3])
+    else:
+        for i, point in enumerate(unknowns[:-inst_count]):
+            iii = 3*i
+            updated_Aproximates[point] = tuple(X_vector[iii:iii+3])
+        for i,instrument in enumerate(instruments):
+            updated_Aproximates['Ori_' + instrument] = X_vector[-inst_count+i]
     return updated_Aproximates
 
-def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
+# =============================================================================
+# Needs changing
+# =============================================================================
+
+def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
                       Combinations_for_constraints,
                       measured_distances_in_lines,
                       sorted_measured_points_in_lines,
                       instruments, count_instruments,
                       Pol_measurements,unknowns,count_unknowns,
-                      X_vector, X_vectorHR, IFM_StDev
+                      X_vector, X_vectorHR, IFM_StDev, Instruments_6DoF
                       ):
     count_IFM_measurements = sum([len(v) for k, v in\
                                          measured_distances_in_lines.items()])
-    count_Pol_measurements = (sum([len(v) for k, v in Pol_measurements.items()]))
+    
+    count_Sd = Count_meas_types(Pol_measurements, 'Sd')
+    count_Hz = Count_meas_types(Pol_measurements, 'Hz')
+    count_V = Count_meas_types(Pol_measurements, 'V')
+    
     count_Pico_measurements = 0
-    count_all_observations = count_Pico_measurements \
-                         + 3*count_Pol_measurements + count_IFM_measurements
+    count_all_observations = count_Pico_measurements + count_Sd + count_Hz + \
+                             count_V + count_IFM_measurements
 
     del count_IFM_measurements, count_Pico_measurements
     count_constraints = len(Combinations_for_constraints)
 	
-    A_matrix = np.zeros([count_all_observations+ count_constraints , count_unknowns], dtype=float)
+    A_matrix = np.zeros([count_all_observations + count_constraints,
+                         count_unknowns], dtype=float)
                                 #           
     A_matrixHR = {}
     
@@ -531,23 +586,25 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
     LX0_subv_Sd = np.array([])
 
     # Estimate orientation unknowns
-    for instrument in instruments:
-        ori_sum = 0
-        count = 0
-        for target in Pol_measurements[instrument]:
-            ori_local = a(Pol_measurements[instrument][target][1],a.T_GON) - \
-                        a(horizontal_angle_from_Coords(Aproximates[target],
-														  Aproximates[instrument]),a.T_RAD)
-            ori_sum += ori_local
-            count += 1
-        Aproximates['Ori_' + instrument] = a(ori_sum/count,a.T_GON,False).angle
-        X_vector[X_vectorHR.index('Ori_' + instrument)] = a(-ori_sum/\
-				count,a.T_GON,False).angle
+#    for instrument in instruments:
+#        ori_sum = 0
+#        count = 0
+#        for target in Pol_measurements[instrument]:
+#            ori_local = a(Pol_measurements[instrument][target][1],a.T_GON) - \
+#                        a(horizontal_angle_from_Coords(Aproximates[target],
+#														  Aproximates[instrument]),a.T_RAD)
+#            ori_sum += ori_local
+#            count += 1
+#        Aproximates['Ori_' + instrument] = a(ori_sum/count,a.T_GON,False).angle
+#        X_vector[X_vectorHR.index('Ori_' + instrument)] = a(-ori_sum/\
+#				count,a.T_GON,False).angle
         
     counter = 0
     for inst,points in Pol_measurements.items():
         instrument_i = 3 * unknowns.index(inst) # Starting column of the instrument
         Ori_inst_i = X_vectorHR.index('Ori_'+inst) # Inst's Orientation index
+        if Instruments_6DoF:
+            Ori_inst_i = X_vectorHR.index('RZ '+inst)
         for point in points:
             # evaluating the partial derivatives for all polar observations
             Hz_dX, Hz_dY, Hz_dZ, Hz_dO = ParD_Hz(Aproximates[point],
@@ -555,17 +612,25 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates,
             V_dX, V_dY, V_dZ = ParD_V(Aproximates[point],Aproximates[inst])
             Sd_dX, Sd_dY, Sd_dZ = ParD_Sd(Aproximates[point],Aproximates[inst])
             # Returning measured values
-            Sd, Hz, V, StDev_Sd, StDev_Hz, StDev_V = Pol_measurements[inst][
-																point][0:6] #Here are angles in (m)gons!!!
+            #Here are angles in (m)gons!!!
             # Filling the L subvectors for Hz,V and Sd
+            Sd = Pol_measurements[inst][point]['Sd']
+            Hz = Pol_measurements[inst][point]['Hz']
+            V = Pol_measurements[inst][point]['V']
+            StDev_Sd = Pol_measurements[inst][point]['StDev_Sd']
+            StDev_Hz = Pol_measurements[inst][point]['StDev_Hz']
+            StDev_V = Pol_measurements[inst][point]['StDev_V']
+            
             L_subv_Hz = np.append(L_subv_Hz, a(Hz,a.T_GON,True).angle)
             P_subv_Hz = np.append(P_subv_Hz, pow(cg.Sigma_0,2) / pow(gon2rad(
                                                              StDev_Hz/1000),2))
             Q_subv_Hz = np.append(Q_subv_Hz, 1/pow(cg.Sigma_0,2) * pow(gon2rad(
                                                              StDev_Hz/1000),2))
+          
             Hz_angle_from_aprox = a(horizontal_angle_from_Coords(
                                     Aproximates[point],Aproximates[inst]) - \
                                     X_vector[Ori_inst_i],a.T_RAD,True).angle
+
             LX0_subv_Hz = np.append(LX0_subv_Hz, Hz_angle_from_aprox)
     
             L_subv_V = np.append(L_subv_V, a(V,a.T_GON,True).angle)
@@ -692,6 +757,9 @@ def create_constraints(Aproximates):
     count_constraints = len(Combinations_for_constraints)
     return Combinations_for_constraints, count_constraints
 
+# =============================================================================
+# Needs changing
+# =============================================================================
 
 def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
 				 sorted_measured_points_in_lines,instruments, count_instruments,
@@ -751,16 +819,6 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
         print('[vv]  ', sum(v*v))
         print('[v]  ', sum(v))
 
-#        Aproximates = filling_Aproximates(unknowns, X_vector, instruments)
-#        LSM_can_be_done,A_matrix,L_vector,P_matrix,LX0_vector,A_matrixHR, \
-#        L_vectorHR = Filling_A_L_P_LX0(Nominal_coords,Aproximates,
-#                                      Combinations_for_constraints,
-#                                      measured_distances_in_lines,
-#                                      sorted_measured_points_in_lines,
-#                                      instruments, count_instruments,
-#                                      Pol_measurements,unknowns,count_unknowns,
-#                                      X_vector, X_vectorHR
-#                                      )
         P_inv = inv(P_matrix)
 #        Qllest = A_matrix @ N_inv @ A_matrix.transpose()
 #        Qvv = P_inv - Qllest
@@ -783,7 +841,7 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
                     print(f"{vi/(m.sqrt(s02*Qvv[i,i])):16.12}, {L_vectorHR[i]}")
 
         print("n/o diag elem <0: ",vcount)
-        s02_IFM = np.nan
+#        s02_IFM = np.nan
 #        s02_con = np.nan
         i = count_IFM
         p = count_Pol_measurements
