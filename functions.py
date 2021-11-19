@@ -330,7 +330,54 @@ def ParD_Sd(PointTo, PointFrom):
     dY = -(PointTo[1]-PointFrom[1]) / dist
     dZ = -(PointTo[2]-PointFrom[2]) / dist
     return dX, dY, dZ
+
+def Sd_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs):
+    Sd = m.sqrt(pow((Ryc*Rzc*dX + Ryc*Rzs*dY - Rys*dZ),2)+\
+                pow(((Rxs*Rys*Rzc - Rxc*Rzs)*dX + (Rxc*Rys*Rzs - Rxs*Rzc)*dY +\
+                     Rxs*Ryc*dZ),2)+\
+                pow(((Rxc*Rys*Rzc + Rxs*Rzs)*dX + (Rxc*Rys*Rzs - Rxs*Rzc)*dY +\
+                 Rxc*Ryc*dZ),2))
+    return Sd
+            
+def Hz_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs):
     
+
+def Par_6Dof(PointTo, Instrument, Aproximates, epsilon):
+    Rx, Ry, Rz = Aproximates['Ori_'+Instrument]
+    dX = Aproximates[PointTo][0] - Aproximates[Instrument][0]
+    dY = Aproximates[PointTo][1] - Aproximates[Instrument][1]
+    dZ = Aproximates[PointTo][2] - Aproximates[Instrument][2]
+    Rxc = math.cos(Rx)
+    Rxs = math.sin(Rx)
+    Ryc = math.cos(Ry)
+    Rys = math.sin(Ry)
+    Rzc = math.cos(Rz)
+    Rzs = math.sin(Rz)
+    
+    return dX_Sd, dY_Sd, dZ_Sd, dX_Hz, dY_Hz, dZ_Hz, dX_V, dY_V, dZ_V, dX_Rx,\
+            dY_Ry, dZ_Rz
+
+def Par_6Dof_Sd(PointTo, Instrument, Aproximates, epsilon):
+    Rx, Ry, Rz = Aproximates['Ori_'+Instrument]
+    Rx, Ry, Rz = Aproximates['Ori_'+Instrument]
+    dX-e = Aproximates[PointTo][0] - Aproximates[Instrument][0] - epsilon
+    dY-e = Aproximates[PointTo][1] - Aproximates[Instrument][1] - epsilon
+    dZ-e = Aproximates[PointTo][2] - Aproximates[Instrument][2] - epsilon
+    dX = Aproximates[PointTo][0] - Aproximates[Instrument][0] + epsilon
+    dY = Aproximates[PointTo][1] - Aproximates[Instrument][1] + epsilon
+    dZ = Aproximates[PointTo][2] - Aproximates[Instrument][2] + epsilon
+    dX = Aproximates[PointTo][0] - Aproximates[Instrument][0]
+    dY = Aproximates[PointTo][1] - Aproximates[Instrument][1]
+    dZ = Aproximates[PointTo][2] - Aproximates[Instrument][2]
+    Rxc = math.cos(Rx)
+    Rxs = math.sin(Rx)
+    Ryc = math.cos(Ry)
+    Rys = math.sin(Ry)
+    Rzc = math.cos(Rz)
+    Rzs = math.sin(Rz)
+    
+    return dX_Sd, dY_Sd, dZ_Sd, dX_Rx, dY_Ry, dZ_Rz
+
 def horizontal_angle_from_Coords(PointTo,PointFrom):
     Hz = m.atan2(PointFrom[1]-PointTo[1],PointFrom[0]-PointTo[0])
     return Hz
@@ -475,6 +522,7 @@ def filling_G(number_of_unknowns, unknowns, Aproximates,
         del i, iii, unknown, meany, meanx, meanz
     return G_matrix
 
+
 def filling_Aproximates(unknowns, X_vector, instruments, Instruments_6DoF):
     updated_Aproximates = dict()
     inst_count = len(instruments)
@@ -595,7 +643,7 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
 #        Aproximates['Ori_' + instrument] = a(ori_sum/count,a.T_GON,False).angle
 #        X_vector[X_vectorHR.index('Ori_' + instrument)] = a(-ori_sum/\
 #				count,a.T_GON,False).angle
- 
+
     counter = 0
     for inst,points in Pol_measurements.items():
         instrument_i = 3 * unknowns.index(inst) # Starting column of the instrument

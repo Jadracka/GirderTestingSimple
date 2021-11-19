@@ -569,12 +569,13 @@ if Two_epochs:
             
     Aproximates_E1 = fc.merge_measured_coordinates(
 											 Transformed_Pol_measurements_E1)
-    
+
     if cg.Instruments_6DoF:
         for instrument in Trans_par:
-            Aproximates['Ori_'+instrument] = Trans_par[instrument][-3:]
+            Aproximates_E1['Ori_'+instrument] = Trans_par_E1[instrument][-3:]
     else:
-        Aproximates['Ori_'+instrument] = Trans_par[instrument][-1]
+        for instrument in Trans_par:
+            Aproximates_E1['Ori_'+instrument] = Trans_par_E1[instrument][-1]
     
 # =============================================================================
 # Least Square Method for post-transport epoch
