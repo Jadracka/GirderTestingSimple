@@ -500,7 +500,7 @@ s02_Sd, s02_con, L_vectorHR = fc.LSM(Epoch_num,
 									   Pol_measurements,count_Pol_measurements,
 									   count_IFM_measurements,
 									   unknowns,count_unknowns, cg.IFM_StDev, 
-                       cg.Instruments_6DoF, Trans_par)
+                       cg.Instruments_6DoF, Trans_par, cg.Epsilon)
 
 
 print("LSM for pre transport epoch done.")
@@ -590,7 +590,7 @@ if Two_epochs:
 									   count_Pol_measurements_E1,
 									   count_IFM_measurements_E1, unknowns_E1, 
                        count_unknowns_E1, cg.IFM_StDev_E1, 
-                       cg.Instruments_6DoF, Trans_par_E1) 
+                       cg.Instruments_6DoF, Trans_par_E1, cg.Epsilon) 
 
 # =============================================================================
 # LSM - results writing into file - post-transport Epoch

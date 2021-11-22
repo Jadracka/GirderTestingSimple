@@ -332,51 +332,153 @@ def ParD_Sd(PointTo, PointFrom):
     return dX, dY, dZ
 
 def Sd_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs):
-    Sd = m.sqrt(pow((Ryc*Rzc*dX + Ryc*Rzs*dY - Rys*dZ),2)+\
+    d_Sd = m.sqrt(pow((Ryc*Rzc*dX + Ryc*Rzs*dY - Rys*dZ),2)+\
                 pow(((Rxs*Rys*Rzc - Rxc*Rzs)*dX + (Rxc*Rys*Rzs - Rxs*Rzc)*dY +\
                      Rxs*Ryc*dZ),2)+\
                 pow(((Rxc*Rys*Rzc + Rxs*Rzs)*dX + (Rxc*Rys*Rzs - Rxs*Rzc)*dY +\
                  Rxc*Ryc*dZ),2))
-    return Sd
+    return d_Sd
             
 def Hz_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs):
-    
+    d_Hz = m.atan2(((Rxs*Rys*Rzc - Rxc*Rzs)*dX + (Rxs*Rys*Rzs + Rxc*Rzc)*dY + \
+                   (Rxs*Ryc)*dZ), (Ryc*Rzc*dX + Ryc*Rzs*dY - Rys*dZ))
+    return d_Hz
+
+def V_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs):
+    d_V = m.acos(((Rxc*Rys*Rzc + Rxs*Rzs)*dX + (Rxc*Rys*Rzs - Rxs*Rzc)*dY + \
+                  (Rxc*Ryc)*dZ)/\
+                 (pow((Ryc*Rzc*dX + Ryc*Rzs*dY - Rys*dZ),2)+\
+                pow(((Rxs*Rys*Rzc - Rxc*Rzs)*dX + (Rxc*Rys*Rzs - Rxs*Rzc)*dY +\
+                     Rxs*Ryc*dZ),2)+\
+                pow(((Rxc*Rys*Rzc + Rxs*Rzs)*dX + (Rxc*Rys*Rzs - Rxs*Rzc)*dY +\
+                 (Rxc*Ryc*dZ)),2)))
+    print(d_V)
+    return d_V
 
 def Par_6Dof(PointTo, Instrument, Aproximates, epsilon):
+    print(Instrument, PointTo)
     Rx, Ry, Rz = Aproximates['Ori_'+Instrument]
+    print(Rx, Ry, Rz)
     dX = Aproximates[PointTo][0] - Aproximates[Instrument][0]
     dY = Aproximates[PointTo][1] - Aproximates[Instrument][1]
     dZ = Aproximates[PointTo][2] - Aproximates[Instrument][2]
-    Rxc = math.cos(Rx)
-    Rxs = math.sin(Rx)
-    Ryc = math.cos(Ry)
-    Rys = math.sin(Ry)
-    Rzc = math.cos(Rz)
-    Rzs = math.sin(Rz)
+    dXe = Aproximates[PointTo][0] - Aproximates[Instrument][0] + epsilon
+    dYe = Aproximates[PointTo][1] - Aproximates[Instrument][1] + epsilon
+    dZe = Aproximates[PointTo][2] - Aproximates[Instrument][2] + epsilon
+    dX_e = Aproximates[PointTo][0] - Aproximates[Instrument][0] - epsilon
+    dY_e = Aproximates[PointTo][1] - Aproximates[Instrument][1] - epsilon
+    dZ_e = Aproximates[PointTo][2] - Aproximates[Instrument][2] - epsilon
+    Rxc = m.cos(Rx)
+    Rxs = m.sin(Rx)
+    Ryc = m.cos(Ry)
+    Rys = m.sin(Ry)
+    Rzc = m.cos(Rz)
+    Rzs = m.sin(Rz)
+    Rxce = m.cos(Rx + epsilon)
+    Rxse = m.sin(Rx + epsilon)
+    Ryce = m.cos(Ry + epsilon)
+    Ryse = m.sin(Ry + epsilon)
+    Rzce = m.cos(Rz + epsilon)
+    Rzse = m.sin(Rz + epsilon)
+    Rxc_e = m.cos(Rx - epsilon)
+    Rxs_e = m.sin(Rx - epsilon)
+    Ryc_e = m.cos(Ry - epsilon)
+    Rys_e = m.sin(Ry - epsilon)
+    Rzc_e = m.cos(Rz - epsilon)
+    Rzs_e = m.sin(Rz - epsilon)
+    dX_Sd = (Sd_6Dof(dXe, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs) +
+             Sd_6Dof(dX_e, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs)) /2*epsilon
+    dY_Sd = (Sd_6Dof(dX, dYe, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs) +
+             Sd_6Dof(dX, dY_e, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs)) /2*epsilon
+    dZ_Sd = (Sd_6Dof(dX, dY, dZe, Rxc, Rxs, Ryc, Rys, Rzc, Rzs) +
+             Sd_6Dof(dX, dY, dZ_e, Rxc, Rxs, Ryc, Rys, Rzc, Rzs)) /2*epsilon
+    dRx_Sd = (Sd_6Dof(dX, dY, dZ, Rxce, Rxse, Ryc, Rys, Rzc, Rzs) +
+              Sd_6Dof(dX, dY, dZ, Rxc_e, Rxs_e, Ryc, Rys, Rzc, Rzs)) \
+              /2*epsilon
+    dRy_Sd = (Sd_6Dof(dX, dY, dZ, Rxc, Rxs, Ryce, Ryse, Rzc, Rzs) +
+              Sd_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc_e, Rys_e, Rzc, Rzs)) \
+              /2*epsilon
+    dRz_Sd = (Sd_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzce, Rzse) +
+              Sd_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc_e, Rzs_e)) \
+              /2*epsilon
+    dX_Hz = (Hz_6Dof(dXe, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs) +
+             Hz_6Dof(dX_e, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs)) /2*epsilon
+    dY_Hz = (Hz_6Dof(dX, dYe, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs) +
+             Hz_6Dof(dX, dY_e, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs)) /2*epsilon
+    dZ_Hz = (Hz_6Dof(dX, dY, dZe, Rxc, Rxs, Ryc, Rys, Rzc, Rzs) +
+             Hz_6Dof(dX, dY, dZ_e, Rxc, Rxs, Ryc, Rys, Rzc, Rzs)) /2*epsilon
+    dRx_Hz = (Hz_6Dof(dX, dY, dZ, Rxce, Rxse, Ryc, Rys, Rzc, Rzs) +
+              Hz_6Dof(dX, dY, dZ, Rxc_e, Rxs_e, Ryc, Rys, Rzc, Rzs)) \
+              /2*epsilon
+    dRy_Hz = (Hz_6Dof(dX, dY, dZ, Rxc, Rxs, Ryce, Ryse, Rzc, Rzs) +
+              Hz_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc_e, Rys_e, Rzc, Rzs)) \
+              /2*epsilon
+    dRz_Hz = (Hz_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzce, Rzse) +
+              Hz_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc_e, Rzs_e)) \
+              /2*epsilon
+    dX_V = (V_6Dof(dXe, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs) +
+            V_6Dof(dX_e, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs)) / 2*epsilon
+    dY_V = (V_6Dof(dX, dYe, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs) +
+            V_6Dof(dX, dY_e, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs)) / 2*epsilon
+    dZ_V = (V_6Dof(dX, dY, dZe, Rxc, Rxs, Ryc, Rys, Rzc, Rzs) +
+            V_6Dof(dX, dY, dZ_e, Rxc, Rxs, Ryc, Rys, Rzc, Rzs)) / 2*epsilon
+    dRx_V = (V_6Dof(dX, dY, dZ, Rxce, Rxse, Ryc, Rys, Rzc, Rzs) +
+             V_6Dof(dX, dY, dZ, Rxc_e, Rxs_e, Ryc, Rys, Rzc, Rzs)) / 2*epsilon
+    dRy_V = (V_6Dof(dX, dY, dZ, Rxc, Rxs, Ryce, Ryse, Rzc, Rzs) +
+             V_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc_e, Rys_e, Rzc, Rzs)) / 2*epsilon
+    dRz_V = (V_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzce, Rzse) +
+             V_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc_e, Rzs_e)) / 2*epsilon
     
-    return dX_Sd, dY_Sd, dZ_Sd, dX_Hz, dY_Hz, dZ_Hz, dX_V, dY_V, dZ_V, dX_Rx,\
-            dY_Ry, dZ_Rz
+    return dX_Sd, dY_Sd, dZ_Sd, dRx_Sd, dRy_Sd, dRz_Sd, \
+           dX_Hz, dY_Hz, dZ_Hz, dRx_Hz, dRy_Hz, dRz_Hz, \
+           dX_V, dY_V, dZ_V, dRx_V, dRy_V, dRz_V
 
 def Par_6Dof_Sd(PointTo, Instrument, Aproximates, epsilon):
     Rx, Ry, Rz = Aproximates['Ori_'+Instrument]
-    Rx, Ry, Rz = Aproximates['Ori_'+Instrument]
-    dX-e = Aproximates[PointTo][0] - Aproximates[Instrument][0] - epsilon
-    dY-e = Aproximates[PointTo][1] - Aproximates[Instrument][1] - epsilon
-    dZ-e = Aproximates[PointTo][2] - Aproximates[Instrument][2] - epsilon
-    dX = Aproximates[PointTo][0] - Aproximates[Instrument][0] + epsilon
-    dY = Aproximates[PointTo][1] - Aproximates[Instrument][1] + epsilon
-    dZ = Aproximates[PointTo][2] - Aproximates[Instrument][2] + epsilon
     dX = Aproximates[PointTo][0] - Aproximates[Instrument][0]
     dY = Aproximates[PointTo][1] - Aproximates[Instrument][1]
     dZ = Aproximates[PointTo][2] - Aproximates[Instrument][2]
-    Rxc = math.cos(Rx)
-    Rxs = math.sin(Rx)
-    Ryc = math.cos(Ry)
-    Rys = math.sin(Ry)
-    Rzc = math.cos(Rz)
-    Rzs = math.sin(Rz)
-    
-    return dX_Sd, dY_Sd, dZ_Sd, dX_Rx, dY_Ry, dZ_Rz
+    dXe = Aproximates[PointTo][0] - Aproximates[Instrument][0] + epsilon
+    dYe = Aproximates[PointTo][1] - Aproximates[Instrument][1] + epsilon
+    dZe = Aproximates[PointTo][2] - Aproximates[Instrument][2] + epsilon
+    dX_e = Aproximates[PointTo][0] - Aproximates[Instrument][0] - epsilon
+    dY_e = Aproximates[PointTo][1] - Aproximates[Instrument][1] - epsilon
+    dZ_e = Aproximates[PointTo][2] - Aproximates[Instrument][2] - epsilon
+    Rxc = m.cos(Rx)
+    Rxs = m.sin(Rx)
+    Ryc = m.cos(Ry)
+    Rys = m.sin(Ry)
+    Rzc = m.cos(Rz)
+    Rzs = m.sin(Rz)
+    Rxce = m.cos(Rx + epsilon)
+    Rxse = m.sin(Rx + epsilon)
+    Ryce = m.cos(Ry + epsilon)
+    Ryse = m.sin(Ry + epsilon)
+    Rzce = m.cos(Rz + epsilon)
+    Rzse = m.sin(Rz + epsilon)
+    Rxc_e = m.cos(Rx - epsilon)
+    Rxs_e = m.sin(Rx - epsilon)
+    Ryc_e = m.cos(Ry - epsilon)
+    Rys_e = m.sin(Ry - epsilon)
+    Rzc_e = m.cos(Rz - epsilon)
+    Rzs_e = m.sin(Rz - epsilon)
+    dX_Sd = (Sd_6Dof(dXe, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs) +
+             Sd_6Dof(dX_e, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs)) /2*epsilon
+    dY_Sd = (Sd_6Dof(dX, dYe, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs) +
+             Sd_6Dof(dX, dY_e, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs)) /2*epsilon
+    dZ_Sd = (Sd_6Dof(dX, dY, dZe, Rxc, Rxs, Ryc, Rys, Rzc, Rzs) +
+             Sd_6Dof(dX, dY, dZ_e, Rxc, Rxs, Ryc, Rys, Rzc, Rzs)) /2*epsilon
+    dRx_Sd = (Sd_6Dof(dX, dY, dZ, Rxce, Rxse, Ryc, Rys, Rzc, Rzs) +
+              Sd_6Dof(dX, dY, dZ, Rxc_e, Rxs_e, Ryc, Rys, Rzc, Rzs)) \
+              /2*epsilon
+    dRy_Sd = (Sd_6Dof(dX, dY, dZ, Rxc, Rxs, Ryce, Ryse, Rzc, Rzs) +
+              Sd_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc_e, Rys_e, Rzc, Rzs)) \
+              /2*epsilon
+    dRz_Sd = (Sd_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzce, Rzse) +
+              Sd_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc_e, Rzs_e)) \
+              /2*epsilon
+   
+    return dX_Sd, dY_Sd, dZ_Sd, dRx_Sd, dRy_Sd, dRz_Sd
 
 def horizontal_angle_from_Coords(PointTo,PointFrom):
     Hz = m.atan2(PointFrom[1]-PointTo[1],PointFrom[0]-PointTo[0])
@@ -544,7 +646,8 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
                       sorted_measured_points_in_lines,
                       instruments, count_instruments,
                       Pol_measurements,unknowns,count_unknowns,
-                      X_vector, X_vectorHR, IFM_StDev, Instruments_6DoF
+                      X_vector, X_vectorHR, IFM_StDev, Instruments_6DoF, 
+                      epsilon
                       ):
     count_IFM_measurements = sum([len(v) for k, v in\
                                          measured_distances_in_lines.items()])
@@ -562,7 +665,7 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
 	
     A_matrix = np.zeros([count_all_observations + count_constraints,
                          count_unknowns], dtype=float)
-                                #           
+    
     A_matrixHR = {}
     
     L_vector = np.array([], dtype=float)
@@ -572,6 +675,10 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
     
     P_vector = np.array([],dtype=float)
     Q_vector = np.array([],dtype=float)
+    
+# =============================================================================
+# MAYBE NEEDS CHANGING
+# =============================================================================
     
     # Filling A and L with IFM measurements
     for line in measured_distances_in_lines:
@@ -610,6 +717,10 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
             A_matrixHR[(L_i,PointTo_i+1)] = ['dY', line, PointTo, PointFrom]
             A_matrixHR[(L_i,PointTo_i+2)] = ['dZ', line, PointTo, PointFrom]
     del PointFrom,PointTo, PointFrom_i,PointTo_i,dX,dY,dZ,L_i, meas_i, distance
+    
+# =============================================================================
+# MAYBE NEEDS CHANGING - END
+# =============================================================================
     
     L_subv_Hz = np.array([])
     L_subv_V = np.array([])
@@ -659,15 +770,20 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
             
             # Returning the starting column of the point
             Point_i = 3*unknowns.index(point)
-            
-            # evaluating the partial derivatives for all polar observations
-            Hz_dX, Hz_dY, Hz_dZ, Hz_dO = ParD_Hz(Aproximates[point],
+                        
+            if Instruments_6DoF:
+                dX_Sd, dY_Sd, dZ_Sd, dRx_Sd, dRy_Sd, dRz_Sd, \
+                dX_Hz, dY_Hz, dZ_Hz, dRx_Hz, dRy_Hz, dRz_Hz, \
+                dX_V, dY_V, dZ_V, dRx_V, dRy_V, dRz_V = Par_6Dof(point, inst, 
+                                                                 Aproximates, 
+                                                                 epsilon)
+            else:
+                 Hz_dX, Hz_dY, Hz_dZ, Hz_dO = ParD_Hz(Aproximates[point],
                                                     Aproximates[inst])
-            V_dX, V_dY, V_dZ = ParD_V(Aproximates[point],Aproximates[inst])
-            Sd_dX, Sd_dY, Sd_dZ = ParD_Sd(Aproximates[point],Aproximates[inst])
-            # Returning measured values
-            #Here are angles in (m)gons!!!
-            
+                 V_dX, V_dY, V_dZ = ParD_V(Aproximates[point],
+                                           Aproximates[inst])
+                 Sd_dX, Sd_dY, Sd_dZ = ParD_Sd(Aproximates[point],
+                                               Aproximates[inst])   
             
             # Filling the L subvectors for Hz,V and Sd
             
@@ -687,22 +803,49 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
                 LX0_subv_Sd = np.append(LX0_subv_Sd, slope_distance(
                                          Aproximates[point],Aproximates[inst]))
                 L_subv_Sd_HR.append(('Sd', inst, point))
-                A_matrix[Sd_offset+counter,Point_i:Point_i+3] = Sd_dX, Sd_dY, \
-                                                                       Sd_dZ
-                A_matrix[Sd_offset+counter,instrument_i:instrument_i+3] = \
+                if Instruments_6DoF:
+                    A_matrix[Sd_offset+counter,Point_i:Point_i+3] = dX_Sd, \
+                                                                dY_Sd, dZ_Sd
+                    A_matrix[Sd_offset+counter,instrument_i:instrument_i+3] = \
+                                                        -dX_Sd, -dY_Sd, -dZ_Sd
+                    A_matrix[Sd_offset+counter,
+                             Ori_inst_i:Ori_inst_i+3] = dRx_Sd, dRy_Sd, dRz_Sd
+                    
+                    A_matrixHR[(Sd_offset+counter,Point_i)] = ['Sd/dX', inst, 
+                                                                   point]
+                    A_matrixHR[(Sd_offset+counter,Point_i+1)] = ['Sd/dY', inst, 
+                                                                   point]
+                    A_matrixHR[(Sd_offset+counter,Point_i+2)] = ['Sd/dZ', inst, 
+                                                                         point]
+                    A_matrixHR[(Sd_offset+counter,instrument_i)] = ['Sd/dX',
+                                                               point, inst]
+                    A_matrixHR[(Sd_offset+counter,instrument_i+1)] = ['Sd/dY',
+                                                                    point,inst]
+                    A_matrixHR[(Sd_offset+counter,instrument_i+2)] = ['Sd/dZ',
+                                                                    point,inst]
+                    A_matrixHR[(Sd_offset+counter,Ori_inst_i)] = ['Sd/dRx',
+                                                               point, inst]
+                    A_matrixHR[(Sd_offset+counter,Ori_inst_i+1)] = ['Sd/dRy',
+                                                                    point,inst]
+                    A_matrixHR[(Sd_offset+counter,Ori_inst_i+2)] = ['Sd/dRz',
+                                                                    point,inst]
+                else:
+                    A_matrix[Sd_offset+counter,Point_i:Point_i+3] = Sd_dX,  \
+                                                                Sd_dY,Sd_dZ
+                    A_matrix[Sd_offset+counter,instrument_i:instrument_i+3] = \
                                                         -Sd_dX, -Sd_dY, -Sd_dZ
                 
-                A_matrixHR[(Sd_offset+counter,Point_i)] = ['Sd/dX', inst, 
+                    A_matrixHR[(Sd_offset+counter,Point_i)] = ['Sd/dX', inst, 
                                                                    point]
-                A_matrixHR[(Sd_offset+counter,Point_i+1)] = ['Sd/dY', inst, 
+                    A_matrixHR[(Sd_offset+counter,Point_i+1)] = ['Sd/dY', inst, 
                                                                    point]
-                A_matrixHR[(Sd_offset+counter,Point_i+2)] = ['Sd/dZ', inst, 
+                    A_matrixHR[(Sd_offset+counter,Point_i+2)] = ['Sd/dZ', inst, 
                                                                    point]
-                A_matrixHR[(Sd_offset+counter,instrument_i)] = ['Sd/dX',point,
-                                                                   inst]
-                A_matrixHR[(Sd_offset+counter,instrument_i+1)] = ['Sd/dY',
-                                                                   point,inst]
-                A_matrixHR[(Sd_offset+counter,instrument_i+2)] = ['Sd/dZ',
+                    A_matrixHR[(Sd_offset+counter,instrument_i)] = ['Sd/dX',
+                                                               point, inst]
+                    A_matrixHR[(Sd_offset+counter,instrument_i+1)] = ['Sd/dY',
+                                                                 point,inst]
+                    A_matrixHR[(Sd_offset+counter,instrument_i+2)] = ['Sd/dZ',
                                                                    point,inst]
             try:
                 Pol_measurements[inst][point]['Hz']
@@ -721,22 +864,49 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
                                     X_vector[Ori_inst_i],a.T_RAD,True).angle
                 LX0_subv_Hz = np.append(LX0_subv_Hz, Hz_angle_from_aprox)
                 L_subv_Hz_HR.append(('Hz', inst, point))
-                A_matrix[Hz_offset+counter,Point_i:Point_i+3] = Hz_dX, Hz_dY,\
-                                                                Hz_dZ
-                A_matrix[Hz_offset+counter,Ori_inst_i] = Hz_dO
-                A_matrix[Hz_offset+counter,instrument_i:instrument_i+3] = \
+                
+                if Instruments_6DoF:
+                    A_matrix[Hz_offset+counter,Point_i:Point_i+3] = dX_Hz,\
+                                                                dY_Hz, dZ_Hz
+                    A_matrix[Hz_offset+counter,instrument_i:instrument_i+3] = \
+                                                       -dX_Hz, -dY_Hz, -dZ_Hz
+                    A_matrix[Hz_offset+counter,Ori_inst_i:Ori_inst_i+3] = \
+                                                    dRx_Hz, dRy_Hz, dRz_Hz
+                    A_matrixHR[(Hz_offset+counter,Point_i)] = ['Hz/dX', inst, 
+                                                                   point]
+                    A_matrixHR[(Hz_offset+counter,Point_i+1)] = ['Hz/dY', inst, 
+                                                                   point]
+                    A_matrixHR[(Hz_offset+counter,Point_i+2)] = ['Hz/dZ', inst, 
+                                                                   point]
+                    A_matrixHR[(Hz_offset+counter,instrument_i)] = ['Hz/dX',
+                                                               point,inst]
+                    A_matrixHR[(Hz_offset+counter,instrument_i+1)] = ['Hz/dY',
+                                                               point,inst]
+                    A_matrixHR[(Hz_offset+counter,instrument_i+2)] = ['Hz/dZ',
+                                                               point,inst]
+                    A_matrixHR[(Hz_offset+counter,Ori_inst_i)] = ['Hz/dRx',
+                                                               point, inst]
+                    A_matrixHR[(Hz_offset+counter,Ori_inst_i+1)] = ['Hz/dRy',
+                                                                    point,inst]
+                    A_matrixHR[(Hz_offset+counter,Ori_inst_i+2)] = ['Hz/dRz',
+                                                                    point,inst]
+                else:
+                    A_matrix[Hz_offset+counter,Point_i:Point_i+3] = Hz_dX,\
+                                                                Hz_dY, Hz_dZ
+                    A_matrix[Hz_offset+counter,Ori_inst_i] = Hz_dO
+                    A_matrix[Hz_offset+counter,instrument_i:instrument_i+3] = \
                                                        -Hz_dX, -Hz_dY, -Hz_dZ
-                A_matrixHR[(Hz_offset+counter,Point_i)] = ['Hz/dX', inst, 
+                    A_matrixHR[(Hz_offset+counter,Point_i)] = ['Hz/dX', inst, 
                                                                    point]
-                A_matrixHR[(Hz_offset+counter,Point_i+1)] = ['Hz/dY', inst, 
+                    A_matrixHR[(Hz_offset+counter,Point_i+1)] = ['Hz/dY', inst, 
                                                                    point]
-                A_matrixHR[(Hz_offset+counter,Point_i+2)] = ['Hz/dZ', inst, 
+                    A_matrixHR[(Hz_offset+counter,Point_i+2)] = ['Hz/dZ', inst, 
                                                                    point]
-                A_matrixHR[(Hz_offset+counter,instrument_i)] = ['Hz/dX',
+                    A_matrixHR[(Hz_offset+counter,instrument_i)] = ['Hz/dX',
                                                                point,inst]
-                A_matrixHR[(Hz_offset+counter,instrument_i+1)] = ['Hz/dY',
+                    A_matrixHR[(Hz_offset+counter,instrument_i+1)] = ['Hz/dY',
                                                                point,inst]
-                A_matrixHR[(Hz_offset+counter,instrument_i+2)] = ['Hz/dZ',
+                    A_matrixHR[(Hz_offset+counter,instrument_i+2)] = ['Hz/dZ',
                                                                point,inst]
                 
             try:
@@ -754,16 +924,49 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
                 LX0_subv_V = np.append(LX0_subv_V, vertical_angle_from_Coords(
                                         Aproximates[point],Aproximates[inst]))
                 L_subv_V_HR.append(('V', inst, point))
-                A_matrix[V_offset+counter,Point_i:Point_i+3] = V_dX, V_dY, V_dZ         
-                A_matrix[V_offset+counter,instrument_i:instrument_i+3] = \
+
+                if Instruments_6DoF:
+                    A_matrix[V_offset+counter,Point_i:Point_i+3] = dX_V, dY_V,\
+                                                                    dZ_V        
+                    A_matrix[V_offset+counter,instrument_i:instrument_i+3] = \
+                                                          -dX_V, -dY_V, -dZ_V
+                    A_matrix[V_offset+counter,Ori_inst_i:Ori_inst_i+3] = \
+                                                          dRx_V, dRy_V, dRz_V                                    
+                    A_matrixHR[(V_offset+counter,Point_i)] = ['V/dX', inst, 
+                                                                        point]
+                    A_matrixHR[(V_offset+counter,Point_i+1)] = ['V/dY', inst, 
+                                                                        point]
+                    A_matrixHR[(V_offset+counter,Point_i+2)] = ['V/dZ', inst,
+                                                                        point]
+                    A_matrixHR[(V_offset+counter,instrument_i)] = ['V/dX',
+                                                                   point,inst]
+                    A_matrixHR[(V_offset+counter,instrument_i+1)] = ['V/dY',
+                                                                   point,inst]
+                    A_matrixHR[(V_offset+counter,instrument_i+2)] = ['V/dZ',
+                                                                   point,inst]
+                    A_matrixHR[(V_offset+counter,Ori_inst_i)] = ['V/dRx',
+                                                               point, inst]
+                    A_matrixHR[(V_offset+counter,Ori_inst_i+1)] = ['V/dRy',
+                                                                    point,inst]
+                    A_matrixHR[(V_offset+counter,Ori_inst_i+2)] = ['V/dRz',
+                                                                    point,inst]
+                else:
+                    A_matrix[V_offset+counter,Point_i:Point_i+3] = V_dX, V_dY,\
+                                                                   V_dZ         
+                    A_matrix[V_offset+counter,instrument_i:instrument_i+3] = \
                                                           -V_dX, -V_dY, -V_dZ
-                A_matrixHR[(V_offset+counter,Point_i)] = ['V/dX', inst, point]
-                A_matrixHR[(V_offset+counter,Point_i+1)] = ['V/dY', inst, point]
-                A_matrixHR[(V_offset+counter,Point_i+2)] = ['V/dZ', inst, point]
-                
-                A_matrixHR[(V_offset+counter,instrument_i)] = ['V/dX',point,inst]
-                A_matrixHR[(V_offset+counter,instrument_i+1)] = ['V/dY',point,inst]
-                A_matrixHR[(V_offset+counter,instrument_i+2)] = ['V/dZ',point,inst]
+                    A_matrixHR[(V_offset+counter,Point_i)] = ['V/dX', inst, 
+                                                                        point]
+                    A_matrixHR[(V_offset+counter,Point_i+1)] = ['V/dY', inst, 
+                                                                        point]
+                    A_matrixHR[(V_offset+counter,Point_i+2)] = ['V/dZ', inst,
+                                                                        point]
+                    A_matrixHR[(V_offset+counter,instrument_i)] = ['V/dX',
+                                                                   point,inst]
+                    A_matrixHR[(V_offset+counter,instrument_i+1)] = ['V/dY',
+                                                                   point,inst]
+                    A_matrixHR[(V_offset+counter,instrument_i+2)] = ['V/dZ',
+                                                                   point,inst]
             
             counter += 1
     L_vector = np.concatenate((L_vector,L_subv_Hz))
@@ -779,6 +982,10 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
     Q_vector = np.concatenate((Q_vector,Q_subv_Hz))
     Q_vector = np.concatenate((Q_vector,Q_subv_V))
     Q_vector = np.concatenate((Q_vector,Q_subv_Sd))
+
+# =============================================================================
+# MAYBE NEEDS CHANGING
+# =============================================================================
 
  # =============================================================================    
  # Constraints - filling A, L, LX0, P and HR versions
@@ -815,6 +1022,9 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
                    PointTo, PointFrom]
         A_matrixHR[(A_row_index,PointTo_i+2)] = ['dZ', 'distance constraint', 
                    PointTo, PointFrom]
+# =============================================================================
+# MAYBE NEEDS CHANGING - END
+# =============================================================================
     
     P_matrix = np.diagflat(P_vector)
     Q_matrix = np.diagflat(Q_vector)
@@ -848,8 +1058,8 @@ def create_constraints(Aproximates):
 
 def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
 				 sorted_measured_points_in_lines,instruments, count_instruments,
-				 Pol_measurements,count_Pol_measurements, count_IFM,
-				 unknowns, count_unknowns, IFM_StDev, Instruments_6DoF, Trans_par):
+				 Pol_measurements,count_Pol_measurements, count_IFM, unknowns, 
+          count_unknowns, IFM_StDev, Instruments_6DoF, Trans_par, epsilon):
 	
     Combinations_for_constraints,count_constraints =\
 																	create_constraints(Aproximates)
@@ -868,7 +1078,8 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
                           instruments, count_instruments,
                           Pol_measurements,
                           unknowns,count_unknowns,
-                          X_vector, X_vectorHR, IFM_StDev,Instruments_6DoF
+                          X_vector, X_vectorHR, IFM_StDev,Instruments_6DoF,
+                          epsilon
                           )
 
 
@@ -969,7 +1180,7 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
                                       instruments, count_instruments,
                                       Pol_measurements,unknowns,count_unknowns,
                                       X_vector, X_vectorHR, IFM_StDev, 
-                                      Instruments_6DoF
+                                      Instruments_6DoF, epsilon
                                       )
 
 

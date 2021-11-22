@@ -5,7 +5,7 @@ Created on Thu Feb 11 10:54:43 2021
 @author: jbarker
 """
 
-import math as m
+#import math as m
 """
 
    _____             __ _                       _   _                __ _ _      
@@ -21,7 +21,7 @@ import math as m
 """CAN BE CHANGED"""
 Which_epochs = (0,2) #the comma must stay, otherwise the variable will be int
 Names_of_magnets = ['PQK36','PQL6','PQK62']
-Instruments_6DoF = False
+Instruments_6DoF = True
 
 Pico_StDev_basic = 0.00000001 #mm, PicoScale Standard Deviation
 IFM_StDev_basic = (0.0004,0.00015) #mm, LT IFM, based on Leica's white paper
@@ -34,7 +34,7 @@ Constraint_StDev_basic = 0.000001 #mm
 Max_diff_from_line = 1.7 #mm - maximum distance from line, report the excess
 LSM_Threshold = 1e-6
 LSM_Max_iterations = 10
-Epsilon = 0.001
+Epsilon = 0.00001
 
 
 Sigma_0 = 0.000001
