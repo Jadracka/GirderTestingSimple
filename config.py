@@ -33,8 +33,8 @@ Constraint_StDev_basic = 0.000001 #mm
 
 Max_diff_from_line = 1.7 #mm - maximum distance from line, report the excess
 LSM_Threshold = 1e-6
-LSM_Max_iterations = 10
-Epsilon = 0.00001
+LSM_Max_iterations = 15
+Epsilon = 0.001
 
 
 Sigma_0 = 0.000001
