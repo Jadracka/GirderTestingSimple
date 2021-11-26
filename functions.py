@@ -432,53 +432,6 @@ def Par_6Dof(PointTo, Instrument, Aproximates, epsilon):
            dX_Hz, dY_Hz, dZ_Hz, dRx_Hz, dRy_Hz, dRz_Hz, \
            dX_V, dY_V, dZ_V, dRx_V, dRy_V, dRz_V
 
-def Par_6Dof_Sd(PointTo, Instrument, Aproximates, epsilon):
-    Rx, Ry, Rz = Aproximates['Ori_'+Instrument]
-    dX = Aproximates[PointTo][0] - Aproximates[Instrument][0]
-    dY = Aproximates[PointTo][1] - Aproximates[Instrument][1]
-    dZ = Aproximates[PointTo][2] - Aproximates[Instrument][2]
-    dXe = Aproximates[PointTo][0] - Aproximates[Instrument][0] + epsilon
-    dYe = Aproximates[PointTo][1] - Aproximates[Instrument][1] + epsilon
-    dZe = Aproximates[PointTo][2] - Aproximates[Instrument][2] + epsilon
-    dX_e = Aproximates[PointTo][0] - Aproximates[Instrument][0] - epsilon
-    dY_e = Aproximates[PointTo][1] - Aproximates[Instrument][1] - epsilon
-    dZ_e = Aproximates[PointTo][2] - Aproximates[Instrument][2] - epsilon
-    Rxc = m.cos(Rx)
-    Rxs = m.sin(Rx)
-    Ryc = m.cos(Ry)
-    Rys = m.sin(Ry)
-    Rzc = m.cos(Rz)
-    Rzs = m.sin(Rz)
-    Rxce = m.cos(Rx + epsilon)
-    Rxse = m.sin(Rx + epsilon)
-    Ryce = m.cos(Ry + epsilon)
-    Ryse = m.sin(Ry + epsilon)
-    Rzce = m.cos(Rz + epsilon)
-    Rzse = m.sin(Rz + epsilon)
-    Rxc_e = m.cos(Rx - epsilon)
-    Rxs_e = m.sin(Rx - epsilon)
-    Ryc_e = m.cos(Ry - epsilon)
-    Rys_e = m.sin(Ry - epsilon)
-    Rzc_e = m.cos(Rz - epsilon)
-    Rzs_e = m.sin(Rz - epsilon)
-    dX_Sd = (Sd_6Dof(dXe, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs) -
-             Sd_6Dof(dX_e, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs)) /2*epsilon
-    dY_Sd = (Sd_6Dof(dX, dYe, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs) -
-             Sd_6Dof(dX, dY_e, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs)) /2*epsilon
-    dZ_Sd = (Sd_6Dof(dX, dY, dZe, Rxc, Rxs, Ryc, Rys, Rzc, Rzs) -
-             Sd_6Dof(dX, dY, dZ_e, Rxc, Rxs, Ryc, Rys, Rzc, Rzs)) /2*epsilon
-    dRx_Sd = (Sd_6Dof(dX, dY, dZ, Rxce, Rxse, Ryc, Rys, Rzc, Rzs) -
-              Sd_6Dof(dX, dY, dZ, Rxc_e, Rxs_e, Ryc, Rys, Rzc, Rzs)) \
-              /2*epsilon
-    dRy_Sd = (Sd_6Dof(dX, dY, dZ, Rxc, Rxs, Ryce, Ryse, Rzc, Rzs) -
-              Sd_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc_e, Rys_e, Rzc, Rzs)) \
-              /2*epsilon
-    dRz_Sd = (Sd_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzce, Rzse) -
-              Sd_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc_e, Rzs_e)) \
-              /2*epsilon
-   
-    return dX_Sd, dY_Sd, dZ_Sd, dRx_Sd, dRy_Sd, dRz_Sd
-
 def horizontal_angle_from_Coords(PointTo,PointFrom):
     Hz = m.atan2(PointFrom[1]-PointTo[1],PointFrom[0]-PointTo[0])
     return Hz
@@ -553,12 +506,23 @@ def filling_X(Aproximates, unknowns, count_unknowns, count_instruments,
         XHR.append(('Y ' + unknown))
         XHR.append(('Z ' + unknown))
     if Instruments_6DoF:
-        for unknown in unknowns[-count_instruments:]:
+        for i, unknown in enumerate(unknowns[-count_instruments:]):
+            iii = 3*(count_instruments - i)
+            Angles = Aproximates[unknown]
+            Rx = (a(Angles[0],a.T_RAD, True).angle)
+            Ry = (a(Angles[1],a.T_RAD, True).angle)
+            Rz = (a(Angles[2],a.T_RAD, True).angle)
+            X[-iii] = Rx
+            X[-iii+1] = Ry
+            X[-iii+2] = Rz
             XHR.append(('RX ' + unknown))
             XHR.append(('RY ' + unknown))
             XHR.append(('RZ ' + unknown))
     else:
-        for unknown in unknowns[-count_instruments:]:
+        # Has a problem! 
+        for i, unknown in enumerate(unknowns[-count_instruments:]):
+            index = count_instruments - i
+            X[-index] = np.array(a(Aproximates[unknown],a.T_RAD, True).angle)
             XHR.append(unknown)
     return X, XHR
 

@@ -14,6 +14,7 @@ import math as m
 import config as cg
 import functions as fc
 import Helmert3Dtransform as ht
+from angle import Angle as a
 
 from datetime import datetime as dt
 date_time = dt.fromtimestamp(dt.timestamp(dt.now()))
@@ -447,7 +448,7 @@ if Two_epochs:
         print('All lines measured in Epoch_%s were also measured in Epoch_%s.'
               % (str(Epoch_num),str(Epoch_num1)))
     del line, all_lines_measured_same
-print("Comparisons and initial imports sone.")
+print("Comparisons and initial imports done.")
 # =============================================================================
 # Calculating Helmert transformations for measured cartesian coordinates
 # =============================================================================
@@ -455,7 +456,10 @@ Transformed_Pol_measurements, Trans_par = fc.Helmert_calc_for_PolMeas(
                                           Pol_measurements_cart,Nominal_coords)
 for meas in cg.LSM_Excluded_measurements[str(Epoch_num)]:
     Pol_measurements[meas[1]][meas[2]].pop(meas[0])
-del meas
+try:
+    del meas
+except NameError:
+    pass
 
 count_IFM_measurements = sum([len(v) for k, v in\
                                          measured_distances_in_lines.items()])
@@ -481,10 +485,16 @@ Aproximates = fc.merge_measured_coordinates(Transformed_Pol_measurements)
 
 if cg.Instruments_6DoF:
     for instrument in Trans_par:
-        Aproximates['Ori_'+instrument] = Trans_par[instrument][-3:]
+        Angles = Trans_par[instrument][-3:]
+        Rx = (a(Angles[0],a.T_RAD, True).angle)
+        Ry = (a(Angles[1],a.T_RAD, True).angle)
+        Rz = (a(Angles[2],a.T_RAD, True).angle)
+        Aproximates['Ori_'+instrument] = (Rx, Ry, Rz)
+    del Rx, Ry, Rz
 else:
     for instrument in Trans_par:
-        Aproximates['Ori_'+instrument] = Trans_par[instrument][-1]
+        Aproximates['Ori_'+instrument] = (a(Trans_par[instrument][-1]-m.pi,
+                                          a.T_RAD, True).angle)
             
 print("Initial Helmert transform pretransport epoch, unknown counts and Aproximates filling done.")
 
@@ -550,7 +560,10 @@ if Two_epochs:
                                    Pol_measurements_E1.items()]))
     for meas in cg.LSM_Excluded_measurements[str(Epoch_num1)]:
         Pol_measurements_E1[meas[1]][meas[2]].pop(meas[0])
-    del meas
+    try:
+        del meas
+    except NameError:
+        pass
     excluded_count_E1 = len(cg.LSM_Excluded_measurements[str(Epoch_num1)])
     count_Sd_E1 = fc.Count_meas_types(Pol_measurements_E1, 'Sd')
     count_Hz_E1 = fc.Count_meas_types(Pol_measurements_E1, 'Hz')
@@ -600,10 +613,11 @@ if Two_epochs:
     
     Header = ["Results from Epoch" + str(
             cg.Which_epochs[0]) + " [RHCS]\n", "created:" + str(date_time)
-            + "\nUsing source files:\n" + '-' + str(
-                    cg.LoS_Measurements_file_name_1) + '\n', '-' + str(
-                    cg.Pol_Measurements_file_name_1) + '\n', '-' + str(
-                    cg.Coords_file_name_1) + '\n']
+            + "\nUsing source files:\n" + ' -' + str(
+                    cg.LoS_Measurements_file_name_1) + '\n', ' -' + str(
+                    cg.Pol_Measurements_file_name_1) + '\n', ' -' + str(
+                    cg.Coords_file_name_1) + '\n'
+                    ]
     
     Results_file_E1.writelines(Header)
     
