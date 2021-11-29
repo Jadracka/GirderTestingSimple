@@ -18,10 +18,6 @@ from angle import Angle as a
 
 from datetime import datetime as dt
 date_time = dt.fromtimestamp(dt.timestamp(dt.now()))
-#import Helmert3Dtransform as helm
-
-#from operator import itemgetter
-#from collections import namedtuple
 
 # Are there two epochs to calculate?
 if len(cg.Which_epochs)>1:
@@ -32,7 +28,6 @@ else:
     Two_epochs = False
     Epoch_num = cg.Which_epochs[0]
 
-# Developing the 6DoF version of the analysis
 
 # =============================================================================
 # Loading measurement files and Coordinates, if two epochs are set, files load
@@ -454,6 +449,14 @@ print("Comparisons and initial imports done.")
 # =============================================================================
 Transformed_Pol_measurements, Trans_par = fc.Helmert_calc_for_PolMeas(
                                           Pol_measurements_cart,Nominal_coords)
+corr_I0 = (Trans_par['Instrument_0'][0],Trans_par['Instrument_0'][1],
+           Trans_par['Instrument_0'][2],Trans_par['Instrument_0'][3],
+           Trans_par['Instrument_0'][4],Trans_par['Instrument_0'][5], -0.24425)
+corr_I1 = (Trans_par['Instrument_1'][0],Trans_par['Instrument_1'][1],
+           Trans_par['Instrument_1'][2],Trans_par['Instrument_1'][3],
+           Trans_par['Instrument_1'][4],Trans_par['Instrument_1'][5], 3.07930925228)
+Trans_par['Instrument_0'] = corr_I0
+Trans_par['Instrument_1'] = corr_I1
 for meas in cg.LSM_Excluded_measurements[str(Epoch_num)]:
     Pol_measurements[meas[1]][meas[2]].pop(meas[0])
 try:
@@ -490,10 +493,10 @@ if cg.Instruments_6DoF:
         Ry = (a(Angles[1],a.T_RAD, True).angle)
         Rz = (a(Angles[2],a.T_RAD, True).angle)
         Aproximates['Ori_'+instrument] = (Rx, Ry, Rz)
-    del Rx, Ry, Rz
+    del Rx, Ry, Rz, Angles
 else:
     for instrument in Trans_par:
-        Aproximates['Ori_'+instrument] = (a(Trans_par[instrument][-1]-m.pi,
+        Aproximates['Ori_'+instrument] = (a(Trans_par[instrument][-1],
                                           a.T_RAD, True).angle)
             
 print("Initial Helmert transform pretransport epoch, unknown counts and Aproximates filling done.")

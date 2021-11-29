@@ -332,23 +332,37 @@ def ParD_Sd(PointTo, PointFrom):
     return dX, dY, dZ
 
 def Sd_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs):
+#    d_Sd = m.sqrt(pow((Ryc*Rzc*dX + Ryc*Rzs*dY - Rys*dZ),2)+\
+#                pow(((Rxs*Rys*Rzc - Rxc*Rzs)*dX + (Rxc*Rys*Rzs - Rxs*Rzc)*dY +\
+#                     Rxs*Ryc*dZ),2)+\
+#                pow(((Rxc*Rys*Rzc + Rxs*Rzs)*dX + (Rxc*Rys*Rzs - Rxs*Rzc)*dY +\
+#                 Rxc*Ryc*dZ),2))
     d_Sd = m.sqrt(pow((Ryc*Rzc*dX + Ryc*Rzs*dY - Rys*dZ),2)+\
-                pow(((Rxs*Rys*Rzc - Rxc*Rzs)*dX + (Rxc*Rys*Rzs - Rxs*Rzc)*dY +\
+                pow(((Rxs*Rys*Rzc - Ryc*Rzs)*dX + (Rxs*Rys*Rzs + Ryc*Rzc)*dY +\
                      Rxs*Ryc*dZ),2)+\
                 pow(((Rxc*Rys*Rzc + Rxs*Rzs)*dX + (Rxc*Rys*Rzs - Rxs*Rzc)*dY +\
                  Rxc*Ryc*dZ),2))
     return d_Sd
             
 def Hz_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs):
-    d_Hz = m.atan2(((Rxs*Rys*Rzc - Rxc*Rzs)*dX + (Rxs*Rys*Rzs + Rxc*Rzc)*dY + \
+#    d_Hz = m.atan2(((Rxs*Rys*Rzc - Rxc*Rzs)*dX + (Rxs*Rys*Rzs + Rxc*Rzc)*dY + \
+#                   (Rxs*Ryc)*dZ), (Ryc*Rzc*dX + Ryc*Rzs*dY - Rys*dZ))
+    d_Hz = m.atan2(((Rxs*Rys*Rzc - Ryc*Rzs)*dX + (Rxs*Rys*Rzs + Ryc*Rzc)*dY + \
                    (Rxs*Ryc)*dZ), (Ryc*Rzc*dX + Ryc*Rzs*dY - Rys*dZ))
     return d_Hz
 
 def V_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs):
+#    d_V = m.acos(((Rxc*Rys*Rzc + Rxs*Rzs)*dX + (Rxc*Rys*Rzs - Rxs*Rzc)*dY + \
+#                  (Rxc*Ryc)*dZ)/\
+#                 m.sqrt((pow((Ryc*Rzc*dX + Ryc*Rzs*dY - Rys*dZ),2)+\
+#                pow(((Rxs*Rys*Rzc - Rxc*Rzs)*dX + (Rxc*Rys*Rzs - Rxs*Rzc)*dY +\
+#                     Rxs*Ryc*dZ),2)+\
+#                pow(((Rxc*Rys*Rzc + Rxs*Rzs)*dX + (Rxc*Rys*Rzs - Rxs*Rzc)*dY +\
+#                 (Rxc*Ryc*dZ)),2))))
     d_V = m.acos(((Rxc*Rys*Rzc + Rxs*Rzs)*dX + (Rxc*Rys*Rzs - Rxs*Rzc)*dY + \
                   (Rxc*Ryc)*dZ)/\
                  m.sqrt((pow((Ryc*Rzc*dX + Ryc*Rzs*dY - Rys*dZ),2)+\
-                pow(((Rxs*Rys*Rzc - Rxc*Rzs)*dX + (Rxc*Rys*Rzs - Rxs*Rzc)*dY +\
+                pow(((Rxs*Rys*Rzc - Ryc*Rzs)*dX + (Rxs*Rys*Rzs - Ryc*Rzc)*dY +\
                      Rxs*Ryc*dZ),2)+\
                 pow(((Rxc*Rys*Rzc + Rxs*Rzs)*dX + (Rxc*Rys*Rzs - Rxs*Rzc)*dY +\
                  (Rxc*Ryc*dZ)),2))))

@@ -21,7 +21,7 @@ Created on Thu Feb 11 10:54:43 2021
 """CAN BE CHANGED"""
 Which_epochs = (0,) #the comma must stay, otherwise the variable will be int
 Names_of_magnets = ['PQK36','PQL6','PQK62']
-Instruments_6DoF = False
+Instruments_6DoF = True
 
 Pico_StDev_basic = 0.00000001 #mm, PicoScale Standard Deviation
 IFM_StDev_basic = (0.0004,0.00015) #mm, LT IFM, based on Leica's white paper

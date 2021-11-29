@@ -7,6 +7,7 @@ Created on Tue Jun  1 16:23:20 2021
 
 import numpy as np
 import math
+from angle import Angle as a
 
 def X_Rotation(alpha):
     Rxc = math.cos(alpha)
@@ -193,7 +194,11 @@ def Helmert_transform(From,To):
     if counter == 100:
         print("Too many iterations")
 #    Transformed_From = Transformation(x,From)
-    return x
+    Trans_par = np.array([x[0], x[1], x[2], x[3],
+                 a(x[4],a.T_RAD, False).angle,
+                 a(x[5],a.T_RAD, False).angle,
+                 a(x[6],a.T_RAD, False).angle])
+    return Trans_par
 
 # =============================================================================
 # Testing data [m]
@@ -215,6 +220,21 @@ From = {'Point1': (744970.551, 1040944.109, 224.592),
         'Point6': (744943.006, 1040920.538, 223.352)
       }
 """
+"""
+To = {'Point1': (100.000, 0.000, 0.000),
+      'Point2': (0.000, -100.000, 0.000),
+      'Point3': (0.000, 0.000, 100.000),
+      'Point4': (0.000, 0.000, 0.000)
+      }
+
+From = {'Point1': (89.101, 45.399, 0.000),
+        'Point2': (-45.399, 89.101, 0.000),
+        'Point3': (0.000, 0.000, 100.000),
+        'Point4': (0.000, 0.000, 0.000)
+      }
+"""
+#par = Helmert_transform(From,To)
+#New = Transformation(par,From)
 # =============================================================================
 # Testing data - Results
 # =============================================================================
