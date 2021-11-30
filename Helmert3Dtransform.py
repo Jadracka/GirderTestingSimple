@@ -195,9 +195,9 @@ def Helmert_transform(From,To):
         print("Too many iterations")
 #    Transformed_From = Transformation(x,From)
     Trans_par = np.array([x[0], x[1], x[2], x[3],
-                 a(x[4],a.T_RAD, False).angle,
-                 a(x[5],a.T_RAD, False).angle,
-                 a(x[6],a.T_RAD, False).angle])
+                 a(x[4],a.T_RAD, True).angle,
+                 a(x[5],a.T_RAD, True).angle,
+                 a(x[6],a.T_RAD, True).angle])
     return Trans_par
 
 # =============================================================================

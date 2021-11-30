@@ -454,7 +454,7 @@ corr_I0 = (Trans_par['Instrument_0'][0],Trans_par['Instrument_0'][1],
            Trans_par['Instrument_0'][4],Trans_par['Instrument_0'][5], -0.24425)
 corr_I1 = (Trans_par['Instrument_1'][0],Trans_par['Instrument_1'][1],
            Trans_par['Instrument_1'][2],Trans_par['Instrument_1'][3],
-           Trans_par['Instrument_1'][4],Trans_par['Instrument_1'][5], 3.07930925228)
+           Trans_par['Instrument_1'][4],Trans_par['Instrument_1'][5], -3.09026)
 Trans_par['Instrument_0'] = corr_I0
 Trans_par['Instrument_1'] = corr_I1
 for meas in cg.LSM_Excluded_measurements[str(Epoch_num)]:

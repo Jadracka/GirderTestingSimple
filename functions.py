@@ -447,7 +447,8 @@ def Par_6Dof(PointTo, Instrument, Aproximates, epsilon):
            dX_V, dY_V, dZ_V, dRx_V, dRy_V, dRz_V
 
 def horizontal_angle_from_Coords(PointTo,PointFrom):
-    Hz = m.atan2(PointFrom[1]-PointTo[1],PointFrom[0]-PointTo[0])
+    Hz = a(m.atan2(PointFrom[1]-PointTo[1],PointFrom[0]-PointTo[0]), 
+           a.T_RAD,True).angle
     return Hz
 
 def vertical_angle_from_Coords(PointTo,PointFrom):
@@ -728,15 +729,15 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
 #														  Aproximates[instrument]),a.T_RAD)
 #            ori_sum += ori_local
 #            count += 1
-#        Aproximates['Ori_' + instrument] = a(ori_sum/count,a.T_GON,False).angle
+#        Aproximates['Ori_' + instrument] = a(ori_sum/count,a.T_GON,True).angle
 #        X_vector[X_vectorHR.index('Ori_' + instrument)] = a(-ori_sum/\
-#				count,a.T_GON,False).angle
+#				count,a.T_GON,True).angle
 
     counter = 0
     for inst,points in Pol_measurements.items():
         instrument_i = 3 * unknowns.index(inst) # Starting column of the instrument
         if Instruments_6DoF:
-            Ori_inst_i = X_vectorHR.index('RX Ori_'+inst)
+            Ori_inst_i = X_vectorHR.index('RZ Ori_'+inst)
         else:
             Ori_inst_i = X_vectorHR.index('Ori_'+inst) # Inst's Orientation index
         for point in points:
@@ -790,9 +791,9 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
                     A_matrix[Sd_offset+counter,instrument_i] = -dX_Sd
                     A_matrix[Sd_offset+counter,instrument_i+1] = -dY_Sd
                     A_matrix[Sd_offset+counter,instrument_i+2] = -dZ_Sd
-                    A_matrix[Sd_offset+counter,Ori_inst_i] = dRx_Sd
-                    A_matrix[Sd_offset+counter,Ori_inst_i+1] = dRy_Sd
-                    A_matrix[Sd_offset+counter,Ori_inst_i+2] = dRz_Sd
+                    A_matrix[Sd_offset+counter,Ori_inst_i-2] = dRx_Sd
+                    A_matrix[Sd_offset+counter,Ori_inst_i-1] = dRy_Sd
+                    A_matrix[Sd_offset+counter,Ori_inst_i] = dRz_Sd
                     A_matrixHR[(Sd_offset+counter,Point_i)] = ['Sd/dX', inst, 
                                                                    point]
                     A_matrixHR[(Sd_offset+counter,Point_i+1)] = ['Sd/dY', inst, 
@@ -844,6 +845,9 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
                 Hz_angle_from_aprox = a(horizontal_angle_from_Coords(
                                     Aproximates[point],Aproximates[inst]) - \
                                     X_vector[Ori_inst_i],a.T_RAD,True).angle
+                print(horizontal_angle_from_Coords(Aproximates[point],Aproximates[inst]))
+                print(X_vector[Ori_inst_i])
+                print(Hz, Hz_angle_from_aprox)
                 LX0_subv_Hz = np.append(LX0_subv_Hz, Hz_angle_from_aprox)
                 L_subv_Hz_HR.append(('Hz', inst, point))
                 
@@ -852,7 +856,7 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
                                                                 dY_Hz, dZ_Hz
                     A_matrix[Hz_offset+counter,instrument_i:instrument_i+3] = \
                                                        -dX_Hz, -dY_Hz, -dZ_Hz
-                    A_matrix[Hz_offset+counter,Ori_inst_i:Ori_inst_i+3] = \
+                    A_matrix[Hz_offset+counter,Ori_inst_i-3:Ori_inst_i] = \
                                                     dRx_Hz, dRy_Hz, dRz_Hz
                     A_matrixHR[(Hz_offset+counter,Point_i)] = ['Hz/dX', inst, 
                                                                    point]
@@ -912,7 +916,7 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
                                                                     dZ_V        
                     A_matrix[V_offset+counter,instrument_i:instrument_i+3] = \
                                                           -dX_V, -dY_V, -dZ_V
-                    A_matrix[V_offset+counter,Ori_inst_i:Ori_inst_i+3] = \
+                    A_matrix[V_offset+counter,Ori_inst_i-3:Ori_inst_i] = \
                                                           dRx_V, dRy_V, dRz_V                                    
                     A_matrixHR[(V_offset+counter,Point_i)] = ['V/dX', inst, 
                                                                         point]
