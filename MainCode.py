@@ -451,10 +451,10 @@ Transformed_Pol_measurements, Trans_par = fc.Helmert_calc_for_PolMeas(
                                           Pol_measurements_cart,Nominal_coords)
 corr_I0 = (Trans_par['Instrument_0'][0],Trans_par['Instrument_0'][1],
            Trans_par['Instrument_0'][2],Trans_par['Instrument_0'][3],
-           Trans_par['Instrument_0'][4],Trans_par['Instrument_0'][5], -0.24425)
+           Trans_par['Instrument_0'][4],Trans_par['Instrument_0'][5], -0.24425492515634872)
 corr_I1 = (Trans_par['Instrument_1'][0],Trans_par['Instrument_1'][1],
            Trans_par['Instrument_1'][2],Trans_par['Instrument_1'][3],
-           Trans_par['Instrument_1'][4],Trans_par['Instrument_1'][5], -3.09026)
+           Trans_par['Instrument_1'][4],Trans_par['Instrument_1'][5], 3.19292331401109)
 Trans_par['Instrument_0'] = corr_I0
 Trans_par['Instrument_1'] = corr_I1
 for meas in cg.LSM_Excluded_measurements[str(Epoch_num)]:
@@ -505,7 +505,7 @@ print("Initial Helmert transform pretransport epoch, unknown counts and Aproxima
 # Least Square Method for pre-transport epoch
 # =============================================================================
 P_matrix, Results, Cov_matrix, Qvv, s02, dof, w, s02_IFM, s02_Hz, s02_V,  \
-s02_Sd, s02_con, L_vectorHR = fc.LSM(Epoch_num, 
+s02_Sd, s02_con = fc.LSM(Epoch_num, 
 										Nominal_coords, Aproximates,
 									   measured_distances_in_lines,				
 									   sorted_measured_points_in_lines,
@@ -597,7 +597,7 @@ if Two_epochs:
 # Least Square Method for post-transport epoch
 # =============================================================================
     P_matrix_E1,Results_E1, Cov_matrix_E1, Qvv_E1, s02_E1, dof_E1, w_E1, s02_IFM_E1,\
-	s02_Hz_E1, s02_V_E1, s02_Sd_E1, s02_con_E1, L_vectorHR_E1 = fc.LSM(Epoch_num1, 
+	s02_Hz_E1, s02_V_E1, s02_Sd_E1, s02_con_E1 = fc.LSM(Epoch_num1, 
 										Nominal_coords_E1, Aproximates_E1, 
 										measured_distances_in_lines_E1,				
 									   sorted_measured_points_in_lines_E1,

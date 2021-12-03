@@ -265,8 +265,6 @@ def Count_meas_types(d, meas_type):
 #            if types == 'V':
 #                counter_V +=1
 
-Measurements = Polar_2F_meas_read_in("Polar_measurements_20Sep21.txt")
-
            
 def Coords_read_in(Coords_file_name):
     Coords_file = open(Coords_file_name,'r')
@@ -332,41 +330,49 @@ def ParD_Sd(PointTo, PointFrom):
     return dX, dY, dZ
 
 def Sd_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs):
-#    d_Sd = m.sqrt(pow((Ryc*Rzc*dX + Ryc*Rzs*dY - Rys*dZ),2)+\
-#                pow(((Rxs*Rys*Rzc - Rxc*Rzs)*dX + (Rxc*Rys*Rzs - Rxs*Rzc)*dY +\
-#                     Rxs*Ryc*dZ),2)+\
-#                pow(((Rxc*Rys*Rzc + Rxs*Rzs)*dX + (Rxc*Rys*Rzs - Rxs*Rzc)*dY +\
-#                 Rxc*Ryc*dZ),2))
     d_Sd = m.sqrt(pow((Ryc*Rzc*dX + Ryc*Rzs*dY - Rys*dZ),2)+\
-                pow(((Rxs*Rys*Rzc - Ryc*Rzs)*dX + (Rxs*Rys*Rzs + Ryc*Rzc)*dY +\
+                pow(((Rxs*Rys*Rzc - Rxc*Rzs)*dX + (Rxs*Rys*Rzs + Rxc*Rzc)*dY +\
                      Rxs*Ryc*dZ),2)+\
                 pow(((Rxc*Rys*Rzc + Rxs*Rzs)*dX + (Rxc*Rys*Rzs - Rxs*Rzc)*dY +\
                  Rxc*Ryc*dZ),2))
     return d_Sd
-            
+
+def Sd_6Dof_noRot(dX, dY, dZ):
+    d_Sd = m.sqrt(pow(dX,2)+pow(dY,2)+pow(dZ,2))
+    return d_Sd
+
 def Hz_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs):
-#    d_Hz = m.atan2(((Rxs*Rys*Rzc - Rxc*Rzs)*dX + (Rxs*Rys*Rzs + Rxc*Rzc)*dY + \
-#                   (Rxs*Ryc)*dZ), (Ryc*Rzc*dX + Ryc*Rzs*dY - Rys*dZ))
-    d_Hz = m.atan2(((Rxs*Rys*Rzc - Ryc*Rzs)*dX + (Rxs*Rys*Rzs + Ryc*Rzc)*dY + \
+    d_Hz = m.atan2(((Rxs*Rys*Rzc - Rxc*Rzs)*dX + (Rxs*Rys*Rzs + Rxc*Rzc)*dY + \
                    (Rxs*Ryc)*dZ), (Ryc*Rzc*dX + Ryc*Rzs*dY - Rys*dZ))
     return d_Hz
 
 def V_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs):
-#    d_V = m.acos(((Rxc*Rys*Rzc + Rxs*Rzs)*dX + (Rxc*Rys*Rzs - Rxs*Rzc)*dY + \
-#                  (Rxc*Ryc)*dZ)/\
-#                 m.sqrt((pow((Ryc*Rzc*dX + Ryc*Rzs*dY - Rys*dZ),2)+\
-#                pow(((Rxs*Rys*Rzc - Rxc*Rzs)*dX + (Rxc*Rys*Rzs - Rxs*Rzc)*dY +\
-#                     Rxs*Ryc*dZ),2)+\
-#                pow(((Rxc*Rys*Rzc + Rxs*Rzs)*dX + (Rxc*Rys*Rzs - Rxs*Rzc)*dY +\
-#                 (Rxc*Ryc*dZ)),2))))
     d_V = m.acos(((Rxc*Rys*Rzc + Rxs*Rzs)*dX + (Rxc*Rys*Rzs - Rxs*Rzc)*dY + \
                   (Rxc*Ryc)*dZ)/\
                  m.sqrt((pow((Ryc*Rzc*dX + Ryc*Rzs*dY - Rys*dZ),2)+\
-                pow(((Rxs*Rys*Rzc - Ryc*Rzs)*dX + (Rxs*Rys*Rzs - Ryc*Rzc)*dY +\
+                pow(((Rxs*Rys*Rzc - Rxc*Rzs)*dX + (Rxs*Rys*Rzs + Rxc*Rzc)*dY +\
                      Rxs*Ryc*dZ),2)+\
                 pow(((Rxc*Rys*Rzc + Rxs*Rzs)*dX + (Rxc*Rys*Rzs - Rxs*Rzc)*dY +\
                  (Rxc*Ryc*dZ)),2))))
     return d_V
+
+def Par_6DoF_noRot(PointTo, PointFrom, Aproximates, epsilon):
+    dX = Aproximates[PointTo][0] - Aproximates[PointFrom][0]
+    dY = Aproximates[PointTo][1] - Aproximates[PointFrom][1]
+    dZ = Aproximates[PointTo][2] - Aproximates[PointFrom][2]
+    dXe = Aproximates[PointTo][0] - Aproximates[PointFrom][0] + epsilon
+    dYe = Aproximates[PointTo][1] - Aproximates[PointFrom][1] + epsilon
+    dZe = Aproximates[PointTo][2] - Aproximates[PointFrom][2] + epsilon
+    dX_e = Aproximates[PointTo][0] - Aproximates[PointFrom][0] - epsilon
+    dY_e = Aproximates[PointTo][1] - Aproximates[PointFrom][1] - epsilon
+    dZ_e = Aproximates[PointTo][2] - Aproximates[PointFrom][2] - epsilon
+    dX_Sd = (Sd_6Dof_noRot(dXe, dY, dZ) - Sd_6Dof_noRot(dX_e, dY, dZ))\
+            /(2*epsilon)
+    dY_Sd = (Sd_6Dof_noRot(dX, dYe, dZ) - Sd_6Dof_noRot(dX, dY_e, dZ))\
+            /(2*epsilon)
+    dZ_Sd = (Sd_6Dof_noRot(dX, dY, dZe) - Sd_6Dof_noRot(dX, dY, dZ_e))\
+            /(2*epsilon)
+    return dX_Sd, dY_Sd, dZ_Sd
 
 def Par_6Dof(PointTo, Instrument, Aproximates, epsilon):
 #    print(Instrument, PointTo)
@@ -654,10 +660,6 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
     P_vector = np.array([],dtype=float)
     Q_vector = np.array([],dtype=float)
     
-# =============================================================================
-# MAYBE NEEDS CHANGING
-# =============================================================================
-    
     # Filling A and L with IFM measurements
     for line in measured_distances_in_lines:
         # meas_i is index of the measurand in line, so I can pair it with the
@@ -682,10 +684,17 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
                                   Aproximates[PointTo],Aproximates[PointFrom]))
             PointFrom_i = 3*unknowns.index(PointFrom) 
             PointTo_i = 3*unknowns.index(PointTo)
-            dX,dY,dZ = ParD_Sd(Aproximates[PointTo],Aproximates[PointFrom])
-            A_matrix[L_i,PointTo_i:PointTo_i+3] = dX,dY,dZ
-            # for point "From" the partial derivatives change sign
-            A_matrix[L_i,PointFrom_i:PointFrom_i+3] = -dX,-dY,-dZ
+            if Instruments_6DoF:
+                dX_Sd, dY_Sd, dZ_Sd = Par_6DoF_noRot(PointTo,PointFrom, 
+                                                     Aproximates, epsilon)
+                A_matrix[L_i,PointTo_i:PointTo_i+3] = dX_Sd, dY_Sd, dZ_Sd
+                # for point "From" the partial derivatives change sign
+                A_matrix[L_i,PointFrom_i:PointFrom_i+3] = -dX_Sd, -dY_Sd, -dZ_Sd
+            else:
+                dX,dY,dZ = ParD_Sd(Aproximates[PointTo],Aproximates[PointFrom])
+                A_matrix[L_i,PointTo_i:PointTo_i+3] = dX,dY,dZ
+                # for point "From" the partial derivatives change sign
+                A_matrix[L_i,PointFrom_i:PointFrom_i+3] = -dX,-dY,-dZ
             # Documenting in human readible format the A and L elements
             L_vectorHR.append((line, PointFrom, PointTo))
             A_matrixHR[(L_i,PointFrom_i)] = ['dX', line, PointFrom, PointTo]
@@ -694,12 +703,16 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
             A_matrixHR[(L_i,PointTo_i)] = ['dX', line, PointTo, PointFrom]
             A_matrixHR[(L_i,PointTo_i+1)] = ['dY', line, PointTo, PointFrom]
             A_matrixHR[(L_i,PointTo_i+2)] = ['dZ', line, PointTo, PointFrom]
-    del PointFrom,PointTo, PointFrom_i,PointTo_i,dX,dY,dZ,L_i, meas_i, distance
-    
-# =============================================================================
-# MAYBE NEEDS CHANGING - END
-# =============================================================================
-    
+    del PointFrom,PointTo, PointFrom_i,PointTo_i,L_i, meas_i, distance
+    try:
+        del dX, dY, dZ
+    except UnboundLocalError:
+        pass
+    try:
+        del dX_Sd, dY_Sd, dZ_Sd
+    except UnboundLocalError:
+        pass
+ 
     L_subv_Hz = np.array([])
     L_subv_V = np.array([])
     L_subv_Sd = np.array([])
@@ -845,9 +858,7 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
                 Hz_angle_from_aprox = a(horizontal_angle_from_Coords(
                                     Aproximates[point],Aproximates[inst]) - \
                                     X_vector[Ori_inst_i],a.T_RAD,True).angle
-                print(horizontal_angle_from_Coords(Aproximates[point],Aproximates[inst]))
-                print(X_vector[Ori_inst_i])
-                print(Hz, Hz_angle_from_aprox)
+
                 LX0_subv_Hz = np.append(LX0_subv_Hz, Hz_angle_from_aprox)
                 L_subv_Hz_HR.append(('Hz', inst, point))
                 
@@ -969,28 +980,32 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
     Q_vector = np.concatenate((Q_vector,Q_subv_V))
     Q_vector = np.concatenate((Q_vector,Q_subv_Sd))
 
-# =============================================================================
-# MAYBE NEEDS CHANGING
-# =============================================================================
 
- # =============================================================================    
- # Constraints - filling A, L, LX0, P and HR versions
- # =============================================================================
+# =============================================================================    
+# Constraints - filling A, L, LX0, P and HR versions
+# =============================================================================
 
     L_lenght = len(L_vector)
     for index, const in enumerate(Combinations_for_constraints):
         A_row_index = L_lenght + index
         PointFrom = Combinations_for_constraints[index][0]
         PointTo = Combinations_for_constraints[index][1]
-        #Probably needs to take the coordinates from somewhere else!
-        dX,dY,dZ = ParD_Sd(Nominal_coords[PointTo],Nominal_coords[PointFrom])
         Sd = slope_distance(Nominal_coords[PointFrom],Nominal_coords[PointTo])
         Sd_aprox = slope_distance(Aproximates[PointFrom],Aproximates[PointTo])
         PointFrom_i = 3*unknowns.index(PointFrom) 
         PointTo_i = 3*unknowns.index(PointTo)
-        A_matrix[A_row_index,PointTo_i:PointTo_i+3] = dX,dY,dZ
-        # for point "From" the partial derivatives change sign
-        A_matrix[A_row_index,PointFrom_i:PointFrom_i+3] = -dX,-dY,-dZ
+        if Instruments_6DoF:
+            dX_Sd, dY_Sd, dZ_Sd = Par_6DoF_noRot(PointTo, PointFrom, 
+                                                 Aproximates, epsilon)
+            A_matrix[A_row_index,PointTo_i:PointTo_i+3] = dX_Sd, dY_Sd, dZ_Sd
+            # for point "From" the partial derivatives change sign
+            A_matrix[A_row_index,PointFrom_i:PointFrom_i+3] = -dX_Sd, -dY_Sd, \
+                                                              -dZ_Sd
+        else:
+            dX,dY,dZ = ParD_Sd(Nominal_coords[PointTo],Nominal_coords[PointFrom])
+            A_matrix[A_row_index,PointTo_i:PointTo_i+3] = dX,dY,dZ
+            # for point "From" the partial derivatives change sign
+            A_matrix[A_row_index,PointFrom_i:PointFrom_i+3] = -dX,-dY,-dZ
         # Documenting in human readible format what are the A and L elements
         L_vector = np.append(L_vector,Sd)
         LX0_vector = np.append(LX0_vector,Sd_aprox)
@@ -1008,9 +1023,14 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
                    PointTo, PointFrom]
         A_matrixHR[(A_row_index,PointTo_i+2)] = ['dZ', 'distance constraint', 
                    PointTo, PointFrom]
-# =============================================================================
-# MAYBE NEEDS CHANGING - END
-# =============================================================================
+    try:
+        del dX, dY, dZ
+    except UnboundLocalError:
+        pass
+    try:
+        del dX_Sd, dY_Sd, dZ_Sd
+    except UnboundLocalError:
+        pass
     
     P_matrix = np.diagflat(P_vector)
     Q_matrix = np.diagflat(Q_vector)
@@ -1127,8 +1147,8 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
 #                pass
             else:
                 if (vi/(m.sqrt(s02*Qvv[i,i]))>4):
-                    print(f"{vi/(m.sqrt(s02*Qvv[i,i])):16.12}, {L_vectorHR[i]}")
-
+#                    print(f"{vi/(m.sqrt(s02*Qvv[i,i])):16.12}, {L_vectorHR[i]}")
+                    pass
         print("n/o diag elem <0: ",vcount)
 #        s02_IFM = np.nan
 #        s02_con = np.nan
@@ -1179,4 +1199,4 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
     print (f"s02V   {s02_V:8.3}")
     print (f"s02Sd  {s02_Sd:8.3}")
     del metric, counter, i, p, cc
-    return P_matrix, LSM_results, Qxx, Qvv, s02, dof, w, s02_IFM, s02_Hz, s02_V, s02_Sd, s02_con, L_vectorHR
+    return P_matrix, LSM_results, Qxx, Qvv, s02, dof, w, s02_IFM, s02_Hz, s02_V, s02_Sd, s02_con

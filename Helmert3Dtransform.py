@@ -164,6 +164,7 @@ def Build_A(x,From,identicals):
 
 def Helmert_transform(From,To):
     R0, x0 = Helmert_aproximate_parameters(From,To)
+#    print(x0)
     identicals = list(set(To.keys()) & set(From.keys()))
     equation_count = 3*len(identicals)
     dx = np.zeros(7)
@@ -177,10 +178,10 @@ def Helmert_transform(From,To):
         PointID = identicals[i] #string
         To_ith = To[PointID][:3] #tuple
         To_array = np.concatenate((To_array,np.array(To_ith)),axis = None)
-    threshold = 0.000001 #fraction of basic unit
+    threshold = 0.000000001 #fraction of basic unit
     metric = threshold + 1
     counter = 0
-    while (metric > threshold) and (counter < 100):
+    while (metric > threshold) and (counter < 1000):
         l_prime = TFrom - To_array
         dx = -np.linalg.inv(A.transpose() @ A) @ A.transpose() @ l_prime
         x += dx
@@ -220,21 +221,59 @@ From = {'Point1': (744970.551, 1040944.109, 224.592),
         'Point6': (744943.006, 1040920.538, 223.352)
       }
 """
-"""
-To = {'Point1': (100.000, 0.000, 0.000),
-      'Point2': (0.000, -100.000, 0.000),
-      'Point3': (0.000, 0.000, 100.000),
-      'Point4': (0.000, 0.000, 0.000)
+
+Nominal = {'Point1': (0.00, 0.00, 0.00),
+      'Point2': (1000.00, 0.00, 0.00),
+      'Point3': (0.00, 1000.00, 0.00),
+      'Point4': (0.00, 0.00, 1000.00)
       }
 
-From = {'Point1': (89.101, 45.399, 0.000),
-        'Point2': (-45.399, 89.101, 0.000),
-        'Point3': (0.000, 0.000, 100.000),
-        'Point4': (0.000, 0.000, 0.000)
+X_45 = {'Point1': (0.00, 0.00, 0.00),
+        'Point2': (1000.00, 0.00, 0.00),
+        'Point3': (0.00, 760.41, -649.45),
+        'Point4': (0.00, 649.45, 760.41)
       }
-"""
-#par = Helmert_transform(From,To)
-#New = Transformation(par,From)
+
+Y_45 = {'Point1': (0.00, 0.00, 0.00),
+        'Point2': (760.41, 0.00, -649.45),
+        'Point3': (0.00, 1000.00, 0.00),
+        'Point4': (649.45, 0.00, 760.41)
+      }
+
+Z_45 = {'Point1': (0.00, 0.00, 0.00),
+        'Point2': (760.41, -649.45, 0.00),
+        'Point3': (649.45, 760.41, 0.00),
+        'Point4': (0.00, 0.00, 1000.00)
+      }
+
+LotR = {'Point1': (0.00, 0.00, 0.00),
+        'Point2': (572.06, -572.06, -587.79),
+        'Point3': (441.35, 818.73, -367.29),
+        'Point4': (691.35, -49.31, 720.84)
+      }
+
+
+RoTr = {'Point1': (100.00, -200.00, 300.00),
+        'Point2': (672.06, -772.06, -287.79),
+        'Point3': (541.35, 618.73, -67.29),
+        'Point4': (791.35, -249.31, 1020.84)
+      }
+
+
+parX_45 = Helmert_transform(X_45,Nominal)
+NewX_45 = Transformation(parX_45,X_45)
+
+#parY_45 = Helmert_transform(Y_45,Nominal)
+#NewY_45 = Transformation(parY_45,Y_45)
+#
+#parZ_45 = Helmert_transform(Z_45,Nominal)
+#NewZ_45 = Transformation(parZ_45,Z_45)
+
+#parLotR = Helmert_transform(LotR,Nominal)
+#NewLotR = Transformation(parLotR,LotR)
+#
+#parRoTr = Helmert_transform(RoTr,Nominal)
+#NewRoTr = Transformation(parRoTr,RoTr)
 # =============================================================================
 # Testing data - Results
 # =============================================================================
