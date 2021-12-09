@@ -126,10 +126,6 @@ if (cg.Print_real2nominal_checks) and not (all_points_in_lines_measured):
 del all_measured_points, nominal_points_all_measured, \
     all_points_in_lines_measured
 
-# =============================================================================
-# POTENTIAL PROBLEM WITH MEASUREMENT DICTIONARY
-# =============================================================================
-
 Pol_measurements_cart = {}
 for instrument in Pol_measurements:
     Pol_measurements_cart[instrument] = {}
@@ -449,14 +445,14 @@ print("Comparisons and initial imports done.")
 # =============================================================================
 Transformed_Pol_measurements, Trans_par = fc.Helmert_calc_for_PolMeas(
                                           Pol_measurements_cart,Nominal_coords)
-corr_I0 = (Trans_par['Instrument_0'][0],Trans_par['Instrument_0'][1],
-           Trans_par['Instrument_0'][2],Trans_par['Instrument_0'][3],
-           Trans_par['Instrument_0'][4],Trans_par['Instrument_0'][5], -0.24425492515634872)
-corr_I1 = (Trans_par['Instrument_1'][0],Trans_par['Instrument_1'][1],
-           Trans_par['Instrument_1'][2],Trans_par['Instrument_1'][3],
-           Trans_par['Instrument_1'][4],Trans_par['Instrument_1'][5], 3.19292331401109)
-Trans_par['Instrument_0'] = corr_I0
-Trans_par['Instrument_1'] = corr_I1
+#corr_I0 = (Trans_par['Instrument_0'][0],Trans_par['Instrument_0'][1],
+#           Trans_par['Instrument_0'][2],Trans_par['Instrument_0'][3],
+#           Trans_par['Instrument_0'][4],Trans_par['Instrument_0'][5], -0.24425492515634872)
+#corr_I1 = (Trans_par['Instrument_1'][0],Trans_par['Instrument_1'][1],
+#           Trans_par['Instrument_1'][2],Trans_par['Instrument_1'][3],
+#           Trans_par['Instrument_1'][4],Trans_par['Instrument_1'][5], 3.19292331401109)
+#Trans_par['Instrument_0'] = corr_I0
+#Trans_par['Instrument_1'] = corr_I1
 for meas in cg.LSM_Excluded_measurements[str(Epoch_num)]:
     Pol_measurements[meas[1]][meas[2]].pop(meas[0])
 try:
@@ -496,7 +492,7 @@ if cg.Instruments_6DoF:
     del Rx, Ry, Rz, Angles
 else:
     for instrument in Trans_par:
-        Aproximates['Ori_'+instrument] = (a(Trans_par[instrument][-1],
+        Aproximates['Ori_'+instrument] = (a(-Trans_par[instrument][-1],
                                           a.T_RAD, True).angle)
             
 print("Initial Helmert transform pretransport epoch, unknown counts and Aproximates filling done.")

@@ -19,7 +19,7 @@ Created on Thu Feb 11 10:54:43 2021
 """
 """Data analysis tools"""
 """CAN BE CHANGED"""
-Which_epochs = (0,) #the comma must stay, otherwise the variable will be int
+Which_epochs = (1,) #the comma must stay, otherwise the variable will be int
 Names_of_magnets = ['PQK36','PQL6','PQK62']
 Instruments_6DoF = True
 
@@ -28,7 +28,7 @@ IFM_StDev_basic = (0.0004,0.00015) #mm, LT IFM, based on Leica's white paper
 ADM_StDev_basic = 0.010 #mm, from 2-5m based on Leica's typical errors
 Hz_StDev_basic = 0.15 #mgon same like Leica TM50
 V_StDev_basic = 0.15 #mgon same like Leica TM50
-Constraint_StDev_basic = 0.00001#0.000000055136545 #mm
+Constraint_StDev_basic = 0.000001#0.000000055136545 #mm
 
 
 Max_diff_from_line = 1.7 #mm - maximum distance from line, report the excess
@@ -42,7 +42,15 @@ Sigma_0 = 0.00001
 
 
 # Epoch specific factors
-Epoch_factors = {0:{}, 1:{}, 2:{}}
+Epoch_factors = {-2:{}, 0:{}, 1:{}, 2:{}}
+
+Epoch_factors[-2]['Pico'] = 1
+Epoch_factors[-2]['IFM'] = 1#5.75
+Epoch_factors[-2]['ADM'] = 1#0.90
+Epoch_factors[-2]['Hz'] = 1#3.95
+Epoch_factors[-2]['V'] = 1#12.66
+Epoch_factors[-2]['Con'] = 1
+
 Epoch_factors[0]['Pico'] = 1
 Epoch_factors[0]['IFM'] = 1#5.75
 Epoch_factors[0]['ADM'] = 1#0.90
@@ -82,6 +90,9 @@ Standard SA format with spaces as delimiters and no comments:
 Group aka Line name 'space' Point name 'space' Hz [gon] 'space' V [gon] 'space' Sd [mm]
 """
 Epochs_dictionary = {'LoS':{},'Pol':{},'Coord':{}}
+Epochs_dictionary['LoS'][-2] = "LoS_measurements_01Sep21.txt"
+Epochs_dictionary['Pol'][-2] = "Testing_pol_meas_simplest.txt"
+Epochs_dictionary['Coord'][-2] = "Testing_coords_simplest.txt"
 Epochs_dictionary['LoS'][-1] = "LoS_measurements_01Sep21.txt"
 Epochs_dictionary['Pol'][-1] = "Polar_measurements_01Sep21.txt"
 Epochs_dictionary['Coord'][-1] = "Point_List_20Sep21.txt"
@@ -160,6 +171,7 @@ Common_points = [#
 									  ]
 
 LSM_Excluded_measurements = {
+        '-2':[],
         '-1':[],
         '0':[#('Sd', 'Instrument_1', 'PQK62_8'),
              #('Sd', 'Instrument_1', 'PQK62_9')
