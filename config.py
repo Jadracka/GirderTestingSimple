@@ -19,7 +19,7 @@ Created on Thu Feb 11 10:54:43 2021
 """
 """Data analysis tools"""
 """CAN BE CHANGED"""
-Which_epochs = (1,) #the comma must stay, otherwise the variable will be int
+Which_epochs = (2,) #the comma must stay, otherwise the variable will be int
 Names_of_magnets = ['PQK36','PQL6','PQK62']
 Instruments_6DoF = True
 
@@ -32,12 +32,12 @@ Constraint_StDev_basic = 0.000001#0.000000055136545 #mm
 
 
 Max_diff_from_line = 1.7 #mm - maximum distance from line, report the excess
-LSM_Threshold = 1e-7
+LSM_Threshold = 1e-14
 LSM_Max_iterations = 15
 Epsilon = 0.001
 
 
-Sigma_0 = 0.00001
+Sigma_0 = 0.000001
 
 
 
@@ -66,10 +66,10 @@ Epoch_factors[1]['V'] = 1#48.8
 Epoch_factors[1]['Con'] = 1
 
 Epoch_factors[2]['Pico'] = 1
-Epoch_factors[2]['IFM'] = 1#5.52
-Epoch_factors[2]['ADM'] = 1#1.33
-Epoch_factors[2]['Hz'] = 1#8.9
-Epoch_factors[2]['V'] = 1#37
+Epoch_factors[2]['IFM'] = 5.5464
+Epoch_factors[2]['ADM'] = 0.3309
+Epoch_factors[2]['Hz'] = 1.2660
+Epoch_factors[2]['V'] = 2.4926
 Epoch_factors[2]['Con'] = 1
 
 Print_FIDs = False

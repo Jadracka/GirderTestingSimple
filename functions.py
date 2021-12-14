@@ -16,6 +16,12 @@ import config as cg
 from angle import Angle as a
 import sys
 
+def pretty_print (x):
+    for i in x:
+        print("{:7.2f} ".format(i),end='')
+    print()
+    return()
+
 """
 ______                _   _                 
 |  ___|              | | (_)                
@@ -32,6 +38,60 @@ def slope_distance(Point_From,Point_To):
 	dZ = Point_To[2] - Point_From[2]
 	Sd = m.sqrt(pow(dX,2)+pow(dY,2)+pow(dZ,2))
 	return Sd
+
+def slope_distance_6DoF(Aproximates,point,inst):
+	Rx, Ry, Rz = Aproximates['Ori_'+inst]
+	dX = Aproximates[point][0] - Aproximates[inst][0]
+	dY = Aproximates[point][1] - Aproximates[inst][1]
+	dZ = Aproximates[point][2] - Aproximates[inst][2]
+	Rxc = m.cos(Rx)
+	Rxs = m.sin(Rx)
+	Ryc = m.cos(Ry)
+	Rys = m.sin(Ry)
+	Rzc = m.cos(Rz)
+	Rzs = m.sin(Rz)
+	Sd = m.sqrt(pow((Ryc*Rzc*dX + Ryc*Rzs*dY + Rys*dZ),2)+\
+               pow((-Rxs*Rys*Rzc - Rxc*Rzs)*dX + \
+						(-Rxs*Rys*Rzs + Rxc*Rzc)*dY + (Rxs*Ryc*dZ),2) + \
+               pow((-Rxc*Rys*Rzc + Rxs*Rzs)*dX + (-Rxc*Rys*Rzs - Rxs*Rzc)*dY +\
+				      (Rxc*Ryc*dZ),2))
+	return Sd
+
+def vertical_angle_6DoF(Aproximates,point,inst):
+	Rx, Ry, Rz = Aproximates['Ori_'+inst]
+	dX = Aproximates[point][0] - Aproximates[inst][0]
+	dY = Aproximates[point][1] - Aproximates[inst][1]
+	dZ = Aproximates[point][2] - Aproximates[inst][2]
+	Rxc = m.cos(Rx)
+	Rxs = m.sin(Rx)
+	Ryc = m.cos(Ry)
+	Rys = m.sin(Ry)
+	Rzc = m.cos(Rz)
+	Rzs = m.sin(Rz)
+	V = a(m.acos(((-Rxc*Rys*Rzc + Rxs*Rzs)*dX + (-Rxc*Rys*Rzs - Rxs*Rzc)*dY + \
+			    (Rxc*Ryc*dZ))/ \
+			    m.sqrt(pow((Ryc*Rzc*dX + Ryc*Rzs*dY + Rys*dZ),2)+\
+	                 pow((-Rxs*Rys*Rzc - Rxc*Rzs)*dX + \
+							  (-Rxs*Rys*Rzs + Rxc*Rzc)*dY + (Rxs*Ryc*dZ),2) + \
+					    pow((-Rxc*Rys*Rzc + Rxs*Rzs)*dX + \
+				           (-Rxc*Rys*Rzs - Rxs*Rzc)*dY + (Rxc*Ryc*dZ),2))),
+			a.T_RAD,True).angle
+	return V
+
+def horizontal_angle_6DoF(Aproximates,point,inst):
+	Rx, Ry, Rz = Aproximates['Ori_'+inst]
+	dX = Aproximates[point][0] - Aproximates[inst][0]
+	dY = Aproximates[point][1] - Aproximates[inst][1]
+	dZ = Aproximates[point][2] - Aproximates[inst][2]
+	Rxc = m.cos(Rx)
+	Rxs = m.sin(Rx)
+	Ryc = m.cos(Ry)
+	Rys = m.sin(Ry)
+	Rzc = m.cos(Rz)
+	Rzs = m.sin(Rz)
+	Hz = a(m.atan2((-Rxs*Rys*Rzc - Rxc*Rzs)*dX + (-Rxs*Rys*Rzs + Rxc*Rzc)*dY + \
+			       (Rxs*Ryc*dZ),(Ryc*Rzc*dX + Ryc*Rzs*dY + Rys*dZ)),a.T_RAD,True).angle
+	return Hz
 
 def horizontal_distance(Point_From,Point_To):
     dX = Point_To[0] - Point_From[0]
@@ -331,10 +391,8 @@ def ParD_Sd(PointTo, PointFrom):
 
 def Sd_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs):
     d_Sd = m.sqrt(pow((Ryc*Rzc*dX + Ryc*Rzs*dY + Rys*dZ),2)+\
-                pow(((-Rxs*Rys*Rzc - Rxc*Rzs)*dX + (-Rxs*Rys*Rzs + Rxc*Rzc)*dY +\
-                     Rxs*Ryc*dZ),2)+\
-                pow(((-Rxc*Rys*Rzc + Rxs*Rzs)*dX + (-Rxc*Rys*Rzs - Rxs*Rzc)*dY +\
-                 Rxc*Ryc*dZ),2))
+                  pow((-Rxs*Rys*Rzc - Rxc*Rzs)*dX + (-Rxs*Rys*Rzs + Rxc*Rzc)*dY + (Rxs*Ryc*dZ),2) + \
+                  pow((-Rxc*Rys*Rzc + Rxs*Rzs)*dX + (-Rxc*Rys*Rzs - Rxs*Rzc)*dY + (Rxc*Ryc*dZ),2))
     return d_Sd
 
 def Sd_6Dof_noRot(dX, dY, dZ):
@@ -342,18 +400,14 @@ def Sd_6Dof_noRot(dX, dY, dZ):
     return d_Sd
 
 def Hz_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs):
-    d_Hz = m.atan2(((-Rxs*Rys*Rzc - Rxc*Rzs)*dX + (-Rxs*Rys*Rzs + Rxc*Rzc)*dY + \
-                   (Rxs*Ryc)*dZ), (Ryc*Rzc*dX + Ryc*Rzs*dY + Rys*dZ))
+    d_Hz = m.atan2(((-Rxs*Rys*Rzc - Rxc*Rzs)*dX + (-Rxs*Rys*Rzs + Rxc*Rzc)*dY + (Rxs*Ryc)*dZ), (Ryc*Rzc*dX + Ryc*Rzs*dY + Rys*dZ))
     return d_Hz
 
 def V_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs):
-    d_V = m.acos(((-Rxc*Rys*Rzc + Rxs*Rzs)*dX + (-Rxc*Rys*Rzs - Rxs*Rzc)*dY + \
-                  (Rxc*Ryc)*dZ)/\
-                 m.sqrt((pow((Ryc*Rzc*dX + Ryc*Rzs*dY + Rys*dZ),2)+\
-                pow(((-Rxs*Rys*Rzc - Rxc*Rzs)*dX + (-Rxs*Rys*Rzs + Rxc*Rzc)*dY +\
-                     Rxs*Ryc*dZ),2)+\
-                pow(((-Rxc*Rys*Rzc + Rxs*Rzs)*dX + (-Rxc*Rys*Rzs - Rxs*Rzc)*dY +\
-                 (Rxc*Ryc*dZ)),2))))
+    d_V = m.acos(((-Rxc*Rys*Rzc + Rxs*Rzs)*dX + (-Rxc*Rys*Rzs - Rxs*Rzc)*dY + (Rxc*Ryc)*dZ) / \
+                m.sqrt(pow((Ryc*Rzc*dX + Ryc*Rzs*dY + Rys*dZ),2)+\
+                       pow((-Rxs*Rys*Rzc - Rxc*Rzs)*dX + (-Rxs*Rys*Rzs + Rxc*Rzc)*dY + (Rxs*Ryc*dZ),2) + \
+                       pow((-Rxc*Rys*Rzc + Rxs*Rzs)*dX + (-Rxc*Rys*Rzs - Rxs*Rzc)*dY + (Rxc*Ryc*dZ),2)))
     return d_V
 
 def Par_6DoF_noRot(PointTo, PointFrom, Aproximates, epsilon):
@@ -405,48 +459,42 @@ def Par_6Dof(PointTo, Instrument, Aproximates, epsilon):
     Rzc_e = m.cos(Rz - epsilon)
     Rzs_e = m.sin(Rz - epsilon)
 #    print(Rxc, Rxs, Rys, Rzc, )
-    dX_Sd = (Sd_6Dof(dXe, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs) -
-             Sd_6Dof(dX_e, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs)) /(2*epsilon)
-    dY_Sd = (Sd_6Dof(dX, dYe, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs) -
-             Sd_6Dof(dX, dY_e, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs)) /(2*epsilon)
-    dZ_Sd = (Sd_6Dof(dX, dY, dZe, Rxc, Rxs, Ryc, Rys, Rzc, Rzs) -
-             Sd_6Dof(dX, dY, dZ_e, Rxc, Rxs, Ryc, Rys, Rzc, Rzs)) /(2*epsilon)
-    dRx_Sd = (Sd_6Dof(dX, dY, dZ, Rxce, Rxse, Ryc, Rys, Rzc, Rzs) -
-              Sd_6Dof(dX, dY, dZ, Rxc_e, Rxs_e, Ryc, Rys, Rzc, Rzs)) \
-              /(2*epsilon)
-    dRy_Sd = (Sd_6Dof(dX, dY, dZ, Rxc, Rxs, Ryce, Ryse, Rzc, Rzs) -
-              Sd_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc_e, Rys_e, Rzc, Rzs)) \
-              /(2*epsilon)
-    dRz_Sd = (Sd_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzce, Rzse) -
-              Sd_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc_e, Rzs_e)) \
-              /(2*epsilon)
-    dX_Hz = (Hz_6Dof(dXe, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs) -
-             Hz_6Dof(dX_e, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs)) /(2*epsilon)
-    dY_Hz = (Hz_6Dof(dX, dYe, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs) -
-             Hz_6Dof(dX, dY_e, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs)) /(2*epsilon)
-    dZ_Hz = (Hz_6Dof(dX, dY, dZe, Rxc, Rxs, Ryc, Rys, Rzc, Rzs) -
-             Hz_6Dof(dX, dY, dZ_e, Rxc, Rxs, Ryc, Rys, Rzc, Rzs)) /(2*epsilon)
-    dRx_Hz = (Hz_6Dof(dX, dY, dZ, Rxce, Rxse, Ryc, Rys, Rzc, Rzs) -
-              Hz_6Dof(dX, dY, dZ, Rxc_e, Rxs_e, Ryc, Rys, Rzc, Rzs)) \
-              /(2*epsilon)
-    dRy_Hz = (Hz_6Dof(dX, dY, dZ, Rxc, Rxs, Ryce, Ryse, Rzc, Rzs) -
-              Hz_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc_e, Rys_e, Rzc, Rzs)) \
-              /(2*epsilon)
-    dRz_Hz = (Hz_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzce, Rzse) -
-              Hz_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc_e, Rzs_e)) \
-              /(2*epsilon)
-    dX_V = (V_6Dof(dXe, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs) -
-            V_6Dof(dX_e, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs)) / (2*epsilon)
-    dY_V = (V_6Dof(dX, dYe, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs) -
-            V_6Dof(dX, dY_e, dZ, Rxc, Rxs, Ryc, Rys, Rzc, Rzs)) / (2*epsilon)
-    dZ_V = (V_6Dof(dX, dY, dZe, Rxc, Rxs, Ryc, Rys, Rzc, Rzs) -
-            V_6Dof(dX, dY, dZ_e, Rxc, Rxs, Ryc, Rys, Rzc, Rzs)) / (2*epsilon)
-    dRx_V = (V_6Dof(dX, dY, dZ, Rxce, Rxse, Ryc, Rys, Rzc, Rzs) -
-             V_6Dof(dX, dY, dZ, Rxc_e, Rxs_e, Ryc, Rys, Rzc, Rzs)) /(2*epsilon)
-    dRy_V = (V_6Dof(dX, dY, dZ, Rxc, Rxs, Ryce, Ryse, Rzc, Rzs) -
-             V_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc_e, Rys_e, Rzc, Rzs)) /(2*epsilon)
-    dRz_V = (V_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzce, Rzse) -
-             V_6Dof(dX, dY, dZ, Rxc, Rxs, Ryc, Rys, Rzc_e, Rzs_e)) /(2*epsilon)
+    dX_Sd =  (Sd_6Dof(dXe,  dY,   dZ,   Rxc,   Rxs,   Ryc,   Rys,   Rzc,   Rzs)  -
+              Sd_6Dof(dX_e, dY,   dZ,   Rxc,   Rxs,   Ryc,   Rys,   Rzc,   Rzs))   /(2*epsilon)
+    dY_Sd =  (Sd_6Dof(dX,   dYe,  dZ,   Rxc,   Rxs,   Ryc,   Rys,   Rzc,   Rzs)  -
+              Sd_6Dof(dX,   dY_e, dZ,   Rxc,   Rxs,   Ryc,   Rys,   Rzc,   Rzs))   /(2*epsilon)
+    dZ_Sd =  (Sd_6Dof(dX,   dY,   dZe,  Rxc,   Rxs,   Ryc,   Rys,   Rzc,   Rzs)  -
+              Sd_6Dof(dX,   dY,   dZ_e, Rxc,   Rxs,   Ryc,   Rys,   Rzc,   Rzs))   /(2*epsilon)
+    dRx_Sd = (Sd_6Dof(dX,   dY,   dZ,   Rxce,  Rxse,  Ryc,   Rys,   Rzc,   Rzs)  -
+              Sd_6Dof(dX,   dY,   dZ,   Rxc_e, Rxs_e, Ryc,   Rys,   Rzc,   Rzs))   /(2*epsilon)
+    dRy_Sd = (Sd_6Dof(dX,   dY,   dZ,   Rxc,   Rxs,   Ryce,  Ryse,  Rzc,   Rzs)  -
+              Sd_6Dof(dX,   dY,   dZ,   Rxc,   Rxs,   Ryc_e, Rys_e, Rzc,   Rzs))   /(2*epsilon)
+    dRz_Sd = (Sd_6Dof(dX,   dY,   dZ,   Rxc,   Rxs,   Ryc,   Rys,   Rzce,  Rzse) -
+              Sd_6Dof(dX,   dY,   dZ,   Rxc,   Rxs,   Ryc,   Rys,   Rzc_e, Rzs_e)) /(2*epsilon)
+    dX_Hz =  (Hz_6Dof(dXe,  dY,   dZ,   Rxc,   Rxs,   Ryc,   Rys,   Rzc,   Rzs)  -
+              Hz_6Dof(dX_e, dY,   dZ,   Rxc,   Rxs,   Ryc,   Rys,   Rzc,   Rzs))   /(2*epsilon)
+    dY_Hz =  (Hz_6Dof(dX,   dYe,  dZ,   Rxc,   Rxs,   Ryc,   Rys,   Rzc,   Rzs)  -
+              Hz_6Dof(dX,   dY_e, dZ,   Rxc,   Rxs,   Ryc,   Rys,   Rzc,   Rzs))   /(2*epsilon)
+    dZ_Hz =  (Hz_6Dof(dX,   dY,   dZe,  Rxc,   Rxs,   Ryc,   Rys,   Rzc,   Rzs)  -
+              Hz_6Dof(dX,   dY,   dZ_e, Rxc,   Rxs,   Ryc,   Rys,   Rzc,   Rzs))   /(2*epsilon)
+    dRx_Hz = (Hz_6Dof(dX,   dY,   dZ,   Rxce,  Rxse,  Ryc,   Rys,   Rzc,   Rzs)  -
+              Hz_6Dof(dX,   dY,   dZ,   Rxc_e, Rxs_e, Ryc,   Rys,   Rzc,   Rzs))   /(2*epsilon)
+    dRy_Hz = (Hz_6Dof(dX,   dY,   dZ,   Rxc,   Rxs,   Ryce,  Ryse,  Rzc,   Rzs)  -
+              Hz_6Dof(dX,   dY,   dZ,   Rxc,   Rxs,   Ryc_e, Rys_e, Rzc,   Rzs))   /(2*epsilon)
+    dRz_Hz = (Hz_6Dof(dX,   dY,   dZ,   Rxc,   Rxs,   Ryc,   Rys,   Rzce,  Rzse) -
+              Hz_6Dof(dX,   dY,   dZ,   Rxc,   Rxs,   Ryc,   Rys,   Rzc_e, Rzs_e)) /(2*epsilon)
+    dX_V =  (V_6Dof(dXe,  dY,   dZ,   Rxc,   Rxs,   Ryc,   Rys,   Rzc,   Rzs)  -
+             V_6Dof(dX_e, dY,   dZ,   Rxc,   Rxs,   Ryc,   Rys,   Rzc,   Rzs))   /(2*epsilon)
+    dY_V =  (V_6Dof(dX,   dYe,  dZ,   Rxc,   Rxs,   Ryc,   Rys,   Rzc,   Rzs)  -
+             V_6Dof(dX,   dY_e, dZ,   Rxc,   Rxs,   Ryc,   Rys,   Rzc,   Rzs))   /(2*epsilon)
+    dZ_V =  (V_6Dof(dX,   dY,   dZe,  Rxc,   Rxs,   Ryc,   Rys,   Rzc,   Rzs)  -
+             V_6Dof(dX,   dY,   dZ_e, Rxc,   Rxs,   Ryc,   Rys,   Rzc,   Rzs))   /(2*epsilon)
+    dRx_V = (V_6Dof(dX,   dY,   dZ,   Rxce,  Rxse,  Ryc,   Rys,   Rzc,   Rzs)  -
+             V_6Dof(dX,   dY,   dZ,   Rxc_e, Rxs_e, Ryc,   Rys,   Rzc,   Rzs))   /(2*epsilon)
+    dRy_V = (V_6Dof(dX,   dY,   dZ,   Rxc,   Rxs,   Ryce,  Ryse,  Rzc,   Rzs)  -
+             V_6Dof(dX,   dY,   dZ,   Rxc,   Rxs,   Ryc_e, Rys_e, Rzc,   Rzs))   /(2*epsilon)
+    dRz_V = (V_6Dof(dX,   dY,   dZ,   Rxc,   Rxs,   Ryc,   Rys,   Rzce,  Rzse) -
+             V_6Dof(dX,   dY,   dZ,   Rxc,   Rxs,   Ryc,   Rys,   Rzc_e, Rzs_e)) /(2*epsilon)
     
     return dX_Sd, dY_Sd, dZ_Sd, dRx_Sd, dRy_Sd, dRz_Sd, \
            dX_Hz, dY_Hz, dZ_Hz, dRx_Hz, dRy_Hz, dRz_Hz, \
@@ -790,7 +838,11 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
 																StDev_Sd,2))
                 Q_subv_Sd = np.append(Q_subv_Sd, 1/pow(cg.Sigma_0,2) * pow(
 																StDev_Sd,2))
-                LX0_subv_Sd = np.append(LX0_subv_Sd, slope_distance(
+                if Instruments_6DoF:
+                    LX0_subv_Sd = np.append(LX0_subv_Sd, slope_distance_6DoF(
+                                         Aproximates,point,inst))
+                else:
+                    LX0_subv_Sd = np.append(LX0_subv_Sd, slope_distance(
                                          Aproximates[point],Aproximates[inst]))
                 L_subv_Sd_HR.append(('Sd', inst, point))
                 if Instruments_6DoF:
@@ -800,9 +852,12 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
                     A_matrix[Sd_offset+counter,instrument_i] = -dX_Sd
                     A_matrix[Sd_offset+counter,instrument_i+1] = -dY_Sd
                     A_matrix[Sd_offset+counter,instrument_i+2] = -dZ_Sd
-                    A_matrix[Sd_offset+counter,Ori_inst_i-2] = dRx_Sd
-                    A_matrix[Sd_offset+counter,Ori_inst_i-1] = dRy_Sd
-                    A_matrix[Sd_offset+counter,Ori_inst_i] = dRz_Sd
+#                    A_matrix[Sd_offset+counter,Ori_inst_i-2] = dRx_Sd
+#                    A_matrix[Sd_offset+counter,Ori_inst_i-1] = dRy_Sd
+#                    A_matrix[Sd_offset+counter,Ori_inst_i] = dRz_Sd
+                    A_matrix[Sd_offset+counter,Ori_inst_i-2] = -dRx_Sd   # Markus
+                    A_matrix[Sd_offset+counter,Ori_inst_i-1] = -dRy_Sd   # Markus
+                    A_matrix[Sd_offset+counter,Ori_inst_i]   = -dRz_Sd   # Markus
                     A_matrixHR[(Sd_offset+counter,Point_i)] = ['Sd/dX', inst, 
                                                                    point]
                     A_matrixHR[(Sd_offset+counter,Point_i+1)] = ['Sd/dY', inst, 
@@ -852,9 +907,11 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
                 Q_subv_Hz = np.append(Q_subv_Hz, 1/pow(cg.Sigma_0,2) * pow(
                                                     gon2rad(StDev_Hz/1000),2))
                 if Instruments_6DoF:
-                    Hz_angle_from_aprox = a(horizontal_angle_from_Coords(
-                                    Aproximates[point],Aproximates[inst]) + \
-                                    X_vector[Ori_inst_i],a.T_RAD,True).angle
+                    Hz_angle_from_aprox = a(horizontal_angle_6DoF(Aproximates,
+													   point, inst),a.T_RAD,True).angle
+#                    Hz_angle_from_aprox = a(horizontal_angle_from_Coords(
+#                                    Aproximates[point],Aproximates[inst]) + \
+#                                    X_vector[Ori_inst_i],a.T_RAD,True).angle
                 else:
                     Hz_angle_from_aprox = a(horizontal_angle_from_Coords(
                                     Aproximates[point],Aproximates[inst]) - \
@@ -868,8 +925,9 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
                                                                 dY_Hz, dZ_Hz
                     A_matrix[Hz_offset+counter,instrument_i:instrument_i+3] = \
                                                        -dX_Hz, -dY_Hz, -dZ_Hz
-                    A_matrix[Hz_offset+counter,Ori_inst_i-2:Ori_inst_i+1] = \
-                                                    dRx_Hz, dRy_Hz, dRz_Hz
+#                    A_matrix[Hz_offset+counter,Ori_inst_i-2:Ori_inst_i+1] = \
+#                                                    dRx_Hz, dRy_Hz, dRz_Hz
+                    A_matrix[Hz_offset+counter,Ori_inst_i-2:Ori_inst_i+1] = -dRx_Hz, -dRy_Hz, -dRz_Hz  # Markus
                                                     
                     A_matrixHR[(Hz_offset+counter,Point_i)] = ['Hz/dX', inst, 
                                                                    point]
@@ -920,7 +978,11 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
                                                   gon2rad(StDev_V/1000),2))
                 Q_subv_V = np.append(Q_subv_V, 1/pow(cg.Sigma_0,2) * pow(
                                                   gon2rad(StDev_V/1000),2))
-                LX0_subv_V = np.append(LX0_subv_V, vertical_angle_from_Coords(
+                if Instruments_6DoF:
+                    LX0_subv_V = np.append(LX0_subv_V, vertical_angle_6DoF(
+                                           Aproximates,point,inst))
+                else:
+                    LX0_subv_V = np.append(LX0_subv_V, vertical_angle_from_Coords(
                                         Aproximates[point],Aproximates[inst]))
                 L_subv_V_HR.append(('V', inst, point))
 
@@ -929,8 +991,9 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
                                                                     dZ_V        
                     A_matrix[V_offset+counter,instrument_i:instrument_i+3] = \
                                                           -dX_V, -dY_V, -dZ_V
-                    A_matrix[V_offset+counter,Ori_inst_i-2:Ori_inst_i+1] = \
-                                                          dRx_V, dRy_V, dRz_V 
+#                    A_matrix[V_offset+counter,Ori_inst_i-2:Ori_inst_i+1] = \
+#                                                          -dRx_V, -dRy_V, -dRz_V 
+                    A_matrix[V_offset+counter,Ori_inst_i-2:Ori_inst_i+1] = -dRx_V, -dRy_V, -dRz_V # Markus 
                     A_matrixHR[(V_offset+counter,Point_i)] = ['V/dX', inst, 
                                                                         point]
                     A_matrixHR[(V_offset+counter,Point_i+1)] = ['V/dY', inst, 
@@ -1067,7 +1130,7 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
           count_unknowns, IFM_StDev, Instruments_6DoF, Trans_par, epsilon):
 	
     Combinations_for_constraints,count_constraints =\
-																	create_constraints(Aproximates)
+														create_constraints(Aproximates)
 
     G_matrix = filling_G(count_unknowns, unknowns, 
 									Aproximates,count_instruments, Instruments_6DoF)
@@ -1093,7 +1156,7 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
     print('\n Processing Epoch_%s:' %(str(Epoch_num)))
     while (metric > cg.LSM_Threshold) and (counter <= cg.LSM_Max_iterations):
         print('\n Iteration', counter)
-        A_matrix = -A_matrix
+#        A_matrix = -A_matrix
         l = np.ndarray(L_vector.size)
         for i, lelement in enumerate(L_vector):
             if L_vectorHR[i][0] == "Hz":
@@ -1101,6 +1164,7 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
             else:
                 l[i] = LX0_vector[i] - L_vector[i]
         del lelement, i
+        print('l',max(abs(l)), np.argmax(abs(l)))
         N = A_matrix.transpose() @ P_matrix @ A_matrix
         print("Determinant: ",linalg.det(A_matrix.transpose() @ A_matrix))
         if Instruments_6DoF:
@@ -1122,11 +1186,19 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
             N_inv = np.linalg.inv(N_extended)[:-4,:-4]
         dx = N_inv @ n
         print('dx',max(abs(dx)), np.argmax(abs(dx)))
+        print("X")
+        pretty_print((X_vector*pow(10,9))[-6:])
+        print("dx")
+        pretty_print((dx*pow(10,9))[-6:])
+#        pretty_print((X_vector*pow(10,9))[-7:])
+        dx_1 = -dx[:-6]
+        dx_2 = dx[-6:]
+        dx = np.concatenate((dx_1,dx_2))
         X_vector += dx
         v = A_matrix @ dx - l
-        print('v max ', v[np.argmax(abs(v))], np.argmax(abs(v)))
-        print('[vv]  ', sum(v*v))
-        print('[v]  ', sum(v))
+#        print('v max ', v[np.argmax(abs(v))], np.argmax(abs(v)))
+#        print('[vv]  ', sum(v*v))
+#        print('[v]  ', sum(v))
 
         P_inv = inv(P_matrix)
 #        Qllest = A_matrix @ N_inv @ A_matrix.transpose()
@@ -1134,7 +1206,7 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
 #        Qvv = Q_matrix - Qllest
         Qvv = P_inv - A_matrix @ N_inv @ A_matrix.transpose()
         dof = int(round(np.trace(Qvv@P_matrix)))
-        print("dof from Qvv: ",dof)
+#        print("dof from Qvv: ",dof)
         s02 = (v @ P_matrix @ v)/dof
         LSM_results = Aproximates.copy()
         Qxx = s02 * N_inv
@@ -1146,13 +1218,14 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
 #                print(f"{i}, vi {vi:8.2}, Qll {Q_matrix[i,i]:7.2}, Ql^l^ {Qllest[i][i]:8.2}, {Qvv[i,i]:8.2}, {L_vectorHR[i]}")
 #                pass
             else:
-                if (vi/(m.sqrt(s02*Qvv[i,i]))>4):
+#                if (vi/(m.sqrt(s02*Qvv[i,i]))>4):
 #                    print(f"{vi/(m.sqrt(s02*Qvv[i,i])):16.12}, {L_vectorHR[i]}")
                     pass
-        print("n/o diag elem <0: ",vcount)
+#        print("n/o diag elem <0: ",vcount)
         s02_IFM = np.nan
         s02_con = np.nan
-        i = count_IFM
+#        i = count_IFM
+        i = 0    # Markus, if no ifm measurements are present.
         p = count_Pol_measurements
         cc = count_constraints
         if count_IFM > 0:
@@ -1163,7 +1236,7 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
                   round(np.trace(Qvv[i:i+p-1,i:i+p-1] @ P_matrix[i:i+p-1,i:i+p-1]))
 								
         s02_V = pow(cg.Sigma_0,-2)*(v[i+p:i+2*p-1] @ P_matrix[i+p:i+2*p-1,i+p:i+2*p-1] @ v[i+p:i+2*p-1])/\
-				 round(np.trace(Qvv[i+p:i+2*p-1,i+p:i+2*p-1] @ P_matrix[
+				  round(np.trace(Qvv[i+p:i+2*p-1,i+p:i+2*p-1] @ P_matrix[
 																	i+p:i+2*p-1,i+p:i+2*p-1]))
 			
         s02_Sd = pow(cg.Sigma_0,-2)*(v[i+2*p:i+3*p-1] @ P_matrix[i+2*p:i+3*p-1,i+2*p:i+3*p-1] @ \
@@ -1189,9 +1262,9 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
                                       Instruments_6DoF, epsilon
                                       )
 
+        
 
-
-#    print (f"s02    {s02:8.3}")
+    print (f"s02    {s02:8.3}")
     print (f"s0     {m.sqrt(s02):8.3}")
     print (f"sig0   {cg.Sigma_0:8.3}")
     print (f"s02ifm {s02_IFM:8.3}")
