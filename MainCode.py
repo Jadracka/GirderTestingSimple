@@ -8,29 +8,31 @@ Created on Wed Apr  7 08:02:05 2021
 #import scipy as sp
 import numpy as np
 
-#import sys
+import sys
 #import string
 import math as m
 import config as cg
 import functions as fc
 import Helmert3Dtransform as ht
+from angle import Angle as a
 
 from datetime import datetime as dt
 date_time = dt.fromtimestamp(dt.timestamp(dt.now()))
-#import Helmert3Dtransform as helm
-
-#from operator import itemgetter
-#from collections import namedtuple
 
 # Are there two epochs to calculate?
 if len(cg.Which_epochs)>1:
     Two_epochs = True
+    Epoch_num = cg.Which_epochs[0]
+    Epoch_num1 = cg.Which_epochs[1]
 else:
     Two_epochs = False
+    Epoch_num = cg.Which_epochs[0]
+
 
 # =============================================================================
 # Loading measurement files and Coordinates, if two epochs are set, files load
 # for them as well.
+# Measurements indicated for exclusion at config will be eliminated.
 # =============================================================================
 Nominal_coords = fc.Coords_read_in(cg.Coords_file_name)
 LoS_measurements = fc.Measurements_read_in(cg.LoS_Measurements_file_name)
@@ -38,6 +40,7 @@ Pol_measurements = fc.Polar_2F_meas_read_in(cg.Pol_Measurements_file_name,
                                             Sd_StDev = cg.Dist_StDev,
                                             Hz_StDev = cg.Hz_StDev,
                                             V_StDev = cg.V_StDev)
+
 if Two_epochs:
     LoS_measurements_E1 = fc.Measurements_read_in(
                                                cg.LoS_Measurements_file_name_1)
@@ -47,6 +50,7 @@ if Two_epochs:
                                              Hz_StDev = cg.Hz_StDev_E1,
                                              V_StDev = cg.V_StDev_E1)
     Nominal_coords_E1 = fc.Coords_read_in(cg.Coords_file_name_1)
+
 
 
 # =============================================================================
@@ -67,7 +71,6 @@ nominal_points_all_measured = True
 all_points_in_lines_measured = True
 
 for line in LoS_measurements:
-    Epoch_num = cg.Which_epochs[0]
     if (cg.Print_typos) and (line not in cg.Lines_of_sight):
 # printing which lines are in measurements input but are not in the
 # default naming either due to typo or just simply missing in the nominal
@@ -237,7 +240,6 @@ if Two_epochs:
     all_points_in_lines_measured_E1 = True
 
     for line in LoS_measurements_E1:
-        Epoch_num1 = cg.Which_epochs[1]
         if (cg.Print_typos) and (line not in cg.Lines_of_sight):
     # printing which lines are in measurements input but are not in the
     # default naming either due to typo or just simply missing in the nominal
@@ -437,37 +439,73 @@ if Two_epochs:
         print('All lines measured in Epoch_%s were also measured in Epoch_%s.'
               % (str(Epoch_num),str(Epoch_num1)))
     del line, all_lines_measured_same
-
+print("Comparisons and initial imports done.")
 # =============================================================================
 # Calculating Helmert transformations for measured cartesian coordinates
 # =============================================================================
-Transformed_Pol_measurements = fc.Helmert_calc_for_PolMeas(
+Transformed_Pol_measurements, Trans_par = fc.Helmert_calc_for_PolMeas(
                                           Pol_measurements_cart,Nominal_coords)
+
+for meas in cg.LSM_Excluded_measurements[str(Epoch_num)]:
+    Pol_measurements[meas[1]][meas[2]].pop(meas[0])
+try:
+    del meas
+except NameError:
+    pass
 
 count_IFM_measurements = sum([len(v) for k, v in\
                                          measured_distances_in_lines.items()])
 
-count_Pol_measurements = (sum([len(v) for k, v in Pol_measurements.items()]))
+count_Sd = fc.Count_meas_types(Pol_measurements, 'Sd')
+count_Hz = fc.Count_meas_types(Pol_measurements, 'Hz')
+count_V = fc.Count_meas_types(Pol_measurements, 'V')
 
-count_all_observations = 3*count_Pol_measurements + count_IFM_measurements
+count_Pol_measurements = (sum([len(v) for k, v in Pol_measurements.items()]))
+excluded_count = len(cg.LSM_Excluded_measurements[str(Epoch_num)])
+
+if count_Sd + count_Hz + count_V == 3*count_Pol_measurements - excluded_count:
+    count_all_observations = count_Sd + count_Hz + count_V + count_IFM_measurements
+else:
+    sys.exit("Counts of measurements don't agree.")
+    
+
+#count_all_observations = 3*count_Pol_measurements + count_IFM_measurements
 
 unknowns,count_unknowns, instruments, count_instruments = fc.find_unknowns(
-                                                  Transformed_Pol_measurements)
+                            Transformed_Pol_measurements, cg.Instruments_6DoF)
 Aproximates = fc.merge_measured_coordinates(Transformed_Pol_measurements)
 
+if cg.Instruments_6DoF:
+    for instrument in Trans_par:
+        Angles = Trans_par[instrument][-3:]
+        Rx = (a(-Angles[0],a.T_RAD, True).angle)
+        Ry = (a(-Angles[1],a.T_RAD, True).angle)
+        Rz = (a(-Angles[2],a.T_RAD, True).angle)
+        Aproximates['Ori_'+instrument] = (Rx, Ry, Rz)
+    del Rx, Ry, Rz, Angles
+else:
+    for instrument in Trans_par:
+        Aproximates['Ori_'+instrument] = (a(-Trans_par[instrument][-1],
+                                          a.T_RAD, True).angle)
+            
+print("Initial Helmert transform pretransport epoch, unknown counts and Aproximates filling done.")
 
 # =============================================================================
 # Least Square Method for pre-transport epoch
 # =============================================================================
 P_matrix, Results, Cov_matrix, Qvv, s02, dof, w, s02_IFM, s02_Hz, s02_V,  \
-s02_Sd, s02_con, L_vectorHR = fc.LSM(Epoch_num, 
+s02_Sd, s02_con = fc.LSM(Epoch_num, 
 										Nominal_coords, Aproximates,
 									   measured_distances_in_lines,				
 									   sorted_measured_points_in_lines,
 									   instruments, count_instruments,
 									   Pol_measurements,count_Pol_measurements,
 									   count_IFM_measurements,
-									   unknowns,count_unknowns, cg.IFM_StDev)
+									   unknowns,count_unknowns, cg.IFM_StDev, 
+                       cg.Instruments_6DoF, Trans_par, cg.Epsilon)
+
+
+print("LSM for pre transport epoch done.")
 
 # =============================================================================
 # LSM - results writing into file - pre-transport Epoch
@@ -497,12 +535,14 @@ for point in Aproximates:
 Results_file.close()
 del point, Header, fill
 
-if Two_epochs:
 # =============================================================================
 # Calculating Helmert transformations for measured cartesian coordinates
 # =============================================================================
 
-    Transformed_Pol_measurements_E1 = fc.Helmert_calc_for_PolMeas(
+if Two_epochs:
+
+
+    Transformed_Pol_measurements_E1, Trans_par_E1 = fc.Helmert_calc_for_PolMeas(
                                    Pol_measurements_cart_E1,Nominal_coords_E1)
     
     count_IFM_measurements_E1 = sum([len(v) for k, v in\
@@ -510,31 +550,52 @@ if Two_epochs:
     
     count_Pol_measurements_E1 = (sum([len(v) for k, v in \
                                    Pol_measurements_E1.items()]))
-    
-    count_all_observations_E1 = 3*count_Pol_measurements_E1 + \
-                                                 count_IFM_measurements_E1
+    for meas in cg.LSM_Excluded_measurements[str(Epoch_num1)]:
+        Pol_measurements_E1[meas[1]][meas[2]].pop(meas[0])
+    try:
+        del meas
+    except NameError:
+        pass
+    excluded_count_E1 = len(cg.LSM_Excluded_measurements[str(Epoch_num1)])
+    count_Sd_E1 = fc.Count_meas_types(Pol_measurements_E1, 'Sd')
+    count_Hz_E1 = fc.Count_meas_types(Pol_measurements_E1, 'Hz')
+    count_V_E1 = fc.Count_meas_types(Pol_measurements_E1, 'V')
+ 
+    if count_Sd + count_Hz + count_V == \
+                            3*count_Pol_measurements - excluded_count:
+        count_all_observations = count_Sd + count_Hz + count_V + \
+                                 count_IFM_measurements
+    else:
+        sys.exit("Counts of measurements don't agree.")
     
     unknowns_E1,count_unknowns_E1, instruments_E1, \
-    count_instruments_E1 = fc.find_unknowns(Transformed_Pol_measurements_E1)
+    count_instruments_E1 = fc.find_unknowns(Transformed_Pol_measurements_E1, 
+                                            cg.Instruments_6DoF)
             
     Aproximates_E1 = fc.merge_measured_coordinates(
 											 Transformed_Pol_measurements_E1)
-    #Aproximates_E1_copy = Aproximates_E1.copy()
-       
+
+    if cg.Instruments_6DoF:
+        for instrument in Trans_par:
+            Aproximates_E1['Ori_'+instrument] = Trans_par_E1[instrument][-3:]
+    else:
+        for instrument in Trans_par:
+            Aproximates_E1['Ori_'+instrument] = Trans_par_E1[instrument][-1]
     
 # =============================================================================
 # Least Square Method for post-transport epoch
 # =============================================================================
     P_matrix_E1,Results_E1, Cov_matrix_E1, Qvv_E1, s02_E1, dof_E1, w_E1, s02_IFM_E1,\
-	s02_Hz_E1, s02_V_E1, s02_Sd_E1, s02_con_E1, L_vectorHR_E1 = fc.LSM(Epoch_num1, 
+	s02_Hz_E1, s02_V_E1, s02_Sd_E1, s02_con_E1 = fc.LSM(Epoch_num1, 
 										Nominal_coords_E1, Aproximates_E1, 
 										measured_distances_in_lines_E1,				
 									   sorted_measured_points_in_lines_E1,
 									   instruments_E1, count_instruments_E1,
 									   Pol_measurements_E1,
 									   count_Pol_measurements_E1,
-									   count_IFM_measurements_E1,
-									   unknowns_E1, count_unknowns_E1, cg.IFM_StDev_E1) 
+									   count_IFM_measurements_E1, unknowns_E1, 
+                       count_unknowns_E1, cg.IFM_StDev_E1, 
+                       cg.Instruments_6DoF, Trans_par_E1, cg.Epsilon) 
 
 # =============================================================================
 # LSM - results writing into file - post-transport Epoch
@@ -544,10 +605,11 @@ if Two_epochs:
     
     Header = ["Results from Epoch" + str(
             cg.Which_epochs[0]) + " [RHCS]\n", "created:" + str(date_time)
-            + "\nUsing source files:\n" + '-' + str(
-                    cg.LoS_Measurements_file_name_1) + '\n', '-' + str(
-                    cg.Pol_Measurements_file_name_1) + '\n', '-' + str(
-                    cg.Coords_file_name_1) + '\n']
+            + "\nUsing source files:\n" + ' -' + str(
+                    cg.LoS_Measurements_file_name_1) + '\n', ' -' + str(
+                    cg.Pol_Measurements_file_name_1) + '\n', ' -' + str(
+                    cg.Coords_file_name_1) + '\n'
+                    ]
     
     Results_file_E1.writelines(Header)
     

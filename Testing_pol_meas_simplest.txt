@@ -1,0 +1,8 @@
+Instrument_0 Point0 50 100 2000
+Instrument_0 Point1 50 100 3000
+Instrument_0 Point2 0 100 2828.427
+Instrument_0 Point3 50 37.4334 3605.551
+Instrument_1 Point0 -100 100 2000
+Instrument_1 Point1 -100 100 1000
+Instrument_1 Point2 -50 100 2828.427
+Instrument_1 Point3 -100 37.4334 3605.551
