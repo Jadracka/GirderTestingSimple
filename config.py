@@ -35,6 +35,8 @@ Max_diff_from_line = 1.7 #mm - maximum distance from line, report the excess
 LSM_Threshold = 1e-14
 LSM_Max_iterations = 15
 Epsilon = 0.001
+LSM_incl_IFM = True #Include IFM measurements in LSM?
+LSM_incl_Cons = False #Include Constraints in LSM?
 
 
 Sigma_0 = 0.000001
@@ -42,7 +44,7 @@ Sigma_0 = 0.000001
 
 
 # Epoch specific factors
-Epoch_factors = {-2:{}, 0:{}, 1:{}, 2:{}}
+Epoch_factors = {-2:{}, -1:{}, 0:{}, 1:{}, 2:{}}
 
 Epoch_factors[-2]['Pico'] = 1
 Epoch_factors[-2]['IFM'] = 1#5.75
@@ -51,18 +53,25 @@ Epoch_factors[-2]['Hz'] = 1#3.95
 Epoch_factors[-2]['V'] = 1#12.66
 Epoch_factors[-2]['Con'] = 1
 
+Epoch_factors[-1]['Pico'] = 1
+Epoch_factors[-1]['IFM'] = 1
+Epoch_factors[-1]['ADM'] = 1
+Epoch_factors[-1]['Hz'] = 1
+Epoch_factors[-1]['V'] = 1
+Epoch_factors[-1]['Con'] = 1
+
 Epoch_factors[0]['Pico'] = 1
-Epoch_factors[0]['IFM'] = 1#5.75
-Epoch_factors[0]['ADM'] = 1#0.90
-Epoch_factors[0]['Hz'] = 1#3.95
-Epoch_factors[0]['V'] = 1#12.66
-Epoch_factors[0]['Con'] = 1
+Epoch_factors[0]['IFM'] = 5.102688
+Epoch_factors[0]['ADM'] = 0.10853
+Epoch_factors[0]['Hz'] = 1.2027
+Epoch_factors[0]['V'] = 12.80109
+Epoch_factors[0]['Con'] = 1#100
 
 Epoch_factors[1]['Pico'] = 1
-Epoch_factors[1]['IFM'] = 1#6.32
-Epoch_factors[1]['ADM'] = 1#0.90
-Epoch_factors[1]['Hz'] = 1#8.90
-Epoch_factors[1]['V'] = 1#48.8
+Epoch_factors[1]['IFM'] = 6.3832
+Epoch_factors[1]['ADM'] = 0.7408
+Epoch_factors[1]['Hz'] = 0.99
+Epoch_factors[1]['V'] = 9.2461
 Epoch_factors[1]['Con'] = 1
 
 Epoch_factors[2]['Pico'] = 1
@@ -180,6 +189,70 @@ LSM_Excluded_measurements = {
         '2':[#('Sd', 'Instrument_1', 'PQL6_9')
             ]
         }
+
+Instruments_LoS = {
+'Hor_Left_Bottom_UP_t': 'Instrument_1',
+'Hor_Left_Top_UP_t': 'Instrument_1',
+'Hor_Top_Left_UP_t': 'Instrument_1',
+'Hor_Top_Right_UP_t': 'Instrument_0',
+'Hor_Right_Top_UP_t': 'Instrument_0',
+'Hor_Right_Bottom_UP_t': 'Instrument_0',
+'Hor_Left_Bottom_DN_t': 'Instrument_1',
+'Hor_Left_Top_DN_t': 'Instrument_1',
+'Hor_Top_Left_DN_t': 'Instrument_1',
+'Hor_Top_Right_DN_t': 'Instrument_1',
+'Hor_Right_Top_DN_t': 'Instrument_0',
+'Hor_Right_Bottom_DN_t': 'Instrument_0',
+'Ver_Left_DN_DN_t': 'Instrument_1',
+'Ver_Left_DN_UP_t': 'Instrument_1',
+'Ver_Left_MD_DN_t': 'Instrument_1',
+'Ver_Left_MD_UP_t': 'Instrument_1',
+'Ver_Left_UP_DN_t': 'Instrument_1',
+'Ver_Left_UP_UP_t': 'Instrument_1',
+'Ver_Right_DN_DN_t': 'Instrument_0',
+'Ver_Right_DN_UP_t': 'Instrument_0',
+'Ver_Right_MD_DN_t': 'Instrument_0',
+'Ver_Right_MD_UP_t': 'Instrument_0',
+'Ver_Right_UP_DN_t':'Instrument_0',
+'Ver_Right_UP_UP_t': 'Instrument_0',
+'Diag_Left_DN_t': 'Instrument_1',
+'Diag_Left_UP_t': 'Instrument_1',
+'Diag_Right_DN_t': 'Instrument_1',
+'Diag_Right_UP_t': 'Instrument_1',
+'Diag_Top_DN_t': 'Instrument_0',
+'Diag_Top_UP_t': 'Instrument_0',
+'Hor_Left_Bottom_UP_b':'Instrument_1',
+'Hor_Left_Top_UP_b': 'Instrument_1',
+'Hor_Top_Left_UP_b': 'Instrument_1',
+'Hor_Top_Right_UP_b': 'Instrument_0',
+'Hor_Right_Top_UP_b': 'Instrument_0',
+'Hor_Right_Bottom_UP_b': 'Instrument_0',
+'Hor_Left_Bottom_DN_b': 'Instrument_1',
+'Hor_Left_Top_DN_b': 'Instrument_1',
+'Hor_Top_Left_DN_b': 'Instrument_1',
+'Hor_Top_Right_DN_b': 'Instrument_0',
+'Hor_Right_Top_DN_b': 'Instrument_0',
+'Hor_Right_Bottom_DN_b': 'Instrument_0',
+'Ver_Left_DN_DN_b': 'Instrument_1',
+'Ver_Left_DN_UP_b': 'Instrument_1',
+'Ver_Left_MD_DN_b': 'Instrument_1',
+'Ver_Left_MD_UP_b': 'Instrument_1',
+'Ver_Left_UP_DN_b': 'Instrument_1',
+'Ver_Left_UP_UP_b': 'Instrument_1',
+'Ver_Right_DN_DN_b': 'Instrument_0',
+'Ver_Right_DN_UP_b': 'Instrument_0',
+'Ver_Right_MD_DN_b': 'Instrument_0',
+'Ver_Right_MD_UP_b': 'Instrument_0',
+'Ver_Right_UP_DN_b': 'Instrument_0',
+'Ver_Right_UP_UP_b': 'Instrument_0',
+'Diag_Left_DN_b': 'Instrument_1',
+'Diag_Left_UP_b': 'Instrument_1',
+'Diag_Right_DN_b': 'Instrument_0',
+'Diag_Right_UP_b': 'Instrument_0',
+'Diag_Top_DN_b': 'Instrument_0',
+'Diag_Top_UP_b': 'Instrument_0'
+}
+
 
 Lines_of_sight = {
 'Hor_Left_Bottom_UP_t': ('PQK62_7','PQK62_1','Girder_5','PQL6_7',

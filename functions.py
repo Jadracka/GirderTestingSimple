@@ -7,7 +7,7 @@ Created on Thu Feb 11 12:53:33 2021
 import math as m
 from numpy import pi
 import numpy as np
-import scipy as sp
+#import scipy as sp
 from scipy import linalg
 from numpy.linalg import inv
 import re
@@ -500,6 +500,51 @@ def Par_6Dof(PointTo, Instrument, Aproximates, epsilon):
            dX_Hz, dY_Hz, dZ_Hz, dRx_Hz, dRy_Hz, dRz_Hz, \
            dX_V, dY_V, dZ_V, dRx_V, dRy_V, dRz_V
 
+def Par_6Dof_IFM(PointTo, PointFrom, line, Aproximates, epsilon):
+    Instrument = cg.Instruments_LoS[line]
+    Rx, Ry, Rz = Aproximates['Ori_'+Instrument]
+    dX = Aproximates[PointTo][0] - Aproximates[PointFrom][0]
+    dY = Aproximates[PointTo][1] - Aproximates[PointFrom][1]
+    dZ = Aproximates[PointTo][2] - Aproximates[PointFrom][2]
+    dXe = Aproximates[PointTo][0] - Aproximates[PointFrom][0] + epsilon
+    dYe = Aproximates[PointTo][1] - Aproximates[PointFrom][1] + epsilon
+    dZe = Aproximates[PointTo][2] - Aproximates[PointFrom][2] + epsilon
+    dX_e = Aproximates[PointTo][0] - Aproximates[PointFrom][0] - epsilon
+    dY_e = Aproximates[PointTo][1] - Aproximates[PointFrom][1] - epsilon
+    dZ_e = Aproximates[PointTo][2] - Aproximates[PointFrom][2] - epsilon
+    Rxc = m.cos(Rx)
+    Rxs = m.sin(Rx)
+    Ryc = m.cos(Ry)
+    Rys = m.sin(Ry)
+    Rzc = m.cos(Rz)
+    Rzs = m.sin(Rz)
+    Rxce = m.cos(Rx + epsilon)
+    Rxse = m.sin(Rx + epsilon)
+    Ryce = m.cos(Ry + epsilon)
+    Ryse = m.sin(Ry + epsilon)
+    Rzce = m.cos(Rz + epsilon)
+    Rzse = m.sin(Rz + epsilon)
+    Rxc_e = m.cos(Rx - epsilon)
+    Rxs_e = m.sin(Rx - epsilon)
+    Ryc_e = m.cos(Ry - epsilon)
+    Rys_e = m.sin(Ry - epsilon)
+    Rzc_e = m.cos(Rz - epsilon)
+    Rzs_e = m.sin(Rz - epsilon)
+    dX_Sd =  (Sd_6Dof(dXe,  dY,   dZ,   Rxc,   Rxs,   Ryc,   Rys,   Rzc,   Rzs)  -
+              Sd_6Dof(dX_e, dY,   dZ,   Rxc,   Rxs,   Ryc,   Rys,   Rzc,   Rzs))   /(2*epsilon)
+    dY_Sd =  (Sd_6Dof(dX,   dYe,  dZ,   Rxc,   Rxs,   Ryc,   Rys,   Rzc,   Rzs)  -
+              Sd_6Dof(dX,   dY_e, dZ,   Rxc,   Rxs,   Ryc,   Rys,   Rzc,   Rzs))   /(2*epsilon)
+    dZ_Sd =  (Sd_6Dof(dX,   dY,   dZe,  Rxc,   Rxs,   Ryc,   Rys,   Rzc,   Rzs)  -
+              Sd_6Dof(dX,   dY,   dZ_e, Rxc,   Rxs,   Ryc,   Rys,   Rzc,   Rzs))   /(2*epsilon)
+    dRx_Sd = (Sd_6Dof(dX,   dY,   dZ,   Rxce,  Rxse,  Ryc,   Rys,   Rzc,   Rzs)  -
+              Sd_6Dof(dX,   dY,   dZ,   Rxc_e, Rxs_e, Ryc,   Rys,   Rzc,   Rzs))   /(2*epsilon)
+    dRy_Sd = (Sd_6Dof(dX,   dY,   dZ,   Rxc,   Rxs,   Ryce,  Ryse,  Rzc,   Rzs)  -
+              Sd_6Dof(dX,   dY,   dZ,   Rxc,   Rxs,   Ryc_e, Rys_e, Rzc,   Rzs))   /(2*epsilon)
+    dRz_Sd = (Sd_6Dof(dX,   dY,   dZ,   Rxc,   Rxs,   Ryc,   Rys,   Rzce,  Rzse) -
+              Sd_6Dof(dX,   dY,   dZ,   Rxc,   Rxs,   Ryc,   Rys,   Rzc_e, Rzs_e)) /(2*epsilon)
+    
+    return dX_Sd, dY_Sd, dZ_Sd, dRx_Sd, dRy_Sd, dRz_Sd, Instrument
+
 def horizontal_angle_from_Coords(PointTo,PointFrom):
     Hz = a(m.atan2(PointTo[1]-PointFrom[1],PointTo[0]-PointFrom[0]), 
            a.T_RAD,True).angle
@@ -680,22 +725,23 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
                       X_vector, X_vectorHR, IFM_StDev, Instruments_6DoF, 
                       epsilon
                       ):
-    count_IFM_measurements = sum([len(v) for k, v in\
-                                         measured_distances_in_lines.items()])
-    
     count_Sd = Count_meas_types(Pol_measurements, 'Sd')
     count_Hz = Count_meas_types(Pol_measurements, 'Hz')
     count_V = Count_meas_types(Pol_measurements, 'V')
     
-    count_Pico_measurements = 0
-    count_all_observations = count_Pico_measurements + count_Sd + count_Hz + \
-                             count_V# + count_IFM_measurements
-
-    del count_IFM_measurements, count_Pico_measurements
-    #count_constraints = len(Combinations_for_constraints)
+    count_all_observations = count_Sd + count_Hz + count_V
+    count_A_rows = count_all_observations
 	
-    A_matrix = np.zeros([count_all_observations, #+ count_constraints,
-                         count_unknowns], dtype=float)
+    if cg.LSM_incl_IFM:
+        count_IFM_measurements = sum([len(v) for k, v in\
+                                         measured_distances_in_lines.items()])
+        count_A_rows += count_IFM_measurements
+		
+    if cg.LSM_incl_Cons:
+        count_constraints = len(Combinations_for_constraints)
+        count_A_rows += count_constraints
+	
+    A_matrix = np.zeros([count_A_rows, count_unknowns], dtype=float)
     
     A_matrixHR = {}
     
@@ -706,59 +752,63 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
     
     P_vector = np.array([],dtype=float)
     Q_vector = np.array([],dtype=float)
-    
-#    # Filling A and L with IFM measurements
-#    for line in measured_distances_in_lines:
-#        # meas_i is index of the measurand in line, so I can pair it with the
-#        # Point IDs from sorted points in lines, first measured point is on the
-#        # same index as the distance and second point is on index + 1
-#        for meas_i,distance in enumerate(measured_distances_in_lines[line]):
-#            # I need index of the measurement in L vector, so I can put it on
-#            # correct corresponding row in First plan matrix A
-#            L_i = len(L_vector)
-#            L_vector = np.append(L_vector, distance)
-#            StDev = (StDev_sys_ppm(distance,IFM_StDev))/1000
-#            P_vector = np.append(P_vector,pow(cg.Sigma_0,2) / pow(StDev,2))
-#            Q_vector = np.append(Q_vector,1/pow(cg.Sigma_0,2) * pow(StDev,2))
-#            """Now figuring the index of points in the unknowns list, so I know
-#               which column of the A matrix. The original index is multiplied 
-#               by 3 because unknowns are names of points (and instrument 
-#               orientations) 
-#               not a complete list of unknowns = Point X,Y and Z => *3      """
-#            PointFrom = sorted_measured_points_in_lines[line][meas_i]
-#            PointTo = sorted_measured_points_in_lines[line][meas_i+1]
-#            LX0_vector = np.append(LX0_vector, slope_distance(
-#                                  Aproximates[PointTo],Aproximates[PointFrom]))
-#            PointFrom_i = 3*unknowns.index(PointFrom) 
-#            PointTo_i = 3*unknowns.index(PointTo)
-#            if Instruments_6DoF:
-#                dX_Sd, dY_Sd, dZ_Sd = Par_6DoF_noRot(PointTo,PointFrom, 
-#                                                     Aproximates, epsilon)
-#                A_matrix[L_i,PointTo_i:PointTo_i+3] = dX_Sd, dY_Sd, dZ_Sd
-#                # for point "From" the partial derivatives change sign
-#                A_matrix[L_i,PointFrom_i:PointFrom_i+3] = -dX_Sd, -dY_Sd, -dZ_Sd
-#            else:
-#                dX,dY,dZ = ParD_Sd(Aproximates[PointTo],Aproximates[PointFrom])
-#                A_matrix[L_i,PointTo_i:PointTo_i+3] = dX,dY,dZ
-#                # for point "From" the partial derivatives change sign
-#                A_matrix[L_i,PointFrom_i:PointFrom_i+3] = -dX,-dY,-dZ
-#            # Documenting in human readible format the A and L elements
-#            L_vectorHR.append((line, PointFrom, PointTo))
-#            A_matrixHR[(L_i,PointFrom_i)] = ['dX', line, PointFrom, PointTo]
-#            A_matrixHR[(L_i,PointFrom_i+1)] = ['dY', line, PointFrom, PointTo]
-#            A_matrixHR[(L_i,PointFrom_i+2)] = ['dZ', line, PointFrom, PointTo]
-#            A_matrixHR[(L_i,PointTo_i)] = ['dX', line, PointTo, PointFrom]
-#            A_matrixHR[(L_i,PointTo_i+1)] = ['dY', line, PointTo, PointFrom]
-#            A_matrixHR[(L_i,PointTo_i+2)] = ['dZ', line, PointTo, PointFrom]
-#    del PointFrom,PointTo, PointFrom_i,PointTo_i,L_i, meas_i, distance
-#    try:
-#        del dX, dY, dZ
-#    except UnboundLocalError:
-#        pass
-#    try:
-#        del dX_Sd, dY_Sd, dZ_Sd
-#    except UnboundLocalError:
-#        pass
+	
+    if cg.LSM_incl_IFM:
+	    # Filling A and L with IFM measurements
+	    for line in measured_distances_in_lines:
+	        # meas_i is index of the measurand in line, so I can pair it with the
+	        # Point IDs from sorted points in lines, first measured point is on the
+	        # same index as the distance and second point is on index + 1
+	        for meas_i,distance in enumerate(measured_distances_in_lines[line]):
+	            # I need index of the measurement in L vector, so I can put it on
+	            # correct corresponding row in First plan matrix A
+	            L_i = len(L_vector)
+	            L_vector = np.append(L_vector, distance)
+	            StDev = (StDev_sys_ppm(distance,IFM_StDev))/1000
+	            P_vector = np.append(P_vector,pow(cg.Sigma_0,2) / pow(StDev,2))
+	            Q_vector = np.append(Q_vector,1/pow(cg.Sigma_0,2) * pow(StDev,2))
+	            """Now figuring the index of points in the unknowns list, so I know
+	               which column of the A matrix. The original index is multiplied 
+	               by 3 because unknowns are names of points (and instrument 
+	               orientations) 
+	               not a complete list of unknowns = Point X,Y and Z => *3      """
+	            PointFrom = sorted_measured_points_in_lines[line][meas_i]
+	            PointTo = sorted_measured_points_in_lines[line][meas_i+1]
+	            LX0_vector = np.append(LX0_vector, slope_distance(
+	                                  Aproximates[PointTo],Aproximates[PointFrom]))
+	            PointFrom_i = 3*unknowns.index(PointFrom) 
+	            PointTo_i = 3*unknowns.index(PointTo)
+	            if Instruments_6DoF:
+	                dX_Sd, dY_Sd, dZ_Sd, dRx_Sd, dRy_Sd, dRz_Sd, inst = \
+	                Par_6Dof_IFM(PointTo, PointFrom, line, Aproximates, epsilon)
+	                Ori_inst_i = X_vectorHR.index('RX Ori_'+inst)
+	                A_matrix[L_i,PointTo_i:PointTo_i+3] = dX_Sd, dY_Sd, dZ_Sd
+	                # for point "From" the partial derivatives change sign
+	                A_matrix[L_i,PointFrom_i:PointFrom_i+3] = -dX_Sd, -dY_Sd, -dZ_Sd
+	                A_matrix[L_i,Ori_inst_i:Ori_inst_i+3] = -dRx_Sd, -dRy_Sd, -dRz_Sd
+
+	            else:
+	                dX,dY,dZ = ParD_Sd(Aproximates[PointTo],Aproximates[PointFrom])
+	                A_matrix[L_i,PointTo_i:PointTo_i+3] = dX,dY,dZ
+	                # for point "From" the partial derivatives change sign
+	                A_matrix[L_i,PointFrom_i:PointFrom_i+3] = -dX,-dY,-dZ
+	            # Documenting in human readible format the A and L elements
+	            L_vectorHR.append((line, PointFrom, PointTo))
+	            A_matrixHR[(L_i,PointFrom_i)] = ['dX', line, PointFrom, PointTo]
+	            A_matrixHR[(L_i,PointFrom_i+1)] = ['dY', line, PointFrom, PointTo]
+	            A_matrixHR[(L_i,PointFrom_i+2)] = ['dZ', line, PointFrom, PointTo]
+	            A_matrixHR[(L_i,PointTo_i)] = ['dX', line, PointTo, PointFrom]
+	            A_matrixHR[(L_i,PointTo_i+1)] = ['dY', line, PointTo, PointFrom]
+	            A_matrixHR[(L_i,PointTo_i+2)] = ['dZ', line, PointTo, PointFrom]
+	    del PointFrom,PointTo, PointFrom_i,PointTo_i,L_i, meas_i, distance
+	    try:
+	        del dX, dY, dZ
+	    except UnboundLocalError:
+	        pass
+	    try:
+	        del dX_Sd, dY_Sd, dZ_Sd
+	    except UnboundLocalError:
+	        pass
  
     L_subv_Hz = np.array([])
     L_subv_V = np.array([])
@@ -805,7 +855,10 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
             Hz_offset = count_all_observations - (count_Hz + count_Sd + count_V)
             V_offset = count_all_observations - (count_Hz + count_Sd)
             Sd_offset = count_all_observations - count_Sd
-            
+            if cg.LSM_incl_IFM:
+                Hz_offset += count_IFM_measurements
+                V_offset += count_IFM_measurements
+                Sd_offset += count_IFM_measurements
             # Returning the starting column of the point
             Point_i = 3*unknowns.index(point)
                         
@@ -1049,53 +1102,53 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
 # =============================================================================    
 # Constraints - filling A, L, LX0, P and HR versions
 # =============================================================================
-
-#    L_lenght = len(L_vector)
-#    for index, const in enumerate(Combinations_for_constraints):
-#        A_row_index = L_lenght + index
-#        PointFrom = Combinations_for_constraints[index][0]
-#        PointTo = Combinations_for_constraints[index][1]
-#        Sd = slope_distance(Nominal_coords[PointFrom],Nominal_coords[PointTo])
-#        Sd_aprox = slope_distance(Aproximates[PointFrom],Aproximates[PointTo])
-#        PointFrom_i = 3*unknowns.index(PointFrom) 
-#        PointTo_i = 3*unknowns.index(PointTo)
-#        if Instruments_6DoF:
-#            dX_Sd, dY_Sd, dZ_Sd = Par_6DoF_noRot(PointTo, PointFrom, 
-#                                                 Aproximates, epsilon)
-#            A_matrix[A_row_index,PointTo_i:PointTo_i+3] = dX_Sd, dY_Sd, dZ_Sd
-#            # for point "From" the partial derivatives change sign
-#            A_matrix[A_row_index,PointFrom_i:PointFrom_i+3] = -dX_Sd, -dY_Sd, \
-#                                                              -dZ_Sd
-#        else:
-#            dX,dY,dZ = ParD_Sd(Nominal_coords[PointTo],Nominal_coords[PointFrom])
-#            A_matrix[A_row_index,PointTo_i:PointTo_i+3] = dX,dY,dZ
-#            # for point "From" the partial derivatives change sign
-#            A_matrix[A_row_index,PointFrom_i:PointFrom_i+3] = -dX,-dY,-dZ
-#        # Documenting in human readible format what are the A and L elements
-#        L_vector = np.append(L_vector,Sd)
-#        LX0_vector = np.append(LX0_vector,Sd_aprox)
-#        P_vector = np.append(P_vector,pow(cg.Sigma_0,2)/pow(cg.Constraint_StDev,2))
-#        L_vectorHR.append(('constraint', PointFrom, PointTo))
-#        A_matrixHR[(A_row_index,PointFrom_i)] = ['dX', 'distance constraint', 
-#                   PointFrom, PointTo]
-#        A_matrixHR[(A_row_index,PointFrom_i+1)] = ['dY', 'distance constraint', 
-#                   PointFrom, PointTo]
-#        A_matrixHR[(A_row_index,PointFrom_i+2)] = ['dZ', 'distance constraint', 
-#                   PointFrom, PointTo]
-#        A_matrixHR[(A_row_index,PointTo_i)] = ['dX', 'distance constraint', 
-#                   PointTo, PointFrom]
-#        A_matrixHR[(A_row_index,PointTo_i+1)] = ['dY', 'distance constraint', 
-#                   PointTo, PointFrom]
-#        A_matrixHR[(A_row_index,PointTo_i+2)] = ['dZ', 'distance constraint', 
-#                   PointTo, PointFrom]
-#    try:
-#        del dX, dY, dZ
-#    except UnboundLocalError:
-#        pass
-#    try:
-#        del dX_Sd, dY_Sd, dZ_Sd
-#    except UnboundLocalError:
-#        pass
+    if cg.LSM_incl_Cons:
+	    L_lenght = len(L_vector)
+	    for index, const in enumerate(Combinations_for_constraints):
+	        A_row_index = L_lenght + index
+	        PointFrom = Combinations_for_constraints[index][0]
+	        PointTo = Combinations_for_constraints[index][1]
+	        Sd = slope_distance(Nominal_coords[PointFrom],Nominal_coords[PointTo])
+	        Sd_aprox = slope_distance(Aproximates[PointFrom],Aproximates[PointTo])
+	        PointFrom_i = 3*unknowns.index(PointFrom) 
+	        PointTo_i = 3*unknowns.index(PointTo)
+	        if Instruments_6DoF:
+	            dX_Sd, dY_Sd, dZ_Sd = Par_6DoF_noRot(PointTo, PointFrom, Aproximates,
+																				     epsilon)
+	            A_matrix[A_row_index,PointTo_i:PointTo_i+3] = dX_Sd, dY_Sd, dZ_Sd
+	            # for point "From" the partial derivatives change sign
+	            A_matrix[A_row_index,PointFrom_i:PointFrom_i+3] = -dX_Sd, -dY_Sd, \
+	                                                              -dZ_Sd
+	        else:
+	            dX,dY,dZ = ParD_Sd(Nominal_coords[PointTo],Nominal_coords[PointFrom])
+	            A_matrix[A_row_index,PointTo_i:PointTo_i+3] = dX,dY,dZ
+	            # for point "From" the partial derivatives change sign
+	            A_matrix[A_row_index,PointFrom_i:PointFrom_i+3] = -dX,-dY,-dZ
+	        # Documenting in human readible format what are the A and L elements
+	        L_vector = np.append(L_vector,Sd)
+	        LX0_vector = np.append(LX0_vector,Sd_aprox)
+	        P_vector = np.append(P_vector,pow(cg.Sigma_0,2)/pow(cg.Constraint_StDev,2))
+	        L_vectorHR.append(('constraint', PointFrom, PointTo))
+	        A_matrixHR[(A_row_index,PointFrom_i)] = ['dX', 'distance constraint', 
+	                   PointFrom, PointTo]
+	        A_matrixHR[(A_row_index,PointFrom_i+1)] = ['dY', 'distance constraint', 
+	                   PointFrom, PointTo]
+	        A_matrixHR[(A_row_index,PointFrom_i+2)] = ['dZ', 'distance constraint', 
+	                   PointFrom, PointTo]
+	        A_matrixHR[(A_row_index,PointTo_i)] = ['dX', 'distance constraint', 
+	                   PointTo, PointFrom]
+	        A_matrixHR[(A_row_index,PointTo_i+1)] = ['dY', 'distance constraint', 
+	                   PointTo, PointFrom]
+	        A_matrixHR[(A_row_index,PointTo_i+2)] = ['dZ', 'distance constraint', 
+	                   PointTo, PointFrom]
+	    try:
+	        del dX, dY, dZ
+	    except UnboundLocalError:
+	        pass
+	    try:
+	        del dX_Sd, dY_Sd, dZ_Sd
+	    except UnboundLocalError:
+	        pass
     
     P_matrix = np.diagflat(P_vector)
     Q_matrix = np.diagflat(Q_vector)
@@ -1222,30 +1275,36 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
 #                    print(f"{vi/(m.sqrt(s02*Qvv[i,i])):16.12}, {L_vectorHR[i]}")
                     pass
 #        print("n/o diag elem <0: ",vcount)
-        s02_IFM = np.nan
-        s02_con = np.nan
-#        i = count_IFM
-        i = 0    # Markus, if no ifm measurements are present.
-        p = count_Pol_measurements
-        cc = count_constraints
-        if count_IFM > 0:
+        if cg.LSM_incl_IFM:
+            i = count_IFM
             s02_IFM = pow(cg.Sigma_0,-2)*(v[0:i-1] @ P_matrix[0:i-1,0:i-1] @ v[0:i-1])/\
 										round(np.trace(Qvv[0:i-1,0:i-1] @ P_matrix[0:i-1,0:i-1]))
-										
-        s02_Hz = pow(cg.Sigma_0,-2)*(v[i:i+p-1] @ P_matrix[i:i+p-1,i:i+p-1] @ v[i:i+p-1])/ \
-                  round(np.trace(Qvv[i:i+p-1,i:i+p-1] @ P_matrix[i:i+p-1,i:i+p-1]))
-								
-        s02_V = pow(cg.Sigma_0,-2)*(v[i+p:i+2*p-1] @ P_matrix[i+p:i+2*p-1,i+p:i+2*p-1] @ v[i+p:i+2*p-1])/\
-				  round(np.trace(Qvv[i+p:i+2*p-1,i+p:i+2*p-1] @ P_matrix[
-																	i+p:i+2*p-1,i+p:i+2*p-1]))
-			
-        s02_Sd = pow(cg.Sigma_0,-2)*(v[i+2*p:i+3*p-1] @ P_matrix[i+2*p:i+3*p-1,i+2*p:i+3*p-1] @ \
-									   v[i+2*p:i+3*p-1]) / round(np.trace(Qvv[
-											   i+2*p:i+3*p-1,i+2*p:i+3*p-1]\
-									   @ P_matrix[i+2*p:i+3*p-1,i+2*p:i+3*p-1]))
-        if count_constraints > 0:
+        else:
+            i = 0
+            s02_IFM = np.nan
+
+        p = count_Pol_measurements
+
+   
+        s02_Hz = pow(cg.Sigma_0,-2)*(v[i:i+p-1] @ P_matrix[i:i+p-1,i:i+p-1] @ \
+						   v[i:i+p-1])/ round(np.trace(Qvv[i:i+p-1,i:i+p-1] @ \
+						   P_matrix[i:i+p-1,i:i+p-1]))			
+        s02_V = pow(cg.Sigma_0,-2)*(v[i+p:i+2*p-1] @ \
+				           P_matrix[i+p:i+2*p-1,i+p:i+2*p-1] @ v[i+p:i+2*p-1])/\
+				           round(np.trace(Qvv[i+p:i+2*p-1,i+p:i+2*p-1] @ \
+							    P_matrix[i+p:i+2*p-1,i+p:i+2*p-1]))
+        s02_Sd = pow(cg.Sigma_0,-2)*(v[i+2*p:i+3*p-1] @ \
+					         P_matrix[i+2*p:i+3*p-1,i+2*p:i+3*p-1] @ v[i+2*p:i+3*p-1])\
+									/ round(np.trace(Qvv[i+2*p:i+3*p-1,i+2*p:i+3*p-1]\
+											   @ P_matrix[i+2*p:i+3*p-1,i+2*p:i+3*p-1]))
+
+        if cg.LSM_incl_Cons:
+            cc = count_constraints
             s02_con = pow(cg.Sigma_0,-2)*(v[-cc:] @ P_matrix[-cc:,-cc:] @ v[-cc:])/\
 										round(np.trace(Qvv[-cc:,-cc:] @ P_matrix[-cc:,-cc:]))
+        else:
+            s02_con = np.nan
+
         metric = max(abs(dx))
         counter += 1
 
@@ -1267,9 +1326,14 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
     print (f"s02    {s02:8.3}")
     print (f"s0     {m.sqrt(s02):8.3}")
     print (f"sig0   {cg.Sigma_0:8.3}")
-    print (f"s02ifm {s02_IFM:8.3}")
+    if cg.LSM_incl_IFM:
+        print (f"s02ifm {s02_IFM:8.3}")
     print (f"s02Hz  {s02_Hz:8.3}")
     print (f"s02V   {s02_V:8.3}")
     print (f"s02Sd  {s02_Sd:8.3}")
-    del metric, counter, i, p, cc
+    try:
+        del cc
+    except UnboundLocalError:
+        pass
+    del metric, counter, i, p
     return P_matrix, LSM_results, Qxx, Qvv, s02, dof, w, s02_IFM, s02_Hz, s02_V, s02_Sd, s02_con
