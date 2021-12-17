@@ -882,6 +882,148 @@ del point, Header, fill
 
 print('End of MainCode')
 
+
+print('End of LSM \n')
+
+
+# =============================================================================
+# Calculating standard deviations for unknowns from CovMatrix, 
+# getting rid of orientation in Result dictionary
+# =============================================================================
+
+for i, unknown in enumerate(unknowns[:-count_instruments]):
+    iii = 3*i
+    point = Results[unknown]
+    st_dev_X = m.sqrt(Cov_matrix[iii,iii])
+    st_dev_Y = m.sqrt(Cov_matrix[iii+1,iii+1])
+    st_dev_Z = m.sqrt(Cov_matrix[iii+2,iii+2])
+    st_dev_XYZ = m.sqrt(pow(st_dev_X,2)+pow(st_dev_Y,2)+pow(st_dev_Z,2))
+    update = point + (st_dev_X, st_dev_Y, st_dev_Z, st_dev_XYZ)
+    Results[unknown] = update
+del update, point, st_dev_X, st_dev_Y, st_dev_Z, st_dev_XYZ
+
+if cg.Instruments_6DoF:
+    for i, unknown in enumerate(unknowns[-count_instruments:]):
+        iii = 3*i
+        point = Results[unknown]
+        st_dev_Rx = m.sqrt(Cov_matrix[iii,iii])
+        st_dev_Ry = m.sqrt(Cov_matrix[iii+1,iii+1])
+        st_dev_Rz = m.sqrt(Cov_matrix[iii+2,iii+2])
+        update = point + (st_dev_Rx, st_dev_Ry, st_dev_Rz)
+        Results[unknown] = update
+    del update, point, st_dev_Rx, st_dev_Ry, st_dev_Rz
+
+if not cg.Instruments_6DoF:
+    Ori_keys = ()
+    for key in Results.keys():
+        if "Ori_" in key:
+            Ori_keys += (key,)
+        for key in Ori_keys:
+            Results.pop(key)
+        del i, unknown, iii, Ori_keys, key
+
+if Two_epochs:	
+    for i, unknown in enumerate(unknowns_E1[:-count_instruments_E1]):
+        iii = 3*i
+        point = Results_E1[unknown]
+        st_dev_X = m.sqrt(Cov_matrix_E1[iii,iii])
+        st_dev_Y = m.sqrt(Cov_matrix_E1[iii+1,iii+1])
+        st_dev_Z = m.sqrt(Cov_matrix_E1[iii+2,iii+2])
+        st_dev_XYZ = m.sqrt(pow(st_dev_X,2)+pow(st_dev_Y,2)+pow(st_dev_Z,2))
+        update = point + (st_dev_X, st_dev_Y, st_dev_Z, st_dev_XYZ)
+        Results_E1[unknown] = update
+    del update, point, st_dev_X, st_dev_Y, st_dev_Z, st_dev_XYZ
+    if cg.Instruments_6DoF:
+        for i, unknown in enumerate(unknowns_E1[-count_instruments:]):
+            iii = 3*i
+            point = Results[unknown]
+            st_dev_Rx = m.sqrt(Cov_matrix_E1[iii,iii])
+            st_dev_Ry = m.sqrt(Cov_matrix_E1[iii+1,iii+1])
+            st_dev_Rz = m.sqrt(Cov_matrix_E1[iii+2,iii+2])
+            update = point + (st_dev_Rx, st_dev_Ry, st_dev_Rz)
+            Results_E1[unknown] = update
+        del update, point, st_dev_Rx, st_dev_Ry, st_dev_Rz
+
+    if not cg.Instruments_6DoF:
+        Ori_keys = ()
+        for key in Results_E1.keys():
+            if "Ori_" in key:
+                Ori_keys += (key,)
+        for key in Ori_keys:
+            Results_E1.pop(key)
+        del i, unknown, iii, Ori_keys, key
+	
+	
+# =============================================================================
+# Building dictionary of points wanted to do the transform on
+# =============================================================================
+    Identical_points = {}
+    Identical_points_E1 = {}
+    for point in cg.Common_points:
+        if point in Results.keys():
+            Identical_points[point] = Results[point]
+        if point in Results_E1.keys():
+            Identical_points_E1[point] = Results_E1[point]
+			
+    x = ht.Helmert_transform(Identical_points_E1, Identical_points)
+    Transformed_Results_E1 = ht.Transformation(x, Results_E1)
+	
+    Res_set = set(Results)
+    Res_E1_set = set(Transformed_Results_E1)
+    Movements = {}
+    for point in Res_set.intersection(Res_E1_set):
+        diffs = tuple(np.array(Results[point][:3]) - np.array(
+																			Transformed_Results_E1[point][:3]))
+        mag = round(fc.slope_distance(Results[point],
+																		   Transformed_Results_E1[point]),10)
+    result = diffs + (mag,)
+		# delta X, Y, Z and magnitude:
+    Movements[point] = result
+    del point, diffs, mag, result
+
+# =============================================================================
+# LSM - results writing into file - pre-transport Epoch
+# =============================================================================
+
+Results_file = open(cg.Res_file_name, "w")
+
+Header = ["Results from Epoch" + str(
+        cg.Which_epochs[0]) + " [RHCS]\n", "created:" + str(date_time)
+        + "\nUsing source files:\n" + '-' + str(
+                cg.LoS_Measurements_file_name) + '\n', '-' + str(
+                cg.Pol_Measurements_file_name) + '\n', '-' + str(
+                cg.Coords_file_name) + '\n']
+
+Results_file.writelines(Header)
+
+for point in Aproximates:
+    if 'Ori' in point:
+        fill =  '\n' + point + '\t' + str(
+                                    Results[point][0]) + '\t' + str(
+                                   -Results[point][1]) + '\t' + str(
+                                    Results[point][2]) + '\t' + str(
+                                    Results[point][3]) + '\t' + str(
+                                    Results[point][4]) + '\t' + str(
+                                    Results[point][5])
+        Results_file.write(str(fill))
+    else:
+        fill =  '\n' + point + '\t' + str(
+                                    Results[point][0]) + '\t' + str(
+                                   -Results[point][1]) + '\t' + str(
+                                    Results[point][2]) + '\t' + str(
+                                    Results[point][3]) + '\t' + str(
+                                    Results[point][4]) + '\t' + str(
+                                    Results[point][5]) + '\t' + str(
+                                    Results[point][6])
+
+        Results_file.write(str(fill))
+
+# Closing file
+Results_file.close()
+del point, Header, fill
+
+print('End of MainCode')
+
 # =============================================================================
 # LSM - results writing into file - post-transport Epoch
 # =============================================================================
