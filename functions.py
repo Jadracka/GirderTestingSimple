@@ -141,11 +141,24 @@ def polar2cart3Dgon(Point):
          Point['Sd'] * cosg(Point['V'])
     )
 
+def polar2cart3Drad(r, theta, phi):
+    X = r * m.cos(theta) * m.sin(phi)
+    Y = r * m.sin(theta) * m.sin(phi)
+    Z = r * m.cos(phi)
+    return X,Y,Z
+
 def cart2polar3Dgon(Point):
     return (
          m.sqrt(m.pow(Point[0],2) + m.pow(Point[1],2) + m.pow(Point[2],2)),
          atan2g(m.sqrt(m.pow(Point[0],2) + m.pow(Point[1],2)),Point[2]),
          atan2g(Point[1],Point[0])
+         )
+
+def cart2polar3Drad(Point):
+    return (
+         m.sqrt(m.pow(Point[0],2) + m.pow(Point[1],2) + m.pow(Point[2],2)),
+         m.atan2(m.sqrt(m.pow(Point[0],2) + m.pow(Point[1],2)),Point[2]),
+         m.atan2(Point[1],Point[0])
          )
          
 def Measurements_read_in(Meas_filename):
@@ -340,7 +353,6 @@ def Coords_read_in(Coords_file_name):
         del line, words
     Coords_file.close()
     return Coords
-
 
 def Helmert_calc_for_PolMeas(From,To):
     Transformed_From = {}
@@ -771,7 +783,7 @@ def Filling_A_L_P_LX0(Nominal_coords,Aproximates, Trans_par,
 	               which column of the A matrix. The original index is multiplied 
 	               by 3 because unknowns are names of points (and instrument 
 	               orientations) 
-	               not a complete list of unknowns = Point X,Y and Z => *3      """
+	               not a complete list of unknowns = Point X,Y and Z => *3     """
 	            PointFrom = sorted_measured_points_in_lines[line][meas_i]
 	            PointTo = sorted_measured_points_in_lines[line][meas_i+1]
 	            LX0_vector = np.append(LX0_vector, slope_distance(
@@ -1208,8 +1220,7 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
     counter = 0
     print('\n Processing Epoch_%s:' %(str(Epoch_num)))
     while (metric > cg.LSM_Threshold) and (counter <= cg.LSM_Max_iterations):
-        print('\n Iteration', counter)
-#        A_matrix = -A_matrix
+#        print('\n Iteration', counter)
         l = np.ndarray(L_vector.size)
         for i, lelement in enumerate(L_vector):
             if L_vectorHR[i][0] == "Hz":
@@ -1217,32 +1228,32 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
             else:
                 l[i] = LX0_vector[i] - L_vector[i]
         del lelement, i
-        print('l',max(abs(l)), np.argmax(abs(l)))
+#        print('l',max(abs(l)), np.argmax(abs(l)))
         N = A_matrix.transpose() @ P_matrix @ A_matrix
-        print("Determinant: ",linalg.det(A_matrix.transpose() @ A_matrix))
+#        print("Determinant: ",linalg.det(A_matrix.transpose() @ A_matrix))
         if Instruments_6DoF:
             O = np.zeros([6,6])
         else:
             O = np.zeros([4,4])
         N_extended = np.block([[N,G_matrix],[np.transpose(G_matrix),O]])
-        print('Rank N_extended:', np.linalg.matrix_rank(N_extended))
-        try:
-            print("Log-Determinant of G-extended N: ",
-    			   np.linalg.slogdet(N_extended))
-        except:
-            print("Log-Determinant of G-extended N gives overflow ")
-        print("Condition number N: ", np.linalg.cond(N_extended))
+#        print('Rank N_extended:', np.linalg.matrix_rank(N_extended))
+#        try:
+#            print("Log-Determinant of G-extended N: ",
+#    			   np.linalg.slogdet(N_extended))
+#        except:
+#            print("Log-Determinant of G-extended N gives overflow ")
+#        print("Condition number N: ", np.linalg.cond(N_extended))
         n = A_matrix.transpose() @ P_matrix @ l
         if Instruments_6DoF:
             N_inv = np.linalg.inv(N_extended)[:-6,:-6]
         else:
             N_inv = np.linalg.inv(N_extended)[:-4,:-4]
         dx = N_inv @ n
-        print('dx',max(abs(dx)), np.argmax(abs(dx)))
-        print("X")
-        pretty_print((X_vector*pow(10,9))[-6:])
-        print("dx")
-        pretty_print((dx*pow(10,9))[-6:])
+#        print('dx',max(abs(dx)), np.argmax(abs(dx)))
+#        print("X")
+#        pretty_print((X_vector*pow(10,9))[-6:])
+#        print("dx")
+#        pretty_print((dx*pow(10,9))[-6:])
 #        pretty_print((X_vector*pow(10,9))[-7:])
         dx_1 = -dx[:-6]
         dx_2 = dx[-6:]
@@ -1262,7 +1273,8 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
 #        print("dof from Qvv: ",dof)
         s02 = (v @ P_matrix @ v)/dof
         LSM_results = Aproximates.copy()
-        Qxx = s02 * N_inv
+        Qxx = N_inv
+        Cov_matrix = s02 * Qxx
         w = []
         vcount=0
         for i,vi in enumerate(v):
@@ -1336,4 +1348,4 @@ def LSM(Epoch_num, Nominal_coords, Aproximates, measured_distances_in_lines,
     except UnboundLocalError:
         pass
     del metric, counter, i, p
-    return P_matrix, LSM_results, Qxx, Qvv, s02, dof, w, s02_IFM, s02_Hz, s02_V, s02_Sd, s02_con
+    return P_matrix, LSM_results, Qxx, Qvv, Cov_matrix, s02, dof, w, s02_IFM, s02_Hz, s02_V, s02_Sd, s02_con

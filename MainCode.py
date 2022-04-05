@@ -5,7 +5,7 @@ Created on Wed Apr  7 08:02:05 2021
 @author: jbarker
 """
 
-#import scipy as sp
+import scipy.stats as spst
 import numpy as np
 
 import sys
@@ -469,11 +469,30 @@ else:
     sys.exit("Counts of measurements don't agree.")
     
 
-#count_all_observations = 3*count_Pol_measurements + count_IFM_measurements
-
 unknowns,count_unknowns, instruments, count_instruments = fc.find_unknowns(
                             Transformed_Pol_measurements, cg.Instruments_6DoF)
 Aproximates = fc.merge_measured_coordinates(Transformed_Pol_measurements)
+
+if cg.LSM_incl_Cons:
+    for magnet in cg.Names_of_magnets:
+        try:
+            magnet_fids = {k: v for k, v in cg.FIDS.items() if k.startswith(
+																														magnet)}
+            xAp = ht.Helmert_transform(magnet_fids,Aproximates)
+            magnet_fids_trans_Ap = ht.Transformation(xAp, magnet_fids)
+            xNc = ht.Helmert_transform(magnet_fids,Nominal_coords)
+            magnet_fids_trans_Nc = ht.Transformation(xNc, magnet_fids)
+            for key in magnet_fids:
+                if key not in Aproximates: #Assert only triggres on virtual poitns.
+                    Aproximates[key] = magnet_fids_trans_Ap[key]
+                    Nominal_coords[key] = magnet_fids_trans_Nc[key]
+                    unknowns.insert(-2*count_instruments, key)
+                    count_unknowns += 3
+            Beam_axis_analysis = True
+        except KeyError:
+            print("Magnet %s is not in FIDS. Analysis of beam axis cannot be"
+					      "performed." %(magnet))
+            Beam_axis_analysis = False
 
 if cg.Instruments_6DoF:
     for instrument in Trans_par:
@@ -489,11 +508,10 @@ else:
                                           a.T_RAD, True).angle)
             
 print("Initial Helmert transform pretransport epoch, unknown counts and Aproximates filling done.")
-
 # =============================================================================
 # Least Square Method for pre-transport epoch
 # =============================================================================
-P_matrix, Results, Cov_matrix, Qvv, s02, dof, w, s02_IFM, s02_Hz, s02_V,  \
+P_matrix, Results, Qxx, Qvv, Cov_matrix, s02, dof, w, s02_IFM, s02_Hz, s02_V,  \
 s02_Sd, s02_con = fc.LSM(Epoch_num, 
 										Nominal_coords, Aproximates,
 									   measured_distances_in_lines,				
@@ -504,36 +522,13 @@ s02_Sd, s02_con = fc.LSM(Epoch_num,
 									   unknowns,count_unknowns, cg.IFM_StDev, 
                        cg.Instruments_6DoF, Trans_par, cg.Epsilon)
 
+CovM_filename = str("Cov_matrix_" + str(Epoch_num) + ".txt")
+
+if not cg.LSM_incl_Cons:
+    np.savetxt(CovM_filename, Cov_matrix)
 
 print("LSM for pre transport epoch done.")
 
-# =============================================================================
-# LSM - results writing into file - pre-transport Epoch
-# =============================================================================
-
-Results_file = open(cg.Res_file_name, "w")
-
-Header = ["Results from Epoch" + str(
-        cg.Which_epochs[0]) + " [RHCS]\n", "created:" + str(date_time)
-        + "\nUsing source files:\n" + '-' + str(
-                cg.LoS_Measurements_file_name) + '\n', '-' + str(
-                cg.Pol_Measurements_file_name) + '\n', '-' + str(
-                cg.Coords_file_name) + '\n']
-
-Results_file.writelines(Header)
-
-for point in Aproximates:
-    if 'Ori' not in point:
-        fill =  '\n' + point + '\t' + str(
-                                    Aproximates[point][0]) + '\t' + str(
-                                   -Aproximates[point][1]) + '\t' + str(
-                                    Aproximates[point][2])
-
-        Results_file.write(str(fill))
-
-# Closing file
-Results_file.close()
-del point, Header, fill
 
 # =============================================================================
 # Calculating Helmert transformations for measured cartesian coordinates
@@ -575,6 +570,30 @@ if Two_epochs:
     Aproximates_E1 = fc.merge_measured_coordinates(
 											 Transformed_Pol_measurements_E1)
 
+    if cg.LSM_incl_Cons:
+        for magnet in cg.Names_of_magnets:
+            try:
+                magnet_fids_E1 = {k: v for k, v in cg.FIDS.items() if \
+																							  k.startswith(magnet)}
+                xAp_E1 = ht.Helmert_transform(magnet_fids_E1,Aproximates_E1)
+                magnet_fids_trans_Ap_E1 = ht.Transformation(xAp_E1, 
+																											magnet_fids_E1)
+                xNc_E1 = ht.Helmert_transform(magnet_fids_E1,Nominal_coords_E1)
+                magnet_fids_trans_Nc_E1 = ht.Transformation(xNc_E1, 
+																											magnet_fids_E1)
+                for key in magnet_fids_E1:
+                    if key not in Aproximates_E1:
+                        Aproximates_E1[key] = magnet_fids_trans_Ap_E1[key]
+                        Nominal_coords_E1[key] = magnet_fids_trans_Nc_E1[key]
+                        unknowns_E1.insert(-2*count_instruments_E1, key)
+                        count_unknowns_E1 += 3
+                Beam_axis_analysis = True
+            except KeyError:
+                print("Magnet %s is not in FIDS. Analysis of beam axis cannot"
+						        " be performed." %(magnet))
+                Beam_axis_analysis = False
+
+
     if cg.Instruments_6DoF:
         for instrument in Trans_par:
             Aproximates_E1['Ori_'+instrument] = Trans_par_E1[instrument][-3:]
@@ -585,7 +604,7 @@ if Two_epochs:
 # =============================================================================
 # Least Square Method for post-transport epoch
 # =============================================================================
-    P_matrix_E1,Results_E1, Cov_matrix_E1, Qvv_E1, s02_E1, dof_E1, w_E1, s02_IFM_E1,\
+    P_matrix_E1,Results_E1, Qxx_E1, Qvv_E1, Cov_matrix_E1, s02_E1, dof_E1, w_E1, s02_IFM_E1,\
 	s02_Hz_E1, s02_V_E1, s02_Sd_E1, s02_con_E1 = fc.LSM(Epoch_num1, 
 										Nominal_coords_E1, Aproximates_E1, 
 										measured_distances_in_lines_E1,				
@@ -596,11 +615,277 @@ if Two_epochs:
 									   count_IFM_measurements_E1, unknowns_E1, 
                        count_unknowns_E1, cg.IFM_StDev_E1, 
                        cg.Instruments_6DoF, Trans_par_E1, cg.Epsilon) 
+    CovM_filename_E1 = str("Cov_matrix_" + str(Epoch_num1) + ".txt")
+    if not cg.LSM_incl_Cons:
+        np.savetxt(CovM_filename_E1, Cov_matrix_E1)
+    del Cov_matrix_E1
+del Cov_matrix
+
+print('End of LSM \n')
+
+# =============================================================================
+# Calculating standard deviations for unknowns from CovMatrix, 
+# getting rid of orientation in Result dictionary
+# The StD are calculated from Cov Matrix (real cov m) without constraints!
+# =============================================================================
+try:
+    Cov_matrix = np.array(np.loadtxt(CovM_filename, dtype=float))
+    covmfile_exists = True
+except:
+    print(CovM_filename, "doesn't exist, run the program first without"
+									    " constraints")
+    covmfile_exists = False
+    
+if Two_epochs:	
+	try:
+	    Cov_matrix_E1 = np.array(np.loadtxt(CovM_filename_E1, dtype=float))
+	except:
+	    print(CovM_filename_E1, "doesn't exist, run the program first without"
+										    " constraints")
+	    covmfile_exists = False
+    
+if covmfile_exists and cg.LSM_incl_Cons:
+	for i, unknown in enumerate(unknowns[:-(count_instruments*2 + 12)]):
+	    iii = 3*i
+	    point = Results[unknown]
+	    st_dev_X = m.sqrt(Cov_matrix[iii,iii])
+	    st_dev_Y = m.sqrt(Cov_matrix[iii+1,iii+1])
+	    st_dev_Z = m.sqrt(Cov_matrix[iii+2,iii+2])
+	    st_dev_XYZ = m.sqrt(pow(st_dev_X,2)+pow(st_dev_Y,2)+pow(st_dev_Z,2))
+	    update = point + (st_dev_X, st_dev_Y, st_dev_Z, st_dev_XYZ)
+	    Results[unknown] = update
+	del update, point, st_dev_X, st_dev_Y, st_dev_Z, st_dev_XYZ
+	
+#	if cg.Instruments_6DoF:
+#	    for i, unknown in enumerate(unknowns[-count_instruments:]):
+#	        iii = 3*i
+#	        point = Results[unknown]
+#	        st_dev_Rx = m.sqrt(Cov_matrix[iii,iii])
+#	        st_dev_Ry = m.sqrt(Cov_matrix[iii+1,iii+1])
+#	        st_dev_Rz = m.sqrt(Cov_matrix[iii+2,iii+2])
+#	        update = point + (st_dev_Rx, st_dev_Ry, st_dev_Rz)
+#	        Results[unknown] = update
+#	    del update, point, st_dev_Rx, st_dev_Ry, st_dev_Rz
+	
+#	if not cg.Instruments_6DoF:
+#	    Ori_keys = ()
+#	    for key in Results.keys():
+#	        if "Ori_" in key:
+#	            Ori_keys += (key,)
+#	        for key in Ori_keys:
+#	            Results.pop(key)
+#	        del i, unknown, iii, Ori_keys, key
+	
+	if Two_epochs:	
+	    for i, unknown in enumerate(unknowns_E1[:-(count_instruments_E1*2 + 12)]):
+	        iii = 3*i
+	        point = Results_E1[unknown]
+	        st_dev_X = m.sqrt(Cov_matrix_E1[iii,iii])
+	        st_dev_Y = m.sqrt(Cov_matrix_E1[iii+1,iii+1])
+	        st_dev_Z = m.sqrt(Cov_matrix_E1[iii+2,iii+2])
+	        st_dev_XYZ = m.sqrt(pow(st_dev_X,2)+pow(st_dev_Y,2)+pow(st_dev_Z,2))
+	        update = point + (st_dev_X, st_dev_Y, st_dev_Z, st_dev_XYZ)
+	        Results_E1[unknown] = update
+	    del update, point, st_dev_X, st_dev_Y, st_dev_Z, st_dev_XYZ
+	    if cg.Instruments_6DoF:
+	        for i, unknown in enumerate(unknowns_E1[-count_instruments_E1:]):
+	            iii = 3*i
+	            point = Results[unknown]
+	            st_dev_Rx = m.sqrt(Cov_matrix_E1[iii,iii])
+	            st_dev_Ry = m.sqrt(Cov_matrix_E1[iii+1,iii+1])
+	            st_dev_Rz = m.sqrt(Cov_matrix_E1[iii+2,iii+2])
+	            update = point + (st_dev_Rx, st_dev_Ry, st_dev_Rz)
+	            Results_E1[unknown] = update
+	        del update, point, st_dev_Rx, st_dev_Ry, st_dev_Rz
+	
+	    if not cg.Instruments_6DoF:
+	        Ori_keys = ()
+	        for key in Results_E1.keys():
+	            if "Ori_" in key:
+	                Ori_keys += (key,)
+	        for key in Ori_keys:
+	            Results_E1.pop(key)
+	        del i, unknown, iii, Ori_keys, key
+		
+	# =============================================================================
+	# Building dictionary of points wanted to do the transform on
+	# =============================================================================
+	    Identical_points = {}
+	    Identical_points_E1 = {}
+	    for point in cg.Common_points:
+	        if point in Results.keys():
+	            Identical_points[point] = Results[point]
+	        if point in Results_E1.keys():
+	            Identical_points_E1[point] = Results_E1[point]
+				
+	    x = ht.Helmert_transform(Identical_points_E1, Identical_points)
+	    Transformed_Results_E1 = ht.Transformation(x, Results_E1)
+		
+	    Res_set = set(Results)
+	    Res_E1_set = set(Transformed_Results_E1)
+	    Movements = {}
+	    for point in Res_set.intersection(Res_E1_set):
+	        diffs = tuple(np.array(Results[point][:3]) - np.array(
+																				Transformed_Results_E1[point][:3]))
+	        mag = round(fc.slope_distance(Results[point],
+																			   Transformed_Results_E1[point]),10)
+	        result = diffs + (mag,)
+			# delta X, Y, Z and magnitude:
+	        Movements[point] = result
+	    del point, diffs, mag, result
+	# =============================================================================
+	# Deformation comparison between two epochs
+	# =============================================================================
+	Results_2 = {}
+	Results_E1_2 = {}
+	Results_def_2 = {}
+	exclude_points = set(['Aus', 'Oben', 'Ein', 'Mitte', 'Instrument'])
+	if Two_epochs:
+	    identicals = list(set(unknowns) & set(unknowns_E1))
+	    for point in identicals:
+	        if not any(name in point for name in exclude_points):
+	            F = spst.f.ppf(q=1-0.05, dfn=3, dfd=dof-4)
+	            F_E1 = spst.f.ppf(q=1-0.05, dfn=3, dfd=dof_E1-4)
+	            F_def = spst.f.ppf(q=1-0.05, dfn=3, dfd=dof_E1+dof-8)
+	            iii = 3*(unknowns.index(point)) 
+	            iii_E1 = 3*(unknowns_E1.index(point))
+	            sub_matrix = Cov_matrix[iii:iii+3, iii:iii+3]
+	            sub_matrix_E1 = Cov_matrix_E1[iii_E1:iii_E1+3, iii_E1:iii_E1+3]
+	            def_matrix = sub_matrix + sub_matrix_E1
+	            eigen_val, eigen_vec = np.linalg.eig(sub_matrix)
+	            eigen_val_E1, eigen_vec_E1 = np.linalg.eig(sub_matrix_E1)
+	            eigen_val_def, eigen_vec_def = np.linalg.eig(def_matrix)
+	            # For first epoch:
+	            AoA = m.atan2(eigen_vec[0,1],eigen_vec[0,0])
+	            ZoA = m.acos(eigen_vec[0,2]/np.linalg.norm((eigen_vec[:,0])))
+	            AoB = m.atan2(eigen_vec[1,1],eigen_vec[1,0])
+	            ZoB = m.acos(eigen_vec[1,2]/np.linalg.norm((eigen_vec[:,1])))
+	            AoC = m.atan2(eigen_vec[2,1],eigen_vec[2,0])
+	            ZoC = m.acos(eigen_vec[2,2]/np.linalg.norm((eigen_vec[:,2])))
+	            Ac = m.sqrt(3*F*eigen_val[0])
+	            Bc = m.sqrt(3*F*eigen_val[1])
+	            Cc = m.sqrt(3*F*eigen_val[2])
+	            Results_2[point] = (AoA, ZoA, AoB, ZoB, AoC, ZoC, Ac, Bc, Cc)
+				     # For second epoch:
+	            AoA_E1 = m.atan2(eigen_vec_E1[0,1],eigen_vec_E1[0,0])
+	            ZoA_E1 = m.acos(eigen_vec_E1[0,2]/np.linalg.norm((
+																									eigen_vec_E1[:,0])))
+	            AoB_E1 = m.atan2(eigen_vec_E1[1,1],eigen_vec_E1[1,0])
+	            ZoB_E1 = m.acos(eigen_vec_E1[1,2]/np.linalg.norm((
+																									eigen_vec_E1[:,1])))
+	            AoC_E1 = m.atan2(eigen_vec_E1[2,1],eigen_vec_E1[2,0])
+	            ZoC_E1 = m.acos(eigen_vec_E1[2,2]/np.linalg.norm((
+																									eigen_vec_E1[:,2])))
+	            Ac_E1 = m.sqrt(3*F_E1*eigen_val_E1[0])
+	            Bc_E1 = m.sqrt(3*F_E1*eigen_val_E1[1])
+	            Cc_E1 = m.sqrt(3*F_E1*eigen_val_E1[2])
+	            Results_E1_2[point] = (AoA_E1, ZoA_E1, AoB_E1, ZoB_E1, AoC_E1, 
+															  ZoC_E1, Ac_E1, Bc_E1, Cc_E1)
+						# For deformations:
+	            AoA_def = m.atan2(eigen_vec_def[0,1],eigen_vec_def[0,0])
+	            ZoA_def = m.acos(eigen_vec_def[0,2]/np.linalg.norm((
+																									eigen_vec_def[:,0])))
+	            AoB_def = m.atan2(eigen_vec_def[1,1],eigen_vec_def[1,0])
+	            ZoB_def = m.acos(eigen_vec_def[1,2]/np.linalg.norm((
+																									eigen_vec_def[:,1])))
+	            AoC_def = m.atan2(eigen_vec_def[2,1],eigen_vec_def[2,0])
+	            ZoC_def = m.acos(eigen_vec_def[2,2]/np.linalg.norm((
+																									eigen_vec_def[:,2])))
+	            Ac_def = m.sqrt(3*F_def*eigen_val_def[0])
+	            Bc_def = m.sqrt(3*F_def*eigen_val_def[1])
+	            Cc_def = m.sqrt(3*F_def*eigen_val_def[2])
+				
+	            xA, yA, zA = fc.polar2cart3Drad(1, AoA_def, ZoA_def)
+	            xB, yB, zB = fc.polar2cart3Drad(1, AoB_def, ZoB_def)
+	            xC, yC, zC = fc.polar2cart3Drad(1, AoC_def, ZoC_def)
+	
+	            Mov_vec = np.asarray(Movements[point][:-1])
+	            A_cart = np.array([xA,yA,zA])
+	            dotpA = np.dot(A_cart,Mov_vec)
+	            B_cart = np.array([xB,yB,zB])
+	            dotpB = np.dot(B_cart,Mov_vec)
+	            C_cart = np.array([xC,yC,zC])
+	            dotpC = np.dot(C_cart,Mov_vec)
+				
+	            np.dot(A_cart, B_cart)
+	            print(point, m.pow(dotpA/Ac_def,2) + m.pow(dotpB/Bc_def,2) + m.pow(dotpC/Cc_def,2))
+	            is_out = m.pow(dotpA/Ac_def,2) + m.pow(dotpB/Bc_def,2) + m.pow(
+																									dotpC/Cc_def,2) > 1
+	
+	            Movements[point] += (is_out,)#np.dot(A_cart, B_cart)/min(Ac_def,
+						            #Bc_def), np.dot(A_cart, C_cart)/min(Ac_def, Cc_def),
+											#np.dot(B_cart, C_cart)/min(Bc_def, Cc_def))
+	            Results_def_2[point] = (AoA_def, ZoA_def, AoB_def, ZoB_def, 
+															   AoC_def, ZoC_def, Ac_def, Bc_def, Cc_def)
+#	        else:
+#	            F = spst.f.ppf(q=1-0.05, dfn=1, dfd=dof)
+#	            F_E1 = spst.f.ppf(q=1-0.05, dfn=1, dfd=dof_E1)
+#	            if cg.Instruments_6DoF:
+#	                print(point)
+#	                iii = 3 * (unknowns.index(point)-12)
+#	                Rxc = m.sqrt(F * s02 * Cov_matrix[iii,iii])
+#	                Ryc = m.sqrt(F * s02 * Cov_matrix[iii+1,iii+1])
+#	                Rzc = m.sqrt(F * s02 * Cov_matrix[iii+2,iii+2])
+#	                Results_2[point] = (Rxc, Ryc, Rzc)
+#	            else:
+#	                i = len(unknowns) - unknowns.index(point)
+#	                Oric = m.sqrt(F * s02 * Cov_matrix[-i, -i])
+#	                Results_2[point] = (Oric)
+	    del point, iii, iii_E1       
+
+
+
+
+# =============================================================================
+# LSM - results writing into file - pre-transport Epoch
+# =============================================================================
+
+Results_file = open(cg.Res_file_name, "w")
+
+Header = ["Results from Epoch" + str(
+        cg.Which_epochs[0]) + " [RHCS]\n", "created:" + str(date_time)
+        + "\nUsing source files:\n" + '-' + str(
+                cg.LoS_Measurements_file_name) + '\n', '-' + str(
+                cg.Pol_Measurements_file_name) + '\n', '-' + str(
+                cg.Coords_file_name) + '\n']
+
+Results_file.writelines(Header)
+
+for point in Aproximates:
+    if 'Ori' in point:
+        fill =  '\n' + point + '\t' + str(
+                                    Results[point][0]) + '\t' + str(
+                                   -Results[point][1]) + '\t' + str(
+                                    Results[point][2])
+        Results_file.write(str(fill))
+    elif 'Aus' or 'Oben' or 'Mitte' or 'Aus' in point:
+        fill =  '\n' + point + '\t' + str(
+                                    Results[point][0]) + '\t' + str(
+                                   -Results[point][1]) + '\t' + str(
+                                    Results[point][2])
+        Results_file.write(str(fill))
+    else:
+        fill =  '\n' + point + '\t' + str(
+                                    Results[point][0]) + '\t' + str(
+                                   -Results[point][1]) + '\t' + str(
+                                    Results[point][2]) + '\t' + str(
+                                    Results[point][3]) + '\t' + str(
+                                    Results[point][4]) + '\t' + str(
+                                    Results[point][5]) + '\t' + str(
+                                    Results[point][6])
+
+        Results_file.write(str(fill))
+
+# Closing file
+Results_file.close()
+del point, Header, fill
+
+print('End of MainCode')
 
 # =============================================================================
 # LSM - results writing into file - post-transport Epoch
 # =============================================================================
-    
+if Two_epochs:    
     Results_file_E1 = open(cg.Res_file_name_1, "w")
     
     Header = ["Results from Epoch" + str(
@@ -614,82 +899,30 @@ if Two_epochs:
     Results_file_E1.writelines(Header)
     
     for point in Aproximates_E1:
-        if 'Ori' not in point:
+        if 'Ori' in point:
             fill =  '\n' + point + '\t' + str(
-                                        Aproximates_E1[point][0]) + '\t' + str(
-                                       -Aproximates_E1[point][1]) + '\t' + str(
-                                        Aproximates_E1[point][2])
+                                        Results_E1[point][0]) + '\t' + str(
+                                       -Results_E1[point][1]) + '\t' + str(
+                                        Results_E1[point][2])
+            Results_file_E1.write(str(fill))
+        elif 'Aus' or 'Oben' or 'Mitte' or 'Aus' in point:
+            fill =  '\n' + point + '\t' + str(
+                                        Results_E1[point][0]) + '\t' + str(
+                                       -Results_E1[point][1]) + '\t' + str(
+                                        Results_E1[point][2])
+            Results_file_E1.write(str(fill))
+        else:
+            fill =  '\n' + point + '\t' + str(
+                                        Results_E1[point][0]) + '\t' + str(
+                                       -Results_E1[point][1]) + '\t' + str(
+                                        Results_E1[point][2]) + '\t' + str(
+                                        Results_E1[point][3]) + '\t' + str(
+                                        Results_E1[point][4]) + '\t' + str(
+                                        Results_E1[point][5]) + '\t' + str(
+                                        Results_E1[point][6])
 
             Results_file_E1.write(str(fill))
     
     # Closing file
     Results_file_E1.close()
     del Header, fill, point
-print('End of LSM \n')
-
-if Two_epochs:
-# =============================================================================
-# Calculating standard deviations for unknowns from CovMatrix, 
-# getting rid of orientation in Result dictionary
-# =============================================================================
-	for i, unknown in enumerate(unknowns[:-count_instruments]):
-		iii = 3*i
-		point = Results[unknown]
-		st_dev_X = m.sqrt(Cov_matrix[iii,iii])
-		st_dev_Y = m.sqrt(Cov_matrix[iii+1,iii+1])
-		st_dev_Z = m.sqrt(Cov_matrix[iii+2,iii+2])
-		update = point + (st_dev_X, st_dev_Y, st_dev_Z)
-		Results[unknown] = update
-	del update, point, st_dev_X, st_dev_Y, st_dev_Z
-	Ori_keys = ()
-	for key in Results.keys():
-		if "Ori_" in key:
-			Ori_keys += (key,)
-	for key in Ori_keys:
-		Results.pop(key)
-	del i, unknown, iii, Ori_keys, key
-	
-	for i, unknown in enumerate(unknowns_E1[:-count_instruments_E1]):
-		iii = 3*i
-		point = Results_E1[unknown]
-		st_dev_X = m.sqrt(Cov_matrix_E1[iii,iii])
-		st_dev_Y = m.sqrt(Cov_matrix_E1[iii+1,iii+1])
-		st_dev_Z = m.sqrt(Cov_matrix_E1[iii+2,iii+2])
-		update = point + (st_dev_X, st_dev_Y, st_dev_Z)
-		Results_E1[unknown] = update
-	del update, point, st_dev_X, st_dev_Y, st_dev_Z
-	Ori_keys = ()
-	for key in Results_E1.keys():
-		if "Ori_" in key:
-			Ori_keys += (key,)
-	for key in Ori_keys:
-		Results_E1.pop(key)
-	del i, unknown, iii, Ori_keys, key
-# =============================================================================
-# Building dictionary of points wanted to do the transform on
-# =============================================================================
-	Identical_points = {}
-	Identical_points_E1 = {}
-	for point in cg.Common_points:
-		if point in Results.keys():
-			Identical_points[point] = Results[point]
-		if point in Results_E1.keys():
-			Identical_points_E1[point] = Results_E1[point]
-			
-	x = ht.Helmert_transform(Identical_points_E1, Identical_points)
-	Transformed_Results_E1 = ht.Transformation(x, Results_E1)
-	
-	Res_set = set(Results)
-	Res_E1_set = set(Transformed_Results_E1)
-	Movements = {}
-	for point in Res_set.intersection(Res_E1_set):
-		diffs = tuple(np.array(Results[point][:3]) - np.array(Transformed_Results_E1[point][:3]))
-		mag = round(fc.slope_distance(Results[point], Transformed_Results_E1[point]),10)
-		result = diffs + (mag,)
-		# delta X, Y, Z and magnitude:
-		Movements[point] = result
-	del point, diffs, mag, result
-
-
-
-print('End of MainCode')

@@ -66,7 +66,6 @@ def Transformation(x, From):
 def Helmert_aproximate_parameters(From,To):
     identicals = list(set(To.keys()) & set(From.keys()))
     if len(identicals) >= 3:
-#        identicals = ['Point1','Point4','Point3','Point2']   # Markus testing, remove!
         #MAKE BETTER CHOICE ON POINTS WHEN YOU HAVE TIME, IF YOU WANT... PLEASE
         point1_To = np.array(To[identicals[0]][:3])
         point2_To = np.array(To[identicals[-1]][:3])
