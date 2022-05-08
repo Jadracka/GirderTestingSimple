@@ -8,18 +8,18 @@ Created on Thu Feb 11 10:54:43 2021
 #import math as m
 """
 
-   _____             __ _                       _   _                __ _ _      
-  / ____|           / _(_)                     | | (_)              / _(_) |     
- | |     ___  _ __ | |_ _  __ _ _   _ _ __ __ _| |_ _  ___  _ __   | |_ _| | ___ 
+   _____             __ _                       _   _                __ _ _
+  / ____|           / _(_)                     | | (_)              / _(_) |
+ | |     ___  _ __ | |_ _  __ _ _   _ _ __ __ _| |_ _  ___  _ __   | |_ _| | ___
  | |    / _ \| '_ \|  _| |/ _` | | | | '__/ _` | __| |/ _ \| '_ \  |  _| | |/ _ \
  | |___| (_) | | | | | | | (_| | |_| | | | (_| | |_| | (_) | | | | | | | | |  __/
   \_____\___/|_| |_|_| |_|\__, |\__,_|_|  \__,_|\__|_|\___/|_| |_| |_| |_|_|\___|
-                           __/ |                                                 
-                          |___/                                                  
+                           __/ |
+                          |___/
 """
 """Data analysis tools"""
 """CAN BE CHANGED"""
-Which_epochs = (10,11) #the comma must stay, otherwise the variable will be int
+Which_epochs = (11,12) #the comma must stay, otherwise the variable will be int
 Names_of_magnets = ['PQK36','PQL6','PQK62']
 Instruments_6DoF = True
 
@@ -45,7 +45,7 @@ Sigma_0 = 0.000001
 
 # Epoch specific factors
 Epoch_factors = {-2:{}, -1:{}, 0:{}, 1:{}, 2:{}, 3:{}, 4:{}, 5:{}, 6:{}, 7:{},
-						    8:{}, 9:{}, 10:{}, 11:{}}
+						    8:{}, 9:{}, 10:{}, 11:{}, 12:{}}
 
 Epoch_factors[-2]['Pico'] = 1
 Epoch_factors[-2]['IFM'] = 1
@@ -145,6 +145,13 @@ Epoch_factors[11]['Hz'] = 0.94
 Epoch_factors[11]['V'] = 2.94
 Epoch_factors[11]['Con'] = 1
 
+Epoch_factors[13]['Pico'] = 1
+Epoch_factors[13]['IFM'] = 5.4
+Epoch_factors[13]['ADM'] = 0.3814
+Epoch_factors[13]['Hz'] = 0.58
+Epoch_factors[13]['V'] = 2.12
+Epoch_factors[13]['Con'] = 1
+
 Print_FIDs = False
 
 
@@ -205,6 +212,9 @@ Epochs_dictionary['Coord'][10] = "Point_List_25Mar22.txt"
 Epochs_dictionary['LoS'][11] = "LoS_measurements_29Mar22.txt"
 Epochs_dictionary['Pol'][11] = "Polar_measurements_29Mar22.txt"
 Epochs_dictionary['Coord'][11] = "Point_List_29Mar22.txt"
+Epochs_dictionary['LoS'][12] = "LoS_measurements_21Apr22.txt"
+Epochs_dictionary['Pol'][12] = "Polar_measurements_21Apr22.txt"
+Epochs_dictionary['Coord'][12] = "Point_List_21Apr22.txt"
 
 """Which Epochs gonna be used and adding the data into the code"""
 if len(Which_epochs) == 1:
@@ -239,7 +249,7 @@ elif len(Which_epochs) == 2:
     Constraint_StDev = Constraint_StDev_basic * Epoch_factors[
                                                     Which_epochs[0]]['Con']
     Dist_StDev = (IFM_StDev[0]+ADM_StDev,IFM_StDev[1])
-    
+
     Pico_StDev_E1 = Pico_StDev_basic * Epoch_factors[Which_epochs[1]]['Pico']
     IFM_StDev_E1 = (IFM_StDev_basic[0] * Epoch_factors[Which_epochs[1]]['IFM'],
                  IFM_StDev_basic[1] * Epoch_factors[Which_epochs[1]]['IFM'])
@@ -282,7 +292,8 @@ LSM_Excluded_measurements = {
         '8':[],
         '9':[],
         '10':[],
-        '11':[]
+        '11':[],
+        '12':[]
         }
 
 Instruments_LoS = {
@@ -399,7 +410,7 @@ Lines_of_sight = {
 'Hor_Left_Bottom_UP_b': ('PQK36_1','PQK36_7','Girder_13','PQL6_1','PQL6_7',
                          'Girder_5','PQK62_1','PQK62_7'),
 'Hor_Left_Top_UP_b': ('PQK36_2','PQK36_8','PQL6_2','PQL6_8','PQK62_2',
-                      'PQK62_8'),  
+                      'PQK62_8'),
 'Hor_Top_Left_UP_b': ('PQK36_3','PQK36_9','PQL6_3','PQL6_9','PQK62_3',
                       'PQK62_9'),
 'Hor_Top_Right_UP_b': ('PQK36_4','PQK36_10','PQL6_4','PQL6_10','PQK62_4',
@@ -409,7 +420,7 @@ Lines_of_sight = {
 'Hor_Right_Bottom_UP_b': ('PQK36_6','PQK36_12','Girder_14','PQL6_6','PQL6_12',
                           'Girder_6','PQK62_6','PQK62_12'),
 'Hor_Left_Bottom_DN_b': ('PQK62_7','PQK62_1','Girder_5','PQL6_7','PQL6_1',
-                         'Girder_13','PQK36_7','PQK36_1'),                        
+                         'Girder_13','PQK36_7','PQK36_1'),
 'Hor_Left_Top_DN_b': ('PQK62_8','PQK62_2','PQL6_8','PQL6_2','PQK36_8',
                       'PQK36_2'),
 'Hor_Top_Left_DN_b': ('PQK62_9','PQK62_3','PQL6_9','PQL6_3','PQK36_9',
